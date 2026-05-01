@@ -10,81 +10,91 @@
 </head>
 <body class="min-h-screen text-gray-100">
 
-<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-6 py-3 flex items-center gap-4 sticky top-0 z-10">
-  <a href="/" class="text-[#6366f1] font-bold text-lg">⚡ PyPanel V3</a>
-  <span class="text-gray-500">/</span>
-  <span class="text-white font-medium">Settings</span>
+<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-5 py-3 flex items-center justify-between sticky top-0 z-10">
+  <div class="flex items-center gap-3">
+    <a href="/" class="text-[#6366f1] font-bold">⚡ PyPanel V3</a>
+    <span class="text-gray-600">/</span>
+    <span class="text-white font-medium text-sm">Settings</span>
+  </div>
+  <a href="/logout" class="text-gray-500 hover:text-red-400 text-xs transition-colors">↩ Logout</a>
 </header>
 
-<main class="max-w-2xl mx-auto px-6 py-10">
+<main class="max-w-2xl mx-auto px-5 py-10 flex flex-col gap-5">
 
-  {% if request.query_params.get('saved') %}
-  <div class="mb-6 px-4 py-3 rounded-lg bg-green-900/40 border border-green-700 text-green-300 text-sm font-medium">
-    ✅ Settings saved successfully
+  {% if saved %}
+  <div class="px-4 py-3 rounded-lg bg-green-900/40 border border-green-700 text-green-300 text-sm font-medium">
+    ✅ Settings saved
   </div>
   {% endif %}
 
-  <form method="POST" action="/api/settings" class="flex flex-col gap-6">
+  <form method="POST" action="/_/settings" class="contents">
+
+    <!-- Login Credentials -->
+    <section class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-5 flex flex-col gap-4">
+      <div>
+        <h2 class="text-sm font-semibold text-white mb-0.5">🔐 Login Credentials</h2>
+        <p class="text-xs text-gray-500">Change the username and password for the panel. Leave password blank to keep it unchanged.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Username</label>
+          <input name="username" type="text" value="{{ username }}" autocomplete="off"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-[#6366f1]" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">New Password</label>
+          <input name="password" type="password" placeholder="Leave blank to keep"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
+        </div>
+      </div>
+    </section>
 
     <!-- Cloudflare Tunnel -->
-    <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 flex flex-col gap-4">
+    <section class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-5 flex flex-col gap-4">
       <div>
-        <h2 class="text-base font-semibold text-white mb-0.5">🌐 Cloudflare Tunnel</h2>
-        <p class="text-xs text-gray-500">Enter your Cloudflare Tunnel token to make the panel publicly accessible.</p>
+        <h2 class="text-sm font-semibold text-white mb-0.5">🌐 Cloudflare Tunnel</h2>
+        <p class="text-xs text-gray-500">Make the panel publicly accessible via your Cloudflare account.</p>
       </div>
       <div>
-        <label class="block text-xs text-gray-400 mb-1.5" for="cloudflare_token">Tunnel Token</label>
-        <input id="cloudflare_token" name="cloudflare_token" type="password"
-          value="{{ cloudflare_token }}"
-          placeholder="eyJhIjoiXXXXX…"
+        <label class="block text-xs text-gray-400 mb-1.5">Tunnel Token</label>
+        <input name="cloudflare_token" type="password" value="{{ cloudflare_token }}" placeholder="eyJhIjoiXXX…"
           class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
-        <p class="text-xs text-gray-600 mt-1">Get this from the Cloudflare Zero Trust dashboard → Tunnels.</p>
+        <p class="text-xs text-gray-600 mt-1">Get this from Cloudflare Zero Trust → Tunnels.</p>
       </div>
-      <div id="tunnel-status-row" class="flex items-center justify-between">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-2 text-sm">
-          <span id="tunnel-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-gray-600"></span>
-          <span id="tunnel-label" class="text-gray-400">Checking…</span>
+          <span id="tun-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-gray-600"></span>
+          <span id="tun-label" class="text-gray-400 text-xs">Checking…</span>
         </div>
         <div class="flex gap-2">
-          <button type="button" onclick="tunnelAction('start')"
-            class="text-xs px-3 py-1.5 rounded-md bg-green-800 hover:bg-green-700 text-green-200 font-medium">
-            Start Tunnel
-          </button>
-          <button type="button" onclick="tunnelAction('stop')"
-            class="text-xs px-3 py-1.5 rounded-md bg-red-900 hover:bg-red-800 text-red-200 font-medium">
-            Stop Tunnel
-          </button>
+          <button type="button" onclick="tunnelAction('start')" class="text-xs px-3 py-1.5 rounded-md bg-green-800/70 hover:bg-green-700 text-green-200 font-medium">Start</button>
+          <button type="button" onclick="tunnelAction('stop')"  class="text-xs px-3 py-1.5 rounded-md bg-red-900/70 hover:bg-red-800 text-red-200 font-medium">Stop</button>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- Discord Bot -->
-    <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 flex flex-col gap-4">
+    <section class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-5 flex flex-col gap-4">
       <div>
-        <h2 class="text-base font-semibold text-white mb-0.5">🤖 Discord Bot</h2>
-        <p class="text-xs text-gray-500">Connect a Discord bot to control scripts via slash commands.</p>
+        <h2 class="text-sm font-semibold text-white mb-0.5">🤖 Discord Bot</h2>
+        <p class="text-xs text-gray-500">Control projects via Discord slash commands.</p>
       </div>
       <div>
-        <label class="block text-xs text-gray-400 mb-1.5" for="discord_token">Bot Token</label>
-        <input id="discord_token" name="discord_token" type="password"
-          value="{{ discord_token }}"
-          placeholder="MTxxxxxxx.Gxxxxx.xxxxxxxx"
+        <label class="block text-xs text-gray-400 mb-1.5">Bot Token</label>
+        <input name="discord_token" type="password" value="{{ discord_token }}" placeholder="MTxxxxxx.Gxxxxx…"
           class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
-        <p class="text-xs text-gray-600 mt-1">Get this from <a href="https://discord.com/developers/applications" target="_blank" class="text-indigo-400 hover:underline">discord.com/developers</a>.</p>
       </div>
       <div>
-        <label class="block text-xs text-gray-400 mb-1.5" for="allowed_users">Allowed User IDs</label>
-        <input id="allowed_users" name="allowed_users" type="text"
-          value="{{ allowed_users }}"
-          placeholder="123456789, 987654321"
+        <label class="block text-xs text-gray-400 mb-1.5">Allowed User IDs</label>
+        <input name="allowed_users" type="text" value="{{ allowed_users }}" placeholder="123456789, 987654321"
           class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
-        <p class="text-xs text-gray-600 mt-1">Comma-separated Discord user IDs. Server owner is always allowed.</p>
+        <p class="text-xs text-gray-600 mt-1">Comma-separated. Server owner always allowed.</p>
       </div>
-    </div>
+    </section>
 
     <div class="flex justify-end">
       <button type="submit"
-        class="bg-[#6366f1] hover:bg-indigo-500 text-white font-medium text-sm px-6 py-2.5 rounded-lg transition-colors">
+        class="bg-[#6366f1] hover:bg-indigo-500 text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors">
         💾 Save Settings
       </button>
     </div>
@@ -94,25 +104,23 @@
 <script>
 async function loadTunnelStatus() {
   try {
-    const resp = await fetch('/api/status');
-    const data = await resp.json();
-    const dot = document.getElementById('tunnel-dot');
-    const label = document.getElementById('tunnel-label');
-    if (data.tunnel.status === 'running') {
+    const r = await fetch('/_/status');
+    const d = await r.json();
+    const dot = document.getElementById('tun-dot');
+    const lbl = document.getElementById('tun-label');
+    if (d.tunnel.status === 'running') {
       dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-green-500';
-      label.className = 'text-green-400';
-      label.textContent = '🟢 Connected';
+      lbl.className = 'text-green-400 text-xs'; lbl.textContent = '🟢 Connected';
     } else {
       dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-red-500';
-      label.className = 'text-red-400';
-      label.textContent = '🔴 Stopped';
+      lbl.className = 'text-red-400 text-xs'; lbl.textContent = '🔴 Stopped';
     }
   } catch(e) {}
 }
 loadTunnelStatus();
 
 async function tunnelAction(action) {
-  await fetch(`/api/tunnel/${action}`, { method: 'POST' });
+  await fetch(`/_/tunnel/${action}`, {method:'POST'});
   setTimeout(loadTunnelStatus, 1500);
 }
 </script>

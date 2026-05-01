@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Python Web Panel V3</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' }
-  </script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
   <style>
     body { background: #0f1117; }
     .sdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
@@ -17,7 +15,7 @@
     .modal-bg { background: rgba(0,0,0,.65); backdrop-filter: blur(2px); }
     .file-chip { transition: background .12s; }
     .file-chip:hover { background: #2a2d3e; }
-    .file-chip.sel { background: #312d6e; border-color: #6366f1; }
+    .file-chip.sel { background: #312d6e; border-color: #6366f1 !important; color: #e0e7ff; }
     input[type=file] { display: none; }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
@@ -46,6 +44,7 @@
       </span>
     </div>
     <a href="/settings" class="text-gray-400 hover:text-white text-xs">⚙ Settings</a>
+    <a href="/logout" class="text-gray-500 hover:text-red-400 text-xs transition-colors">↩ Logout</a>
   </div>
 </header>
 
@@ -75,7 +74,6 @@
     <div class="proj-card bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-4 flex flex-col gap-3 hover:border-[#6366f1]/40 transition-colors"
          data-name="{{ p.name }}">
 
-      <!-- Header -->
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
           <span class="sdot flex-shrink-0
@@ -90,7 +88,6 @@
           {% else %}bg-red-900/40 text-red-400{% endif %}">{{ p.status }}</span>
       </div>
 
-      <!-- Start file + meta -->
       <div class="text-xs text-gray-500 space-y-1">
         <div class="flex items-center gap-1.5">
           <span class="text-green-500 shrink-0">▶</span>
@@ -101,11 +98,11 @@
           <span>Restarts: <span class="text-gray-300">{{ p.restarts }}</span></span>
           <span class="col-span-2">Uptime: <span class="uptime-cell text-gray-300"
             data-start="{{ p.start_time or '' }}"
-            data-status="{{ p.status }}">{% if p.uptime %}{{ p.uptime }}s{% else %}—{% endif %}</span></span>
+            data-status="{{ p.status }}">{% if p.uptime %}{{ p.uptime }}s{% else %}—{% endif %}</span>
+          </span>
         </div>
       </div>
 
-      <!-- File chips -->
       {% if p.files %}
       <div class="flex flex-wrap gap-1">
         {% for f in p.files[:6] %}
@@ -122,7 +119,6 @@
       <p class="text-xs text-gray-600 italic">No files — open manager to upload</p>
       {% endif %}
 
-      <!-- Action buttons -->
       <div class="flex gap-1.5 pt-2 border-t border-[#2a2d3e]">
         <button onclick="projAction('start','{{ p.name }}')" title="Start"
           class="btn flex-1 text-xs py-1.5 rounded-md bg-green-800/60 hover:bg-green-700 text-green-200 font-medium">▶</button>
@@ -159,11 +155,10 @@
 
 <!-- File Manager Modal -->
 <div id="fm-modal" class="hidden fixed inset-0 modal-bg z-30 flex items-center justify-center" onclick="bgClose(event,'fm-modal')">
-  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl w-[680px] max-w-full mx-4 slide-in flex flex-col" style="max-height:82vh">
-    <!-- FM Header -->
+  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl w-[700px] max-w-full mx-4 slide-in flex flex-col" style="max-height:84vh">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[#2a2d3e] shrink-0">
       <div class="flex items-center gap-2">
-        <span class="text-base">📁</span>
+        <span>📁</span>
         <span id="fm-title" class="font-semibold text-white text-sm"></span>
         <span class="text-gray-500 text-xs">/ File Manager</span>
       </div>
@@ -173,11 +168,8 @@
         <button onclick="closeModal('fm-modal')" class="text-gray-500 hover:text-white text-xl leading-none ml-1">&times;</button>
       </div>
     </div>
-    <!-- FM Body -->
     <div class="flex flex-1 overflow-hidden min-h-0">
-      <!-- File list sidebar -->
-      <div id="fm-files" class="w-44 shrink-0 border-r border-[#2a2d3e] p-2 overflow-y-auto flex flex-col gap-0.5"></div>
-      <!-- Editor panel -->
+      <div id="fm-files" class="w-44 shrink-0 border-r border-[#2a2d3e] p-2 overflow-y-auto flex flex-col gap-0.5 bg-[#12151f]"></div>
       <div class="flex-1 flex flex-col overflow-hidden min-h-0">
         <div id="fm-no-file" class="flex-1 flex flex-col items-center justify-center text-gray-600 gap-2">
           <span class="text-3xl">📄</span>
@@ -187,7 +179,7 @@
           <div class="flex items-center justify-between px-3 py-2 border-b border-[#2a2d3e] bg-[#12151f] shrink-0">
             <span id="fm-filename" class="text-xs font-mono text-gray-400"></span>
             <div class="flex gap-1.5">
-              <button onclick="setAsStartFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-green-800/70 text-green-200 font-medium">▶ Set Start File</button>
+              <button onclick="setAsStartFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-green-800/70 text-green-200 font-medium">▶ Set Start</button>
               <button onclick="saveFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-[#6366f1] text-white font-medium">💾 Save</button>
               <button onclick="deleteFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-red-900/70 text-red-300 font-medium">🗑</button>
             </div>
@@ -202,7 +194,6 @@
 </div>
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
 let fmProject = null, fmCurrent = null;
 
 // ── Live Stats ────────────────────────────────────────────────────────────────
@@ -243,12 +234,12 @@ function toast(msg, type='ok') {
   inner.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(_tt);
-  _tt = setTimeout(() => el.classList.add('hidden'), 3000);
+  _tt = setTimeout(() => el.classList.add('hidden'), 3500);
 }
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+const closeModal = id => document.getElementById(id).classList.add('hidden');
+const openModal  = id => document.getElementById(id).classList.remove('hidden');
 function bgClose(e, id) { if (e.target === e.currentTarget) closeModal(id); }
 
 // ── New Project ───────────────────────────────────────────────────────────────
@@ -257,31 +248,42 @@ function openNewProject() {
   openModal('new-modal');
   setTimeout(() => document.getElementById('new-name').focus(), 80);
 }
+
 async function createProject() {
   const name = document.getElementById('new-name').value.trim();
-  if (!name) return;
+  if (!name) { toast('❌ Enter a project name', 'err'); return; }
   closeModal('new-modal');
-  const r = await fetch('/api/projects/create', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  const r = await fetch('/_/projects/create', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name})
+  });
   const d = await r.json();
-  if (r.ok) { toast(`✅ Created "${d.name}"`); setTimeout(()=>location.reload(),600); }
-  else toast(`❌ ${d.detail}`, 'err');
+  if (r.ok) {
+    toast(`✅ Created "${d.name}"`);
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast(`❌ ${d.detail}`, 'err');
+  }
 }
 
 // ── Project actions ───────────────────────────────────────────────────────────
 async function projAction(action, name) {
-  const r = await fetch(`/api/projects/${encodeURIComponent(name)}/${action}`, {method:'POST'});
+  const r = await fetch(`/_/projects/${encodeURIComponent(name)}/${action}`, {method:'POST'});
   const d = await r.json();
   if (r.ok) { toast(`✅ ${action} → ${name}`); setTimeout(()=>location.reload(),900); }
   else toast(`❌ ${d.detail||d.error}`, 'err');
 }
+
 async function restartAll() {
-  await fetch('/api/restart-all',{method:'POST'});
-  toast('🔁 Restarting all…','warn');
+  await fetch('/_/restart-all', {method:'POST'});
+  toast('🔁 Restarting all…', 'warn');
   setTimeout(()=>location.reload(),1500);
 }
+
 async function deleteProject(name) {
   if (!confirm(`Delete project "${name}"?\nThis will stop the process and remove all files.`)) return;
-  const r = await fetch(`/api/projects/${encodeURIComponent(name)}`,{method:'DELETE'});
+  const r = await fetch(`/_/projects/${encodeURIComponent(name)}`, {method:'DELETE'});
   const d = await r.json();
   if (r.ok) { toast(`🗑 Deleted ${name}`); setTimeout(()=>location.reload(),700); }
   else toast(`❌ ${d.detail}`, 'err');
@@ -298,19 +300,20 @@ async function openFileManager(name) {
 }
 
 async function loadFiles() {
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/files`);
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files`);
   const d = await r.json();
   const list = document.getElementById('fm-files');
   list.innerHTML = '';
-  if (!d.files.length) {
-    list.innerHTML = '<p class="text-xs text-gray-600 px-2 py-6 text-center">No files</p>';
+  if (!d.files || !d.files.length) {
+    list.innerHTML = '<p class="text-xs text-gray-600 px-2 py-6 text-center">No files<br/>Upload one above</p>';
     return;
   }
   d.files.forEach(fname => {
+    const isStart = fname === d.start_file;
     const el = document.createElement('div');
     el.className = `file-chip flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono cursor-pointer border ${
-      fmCurrent===fname ? 'sel border-[#6366f1]/50 text-gray-100' : 'border-transparent text-gray-400'}`;
-    el.innerHTML = `${fname===d.start_file ? '<span class="text-green-400 shrink-0 text-[10px]">▶</span>' : '<span class="w-2.5 shrink-0"></span>'}<span class="truncate">${fname}</span>`;
+      fmCurrent===fname ? 'sel border-[#6366f1]/50' : 'border-transparent text-gray-400 hover:text-gray-200'}`;
+    el.innerHTML = `${isStart ? '<span class="text-green-400 shrink-0 text-[10px]">▶</span>' : '<span class="w-3 shrink-0"></span>'}<span class="truncate">${fname}</span>`;
     el.onclick = () => openFile(fname);
     list.appendChild(el);
   });
@@ -319,7 +322,7 @@ async function loadFiles() {
 async function openFile(fname) {
   fmCurrent = fname;
   document.getElementById('fm-filename').textContent = fname;
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fname)}`);
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fname)}`);
   const d = await r.json();
   document.getElementById('fm-editor').value = d.content || '';
   document.getElementById('fm-no-file').classList.add('hidden');
@@ -330,14 +333,14 @@ async function openFile(fname) {
 async function saveFile() {
   if (!fmCurrent) return;
   const content = document.getElementById('fm-editor').value;
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fmCurrent)}`,
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fmCurrent)}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
   r.ok ? toast('💾 Saved') : toast('❌ Save failed','err');
 }
 
 async function setAsStartFile() {
   if (!fmCurrent) return;
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/start-file`,
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/start-file`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fmCurrent})});
   const d = await r.json();
   if (r.ok) {
@@ -345,12 +348,12 @@ async function setAsStartFile() {
     await loadFiles();
     const badge = document.querySelector(`.proj-card[data-name="${fmProject}"] .start-file-label`);
     if (badge) badge.textContent = fmCurrent;
-  } else toast(`❌ ${d.detail}`,'err');
+  } else toast(`❌ ${d.detail}`, 'err');
 }
 
 async function deleteFile() {
   if (!fmCurrent || !confirm(`Delete "${fmCurrent}"?`)) return;
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fmCurrent)}`,{method:'DELETE'});
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fmCurrent)}`,{method:'DELETE'});
   if (r.ok) {
     toast(`🗑 Deleted ${fmCurrent}`);
     fmCurrent = null;
@@ -363,10 +366,10 @@ async function deleteFile() {
 async function uploadToProject(input) {
   const file = input.files[0]; if (!file) return;
   const fd = new FormData(); fd.append('file', file);
-  const r = await fetch(`/api/projects/${encodeURIComponent(fmProject)}/upload`,{method:'POST',body:fd});
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/upload`,{method:'POST',body:fd});
   const d = await r.json();
   if (r.ok) { toast(`📤 Uploaded ${d.name}`); await openFile(d.name); }
-  else toast(`❌ ${d.detail}`,'err');
+  else toast(`❌ ${d.detail}`, 'err');
   input.value = '';
 }
 </script>
