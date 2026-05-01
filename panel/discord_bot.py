@@ -19,7 +19,7 @@ def _load_config() -> dict:
         return {}
 
 
-def _format_uptime(seconds: int | None) -> str:
+def _fmt_uptime(seconds: int | None) -> str:
     if seconds is None:
         return "N/A"
     h = seconds // 3600
@@ -43,76 +43,76 @@ def _run_bot(token: str):
     client = discord.Client(intents=intents)
     tree = app_commands.CommandTree(client)
 
-    def _is_allowed(interaction: discord.Interaction) -> bool:
+    def _allowed(interaction: discord.Interaction) -> bool:
         cfg = _load_config()
         allowed = cfg.get("allowed_users", [])
-        guild = interaction.guild
         uid = str(interaction.user.id)
+        guild = interaction.guild
         if guild and str(guild.owner_id) == uid:
             return True
         return uid in allowed
 
-    @tree.command(name="scripts", description="List all scripts and their status")
-    async def cmd_scripts(interaction: discord.Interaction):
-        if not _is_allowed(interaction):
+    @tree.command(name="projects", description="List all projects and their status")
+    async def cmd_projects(interaction: discord.Interaction):
+        if not _allowed(interaction):
             await interaction.response.send_message("❌ Permission denied.", ephemeral=True)
             return
-        scripts = manager.list_scripts()
-        if not scripts:
-            await interaction.response.send_message("No scripts found.")
+        projects = manager.list_projects()
+        if not projects:
+            await interaction.response.send_message("No projects found.")
             return
         lines = []
-        for s in scripts:
-            icon = "🟢" if s["status"] == "running" else "🔴"
-            uptime = _format_uptime(s.get("uptime"))
-            lines.append(f"{icon} **{s['name']}** | PID: {s['pid'] or 'N/A'} | Uptime: {uptime} | Restarts: {s['restarts']}")
+        for p in projects:
+            icon = "🟢" if p["status"] == "running" else "🔴"
+            uptime = _fmt_uptime(p.get("uptime"))
+            lines.append(f"{icon} **{p['name']}** | Start: `{p['start_file']}` | PID: {p['pid'] or 'N/A'} | Uptime: {uptime} | Restarts: {p['restarts']}")
         await interaction.response.send_message("\n".join(lines))
 
-    @tree.command(name="start", description="Start a script")
-    @app_commands.describe(script="Script filename (e.g. bot.py)")
-    async def cmd_start(interaction: discord.Interaction, script: str):
-        if not _is_allowed(interaction):
+    @tree.command(name="start", description="Start a project")
+    @app_commands.describe(project="Project name")
+    async def cmd_start(interaction: discord.Interaction, project: str):
+        if not _allowed(interaction):
             await interaction.response.send_message("❌ Permission denied.", ephemeral=True)
             return
-        result = manager.start_script(script)
+        result = manager.start_project(project)
         if result.get("ok"):
-            await interaction.response.send_message(f"✅ Started **{script}** (PID: {result.get('pid')})")
+            await interaction.response.send_message(f"✅ Started **{project}** (PID: {result.get('pid')})")
         else:
             await interaction.response.send_message(f"❌ Error: {result.get('error')}")
 
-    @tree.command(name="stop", description="Stop a script")
-    @app_commands.describe(script="Script filename (e.g. bot.py)")
-    async def cmd_stop(interaction: discord.Interaction, script: str):
-        if not _is_allowed(interaction):
+    @tree.command(name="stop", description="Stop a project")
+    @app_commands.describe(project="Project name")
+    async def cmd_stop(interaction: discord.Interaction, project: str):
+        if not _allowed(interaction):
             await interaction.response.send_message("❌ Permission denied.", ephemeral=True)
             return
-        result = manager.stop_script(script)
+        result = manager.stop_project(project)
         if result.get("ok"):
-            await interaction.response.send_message(f"⛔ Stopped **{script}**")
+            await interaction.response.send_message(f"⛔ Stopped **{project}**")
         else:
             await interaction.response.send_message(f"❌ Error: {result.get('error')}")
 
-    @tree.command(name="restart", description="Restart a script")
-    @app_commands.describe(script="Script filename (e.g. bot.py)")
-    async def cmd_restart(interaction: discord.Interaction, script: str):
-        if not _is_allowed(interaction):
+    @tree.command(name="restart", description="Restart a project")
+    @app_commands.describe(project="Project name")
+    async def cmd_restart(interaction: discord.Interaction, project: str):
+        if not _allowed(interaction):
             await interaction.response.send_message("❌ Permission denied.", ephemeral=True)
             return
-        result = manager.restart_script(script)
+        result = manager.restart_project(project)
         if result.get("ok"):
-            await interaction.response.send_message(f"🔁 Restarted **{script}** (PID: {result.get('pid')})")
+            await interaction.response.send_message(f"🔁 Restarted **{project}** (PID: {result.get('pid')})")
         else:
             await interaction.response.send_message(f"❌ Error: {result.get('error')}")
 
-    @tree.command(name="logs", description="Show last 20 log lines for a script")
-    @app_commands.describe(script="Script filename (e.g. bot.py)")
-    async def cmd_logs(interaction: discord.Interaction, script: str):
-        if not _is_allowed(interaction):
+    @tree.command(name="logs", description="Show last 20 log lines for a project")
+    @app_commands.describe(project="Project name")
+    async def cmd_logs(interaction: discord.Interaction, project: str):
+        if not _allowed(interaction):
             await interaction.response.send_message("❌ Permission denied.", ephemeral=True)
             return
-        lines = manager.get_log_lines(script, n=20)
+        lines = manager.get_log_lines(project, n=20)
         if not lines:
-            await interaction.response.send_message(f"No logs for **{script}**.")
+            await interaction.response.send_message(f"No logs for **{project}**.")
             return
         content = "\n".join(lines)
         if len(content) > 1900:

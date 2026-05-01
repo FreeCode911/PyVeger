@@ -3,39 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logs — {{ script_name }}</title>
+  <title>Logs — {{ project_name }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <style>
     body { background: #0f1117; }
-    #log-box { font-family: 'Fira Mono', 'Courier New', monospace; font-size: 13px; line-height: 1.6; }
-    .log-line { border-bottom: 1px solid #1a1d27; padding: 2px 0; }
+    #log-box { font-family: 'Fira Mono', 'Courier New', monospace; font-size: 12.5px; line-height: 1.65; }
     .log-line:hover { background: #1a1d27; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
   </style>
 </head>
 <body class="min-h-screen text-gray-100">
 
-<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-6 py-3 flex items-center gap-4 sticky top-0 z-10">
-  <a href="/" class="text-[#6366f1] font-bold text-lg">⚡ PyPanel V3</a>
-  <span class="text-gray-500">/</span>
-  <span class="text-white font-medium">{{ script_name }}</span>
+<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-5 py-3 flex items-center gap-3 sticky top-0 z-10">
+  <a href="/" class="text-[#6366f1] font-bold">⚡ PyPanel V3</a>
+  <span class="text-gray-600">/</span>
+  <span class="text-white font-medium text-sm">{{ project_name }}</span>
+  <span class="text-gray-500 text-xs">logs</span>
   <div class="ml-auto flex items-center gap-3">
     <span id="conn-badge" class="text-xs px-2 py-1 rounded-full bg-yellow-900/50 text-yellow-400">⏳ Connecting…</span>
     <button onclick="clearDisplay()" class="text-xs px-3 py-1 rounded-md bg-[#2a2d3e] hover:bg-[#333649] text-gray-300">Clear</button>
-    <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-      <input type="checkbox" id="autoscroll" checked class="accent-indigo-500" />
-      Auto-scroll
+    <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
+      <input type="checkbox" id="autoscroll" checked class="accent-indigo-500" /> Auto-scroll
     </label>
   </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-6 py-6">
+<main class="max-w-6xl mx-auto px-5 py-6">
   <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl overflow-hidden">
     <div class="flex items-center justify-between px-4 py-2 border-b border-[#2a2d3e] bg-[#12151f]">
-      <span class="text-xs text-gray-500 font-mono">{{ script_name }}.log</span>
+      <span class="text-xs text-gray-500 font-mono">{{ project_name }}.log</span>
       <span id="line-count" class="text-xs text-gray-600">0 lines</span>
     </div>
-    <div id="log-box" class="h-[70vh] overflow-y-auto p-4 text-green-400 bg-[#0b0e16]">
+    <div id="log-box" class="h-[72vh] overflow-y-auto p-4 text-green-400 bg-[#0b0e16]">
       <div id="log-content"></div>
       <div id="log-end"></div>
     </div>
@@ -43,55 +43,35 @@
 </main>
 
 <script>
-const scriptName = {{ script_name | tojson }};
+const projectName = {{ project_name | tojson }};
 const logContent = document.getElementById('log-content');
-const logEnd = document.getElementById('log-end');
-const connBadge = document.getElementById('conn-badge');
-const lineCountEl = document.getElementById('line-count');
 let lineCount = 0;
 
 function addLines(text) {
-  const lines = text.split('\n');
-  lines.forEach(line => {
-    if (line === '') return;
+  text.split('\n').forEach(line => {
+    if (!line) return;
     const div = document.createElement('div');
-    div.className = 'log-line';
+    div.className = 'log-line px-1 rounded';
     div.textContent = line;
     logContent.appendChild(div);
     lineCount++;
   });
-  lineCountEl.textContent = lineCount + ' lines';
-  if (document.getElementById('autoscroll').checked) {
-    logEnd.scrollIntoView({ behavior: 'smooth' });
-  }
+  document.getElementById('line-count').textContent = lineCount + ' lines';
+  if (document.getElementById('autoscroll').checked)
+    document.getElementById('log-end').scrollIntoView({ behavior: 'smooth' });
 }
 
-function clearDisplay() {
-  logContent.innerHTML = '';
-  lineCount = 0;
-  lineCountEl.textContent = '0 lines';
-}
+function clearDisplay() { logContent.innerHTML = ''; lineCount = 0; document.getElementById('line-count').textContent = '0 lines'; }
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(scriptName)}`);
-
-  ws.onopen = () => {
-    connBadge.className = 'text-xs px-2 py-1 rounded-full bg-green-900/50 text-green-400';
-    connBadge.textContent = '🟢 Live';
-  };
-
-  ws.onmessage = (e) => addLines(e.data);
-
-  ws.onclose = () => {
-    connBadge.className = 'text-xs px-2 py-1 rounded-full bg-red-900/50 text-red-400';
-    connBadge.textContent = '🔴 Reconnecting…';
-    setTimeout(connect, 3000);
-  };
-
+  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(projectName)}`);
+  const badge = document.getElementById('conn-badge');
+  ws.onopen = () => { badge.className = 'text-xs px-2 py-1 rounded-full bg-green-900/50 text-green-400'; badge.textContent = '🟢 Live'; };
+  ws.onmessage = e => addLines(e.data);
+  ws.onclose = () => { badge.className = 'text-xs px-2 py-1 rounded-full bg-red-900/50 text-red-400'; badge.textContent = '🔴 Reconnecting…'; setTimeout(connect, 3000); };
   ws.onerror = () => ws.close();
 }
-
 connect();
 </script>
 </body>
