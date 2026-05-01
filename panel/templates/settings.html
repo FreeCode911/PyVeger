@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — PyPanel V3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>body { background: #0f1117; }</style>
+</head>
+<body class="min-h-screen text-gray-100">
+
+<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-6 py-3 flex items-center gap-4 sticky top-0 z-10">
+  <a href="/" class="text-[#6366f1] font-bold text-lg">⚡ PyPanel V3</a>
+  <span class="text-gray-500">/</span>
+  <span class="text-white font-medium">Settings</span>
+</header>
+
+<main class="max-w-2xl mx-auto px-6 py-10">
+
+  {% if request.query_params.get('saved') %}
+  <div class="mb-6 px-4 py-3 rounded-lg bg-green-900/40 border border-green-700 text-green-300 text-sm font-medium">
+    ✅ Settings saved successfully
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/api/settings" class="flex flex-col gap-6">
+
+    <!-- Cloudflare Tunnel -->
+    <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 flex flex-col gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-white mb-0.5">🌐 Cloudflare Tunnel</h2>
+        <p class="text-xs text-gray-500">Enter your Cloudflare Tunnel token to make the panel publicly accessible.</p>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5" for="cloudflare_token">Tunnel Token</label>
+        <input id="cloudflare_token" name="cloudflare_token" type="password"
+          value="{{ cloudflare_token }}"
+          placeholder="eyJhIjoiXXXXX…"
+          class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
+        <p class="text-xs text-gray-600 mt-1">Get this from the Cloudflare Zero Trust dashboard → Tunnels.</p>
+      </div>
+      <div id="tunnel-status-row" class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-sm">
+          <span id="tunnel-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-gray-600"></span>
+          <span id="tunnel-label" class="text-gray-400">Checking…</span>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="tunnelAction('start')"
+            class="text-xs px-3 py-1.5 rounded-md bg-green-800 hover:bg-green-700 text-green-200 font-medium">
+            Start Tunnel
+          </button>
+          <button type="button" onclick="tunnelAction('stop')"
+            class="text-xs px-3 py-1.5 rounded-md bg-red-900 hover:bg-red-800 text-red-200 font-medium">
+            Stop Tunnel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discord Bot -->
+    <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 flex flex-col gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-white mb-0.5">🤖 Discord Bot</h2>
+        <p class="text-xs text-gray-500">Connect a Discord bot to control scripts via slash commands.</p>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5" for="discord_token">Bot Token</label>
+        <input id="discord_token" name="discord_token" type="password"
+          value="{{ discord_token }}"
+          placeholder="MTxxxxxxx.Gxxxxx.xxxxxxxx"
+          class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
+        <p class="text-xs text-gray-600 mt-1">Get this from <a href="https://discord.com/developers/applications" target="_blank" class="text-indigo-400 hover:underline">discord.com/developers</a>.</p>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5" for="allowed_users">Allowed User IDs</label>
+        <input id="allowed_users" name="allowed_users" type="text"
+          value="{{ allowed_users }}"
+          placeholder="123456789, 987654321"
+          class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
+        <p class="text-xs text-gray-600 mt-1">Comma-separated Discord user IDs. Server owner is always allowed.</p>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button type="submit"
+        class="bg-[#6366f1] hover:bg-indigo-500 text-white font-medium text-sm px-6 py-2.5 rounded-lg transition-colors">
+        💾 Save Settings
+      </button>
+    </div>
+  </form>
+</main>
+
+<script>
+async function loadTunnelStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+    const dot = document.getElementById('tunnel-dot');
+    const label = document.getElementById('tunnel-label');
+    if (data.tunnel.status === 'running') {
+      dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-green-500';
+      label.className = 'text-green-400';
+      label.textContent = '🟢 Connected';
+    } else {
+      dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-red-500';
+      label.className = 'text-red-400';
+      label.textContent = '🔴 Stopped';
+    }
+  } catch(e) {}
+}
+loadTunnelStatus();
+
+async function tunnelAction(action) {
+  await fetch(`/api/tunnel/${action}`, { method: 'POST' });
+  setTimeout(loadTunnelStatus, 1500);
+}
+</script>
+</body>
+</html>

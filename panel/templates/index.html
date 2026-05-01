@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Web Panel V3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            panel: { bg: '#0f1117', card: '#1a1d27', border: '#2a2d3e', accent: '#6366f1', green: '#22c55e', red: '#ef4444' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0f1117; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; transition: all 0.3s; }
+    .card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
+    .card-hover:hover { border-color: #6366f1; box-shadow: 0 0 0 1px #6366f1; }
+    .btn { transition: background 0.15s, opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    input[type=file] { display: none; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100 font-sans">
+
+<!-- Toast -->
+<div id="toast" class="toast hidden">
+  <div id="toast-inner" class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium"></div>
+</div>
+
+<!-- Top Bar -->
+<header class="border-b border-[#2a2d3e] bg-[#1a1d27] px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+  <div class="flex items-center gap-3">
+    <span class="text-[#6366f1] font-bold text-xl tracking-tight">⚡ PyPanel V3</span>
+  </div>
+  <div class="flex items-center gap-6 text-sm">
+    <span class="flex items-center gap-2 text-gray-400">
+      CPU: <span id="top-cpu" class="text-white font-mono font-semibold">—</span>
+    </span>
+    <span class="flex items-center gap-2 text-gray-400">
+      RAM: <span id="top-ram" class="text-white font-mono font-semibold">—</span>
+    </span>
+    <span class="flex items-center gap-2 text-gray-400">
+      Active: <span id="top-active" class="text-white font-mono font-semibold">—</span>
+    </span>
+    <div id="tunnel-badge" class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[#0f1117] text-xs">
+      <span class="status-dot {% if tunnel.status == 'running' %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+      <span class="{% if tunnel.status == 'running' %}text-green-400{% else %}text-red-400{% endif %}">
+        Tunnel {% if tunnel.status == 'running' %}Connected{% else %}Stopped{% endif %}
+      </span>
+    </div>
+    <a href="/settings" class="text-gray-400 hover:text-white text-xs">⚙ Settings</a>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="max-w-7xl mx-auto px-6 py-8">
+
+  <!-- Actions Row -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="relative">
+      <input id="search" type="text" placeholder="🔍 Search scripts…"
+        class="bg-[#1a1d27] border border-[#2a2d3e] rounded-lg px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#6366f1] w-64" />
+    </div>
+    <div class="flex gap-3">
+      <button onclick="restartAll()" class="btn bg-yellow-600 hover:bg-yellow-500 text-white text-sm px-4 py-2 rounded-lg font-medium">
+        🔁 Restart All
+      </button>
+      <label for="upload-file" class="btn cursor-pointer bg-[#6366f1] hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium">
+        📤 Upload Script
+      </label>
+      <input id="upload-file" type="file" accept=".py" onchange="uploadScript(this)" />
+    </div>
+  </div>
+
+  <!-- Script Grid -->
+  <div id="scripts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for s in scripts %}
+    <div class="script-card card-hover bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-5 flex flex-col gap-3"
+         data-name="{{ s.name }}">
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-2">
+          <span class="status-dot {% if s.status == 'running' %}bg-green-500 animate-pulse{% else %}bg-red-500{% endif %}"></span>
+          <span class="font-semibold text-sm text-white truncate max-w-[150px]" title="{{ s.name }}">{{ s.name }}</span>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full
+          {% if s.status == 'running' %}bg-green-900/50 text-green-400
+          {% elif s.status == 'restarting' %}bg-yellow-900/50 text-yellow-400
+          {% else %}bg-red-900/50 text-red-400{% endif %}">
+          {{ s.status }}
+        </span>
+      </div>
+      <div class="text-xs text-gray-500 grid grid-cols-2 gap-1">
+        <span>PID: <span class="text-gray-300">{{ s.pid or '—' }}</span></span>
+        <span>Restarts: <span class="text-gray-300">{{ s.restarts }}</span></span>
+        <span class="col-span-2 uptime-cell" data-start="{{ s.start_time or '' }}" data-status="{{ s.status }}">
+          Uptime: <span class="text-gray-300 uptime-val">
+            {% if s.uptime %}{{ s.uptime }}s{% else %}—{% endif %}
+          </span>
+        </span>
+      </div>
+      <div class="flex gap-2 mt-auto pt-2 border-t border-[#2a2d3e]">
+        <button onclick="scriptAction('start','{{ s.name }}')" class="btn flex-1 text-xs py-1.5 rounded-md bg-green-800 hover:bg-green-700 text-green-200 font-medium">▶ Start</button>
+        <button onclick="scriptAction('stop','{{ s.name }}')" class="btn flex-1 text-xs py-1.5 rounded-md bg-red-900 hover:bg-red-800 text-red-200 font-medium">■ Stop</button>
+        <button onclick="scriptAction('restart','{{ s.name }}')" class="btn flex-1 text-xs py-1.5 rounded-md bg-yellow-900 hover:bg-yellow-800 text-yellow-200 font-medium">↺ Restart</button>
+        <a href="/logs/{{ s.name }}" class="btn flex-1 text-xs py-1.5 rounded-md bg-[#2a2d3e] hover:bg-[#333649] text-gray-300 font-medium text-center">📋 Logs</a>
+        <button onclick="deleteScript('{{ s.name }}')" class="btn text-xs py-1.5 px-2 rounded-md bg-[#2a2d3e] hover:bg-red-900 text-gray-400 hover:text-red-300" title="Delete">🗑</button>
+      </div>
+    </div>
+    {% else %}
+    <div id="empty-state" class="col-span-3 text-center py-20 text-gray-600">
+      <div class="text-5xl mb-4">📂</div>
+      <p class="text-lg font-medium">No scripts yet</p>
+      <p class="text-sm mt-1">Upload a <code>.py</code> file to get started</p>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+
+<script>
+// ── Live Stats via WebSocket ──────────────────────────────────────────────────
+let statsWs;
+function connectStats() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  statsWs = new WebSocket(`${proto}://${location.host}/ws/stats`);
+  statsWs.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    document.getElementById('top-cpu').textContent = d.cpu.toFixed(1) + '%';
+    document.getElementById('top-ram').textContent = d.ram.toFixed(1) + '%';
+    document.getElementById('top-active').textContent = d.active;
+  };
+  statsWs.onclose = () => setTimeout(connectStats, 3000);
+}
+connectStats();
+
+// ── Search ────────────────────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.script-card').forEach(card => {
+    const name = card.dataset.name.toLowerCase();
+    card.style.display = name.includes(q) ? '' : 'none';
+  });
+});
+
+// ── Uptime counters ───────────────────────────────────────────────────────────
+function updateUptimes() {
+  document.querySelectorAll('.uptime-cell').forEach(cell => {
+    const start = parseFloat(cell.dataset.start);
+    const status = cell.dataset.status;
+    const val = cell.querySelector('.uptime-val');
+    if (status === 'running' && start) {
+      const secs = Math.floor(Date.now() / 1000 - start);
+      const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+      val.textContent = `${h}h ${m}m ${s}s`;
+    }
+  });
+}
+setInterval(updateUptimes, 1000);
+updateUptimes();
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  const inner = document.getElementById('toast-inner');
+  inner.className = `px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'}`;
+  inner.textContent = msg;
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+// ── Script Actions ────────────────────────────────────────────────────────────
+async function scriptAction(action, name) {
+  try {
+    const resp = await fetch(`/api/${action}/${encodeURIComponent(name)}`, { method: 'POST' });
+    const data = await resp.json();
+    if (resp.ok) {
+      showToast(`✅ ${action} → ${name}`);
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast(`❌ ${data.detail || data.error}`, 'error');
+    }
+  } catch(e) {
+    showToast('❌ Network error', 'error');
+  }
+}
+
+async function restartAll() {
+  try {
+    const resp = await fetch('/api/restart-all', { method: 'POST' });
+    showToast('🔁 Restarting all running scripts…');
+    setTimeout(() => location.reload(), 1500);
+  } catch(e) {
+    showToast('❌ Network error', 'error');
+  }
+}
+
+async function deleteScript(name) {
+  if (!confirm(`Delete ${name}?`)) return;
+  try {
+    const resp = await fetch(`/api/delete/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    const data = await resp.json();
+    if (resp.ok) {
+      showToast(`🗑 Deleted ${name}`);
+      setTimeout(() => location.reload(), 800);
+    } else {
+      showToast(`❌ ${data.detail}`, 'error');
+    }
+  } catch(e) {
+    showToast('❌ Network error', 'error');
+  }
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+async function uploadScript(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (resp.ok) {
+      showToast(`📤 Uploaded ${data.name}`);
+      setTimeout(() => location.reload(), 800);
+    } else {
+      showToast(`❌ ${data.detail}`, 'error');
+    }
+  } catch(e) {
+    showToast('❌ Upload failed', 'error');
+  }
+  input.value = '';
+}
+</script>
+</body>
+</html>
