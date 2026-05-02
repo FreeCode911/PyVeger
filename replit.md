@@ -1,42 +1,66 @@
-# Workspace
+# PyPanel V3
+
+A Python-based web management panel built with FastAPI and Jinja2 templates.
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+PyPanel V3 is a self-hosted project manager that lets you run and manage Python scripts via a web UI. It supports:
 
-## Stack
+- **Project management**: Create, start, stop, restart Python projects
+- **File manager**: Upload, edit, and manage project files in-browser
+- **Live logs**: Real-time log streaming via WebSocket
+- **Settings**: Login credentials, Cloudflare tunnel, and Discord bot configuration
+- **Discord bot**: Control projects via Discord slash commands
+- **Cloudflare tunnel**: Expose the panel publicly
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+## Default credentials
 
-## Python Web Panel V3
+- Username: `admin`
+- Password: `admin`
 
-Located in `panel/`. A FastAPI-based process manager and web dashboard with Discord bot and Cloudflare Tunnel support.
+## Structure
 
-- `panel/app.py` — FastAPI main app (routes, WebSockets, upload/delete)
-- `panel/manager.py` — Script lifecycle manager (start/stop/restart/watch)
-- `panel/tunnel.py` — Cloudflare Tunnel integration (auto-download cloudflared)
-- `panel/discord_bot.py` — Discord slash command bot (discord.py v2)
-- `panel/templates/` — Jinja2 HTML templates (index, logs, settings)
-- `panel/scripts/` — User Python scripts live here
-- `panel/logs/` — Per-script and tunnel log files
-- `panel/config.json` — Cloudflare + Discord tokens and allowed user IDs
+```
+panel/
+├── app.py           # FastAPI app, routes, auth middleware
+├── manager.py       # Project lifecycle (start/stop/create/delete)
+├── tunnel.py        # Cloudflare tunnel integration
+├── discord_bot.py   # Discord bot with slash commands
+├── config.json      # Settings (credentials, tokens)
+├── database.json    # Project metadata
+├── requirements.txt # Python dependencies
+└── templates/
+    ├── index.html   # Dashboard
+    ├── login.html   # Login page
+    ├── logs.html    # Live log viewer
+    └── settings.html # Settings page
+```
 
-Runs on port 8000. Workflow: `cd /home/runner/workspace/panel && python app.py`
+## Running
 
-## Key Commands
+The app runs via the "Start application" workflow:
+```
+cd panel && pip install -r requirements.txt && python app.py
+```
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+Binds to `PORT` env var (default 8000).
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+## Dependencies
+
+- `fastapi` + `uvicorn` — web server
+- `psutil` — CPU/RAM stats
+- `python-multipart` — form handling
+- `jinja2` — HTML templates
+- `discord.py` (optional) — Discord bot
+
+## Key routes
+
+- `GET /` — Dashboard
+- `GET /login`, `POST /login` — Auth
+- `GET /settings`, `POST /_/settings` — Settings
+- `GET /logs/{name}` — Live log page
+- `/_/projects/*` — Project REST API
+- `/_/tunnel/*` — Tunnel control
+- `/_/status` — System status
+- `WS /ws/stats` — Live CPU/RAM stats
+- `WS /ws/logs/{name}` — Live project logs

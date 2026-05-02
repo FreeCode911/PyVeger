@@ -113,7 +113,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, error: str = ""):
-    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+    return templates.TemplateResponse(request, "login.html", {"error": error})
 
 
 @app.post("/login")
@@ -147,8 +147,7 @@ async def index(request: Request):
     projects = manager.list_projects()
     tunnel_status = tunnel.get_status()
     bot_status = discord_bot.get_bot_status()
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "index.html", {
         "projects": projects,
         "tunnel": tunnel_status,
         "bot": bot_status,
@@ -157,8 +156,7 @@ async def index(request: Request):
 
 @app.get("/logs/{project_name}", response_class=HTMLResponse)
 async def logs_page(request: Request, project_name: str):
-    return templates.TemplateResponse("logs.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "logs.html", {
         "project_name": project_name,
     })
 
@@ -166,8 +164,7 @@ async def logs_page(request: Request, project_name: str):
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     cfg = _load_config()
-    return templates.TemplateResponse("settings.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "settings.html", {
         "cloudflare_token": cfg.get("cloudflare_token", ""),
         "discord_token": cfg.get("discord_token", ""),
         "allowed_users": ", ".join(cfg.get("allowed_users", [])),
@@ -330,6 +327,7 @@ async def api_tunnel_stop():
 async def api_save_settings(request: Request):
     form = await request.form()
     cfg = _load_config()
+    old_dc_token = cfg.get("discord_token", "")
     cf_token = str(form.get("cloudflare_token", "")).strip()
     dc_token = str(form.get("discord_token", "")).strip()
     allowed_raw = str(form.get("allowed_users", "")).strip()
@@ -347,6 +345,8 @@ async def api_save_settings(request: Request):
         tunnel.start_tunnel()
     elif not cf_token:
         tunnel.stop_tunnel()
+    if dc_token and dc_token != old_dc_token:
+        discord_bot.start_bot()
     return RedirectResponse(url="/settings?saved=1", status_code=303)
 
 

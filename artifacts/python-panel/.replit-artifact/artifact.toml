@@ -15,7 +15,7 @@ paths = ["/"]
 localPort = 8000
 
 [services.development]
-run = "cd /home/runner/workspace/panel && python app.py"
+run = "cd /home/runner/workspace/panel && pip install -q -r requirements.txt && python app.py"
 
 [services.env]
 PORT = "8000"
