@@ -154,6 +154,14 @@ async def index(request: Request):
     })
 
 
+@app.get("/server/{name}", response_class=HTMLResponse)
+async def server_page(request: Request, name: str):
+    project = manager.get_project(name)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return templates.TemplateResponse(request, "server.html", {"project": project})
+
+
 @app.get("/logs/{project_name}", response_class=HTMLResponse)
 async def logs_page(request: Request, project_name: str):
     return templates.TemplateResponse(request, "logs.html", {

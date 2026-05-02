@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{{ project.name }} — PyPanel V3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/autorefresh.min.js"></script>
+
+  <style>
+    html, body { height: 100%; overflow: hidden; background: #0f1117; }
+    .CodeMirror { height: 100%; font-family: 'Fira Mono','Courier New',monospace; font-size: 13px; background: #0b0e16; }
+    .CodeMirror-scroll { height: 100%; }
+    .tab-btn { border-bottom: 2px solid transparent; color: #6b7280; transition: all .15s; }
+    .tab-btn:hover { color: #e5e7eb; }
+    .tab-btn.active { border-bottom-color: #6366f1; color: #e0e7ff; }
+    .file-chip { transition: background .1s; }
+    .file-chip:hover { background: #2a2d3e; }
+    .file-chip.active { background: #312d6e; border-color: rgba(99,102,241,.5) !important; color: #c7d2fe; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
+    #console-out { font-family: 'Fira Mono', 'Courier New', monospace; font-size: 12px; line-height: 1.7; }
+    .ansi-red { color: #f87171; } .ansi-green { color: #4ade80; } .ansi-yellow { color: #fbbf24; }
+    .ansi-blue { color: #60a5fa; } .ansi-magenta { color: #c084fc; } .ansi-cyan { color: #34d399; }
+    .ansi-gray { color: #6b7280; } .ansi-white { color: #f3f4f6; } .ansi-bright-red { color: #f87171; }
+  </style>
+</head>
+<body class="text-gray-100 flex flex-col" style="height:100dvh">
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="bg-[#1a1d27] border-b border-[#2a2d3e] px-3 sm:px-5 py-2 flex items-center justify-between shrink-0 z-10">
+  <div class="flex items-center gap-3 min-w-0">
+    <a href="/" class="text-gray-400 hover:text-white text-sm flex items-center gap-1 transition-colors whitespace-nowrap">
+      ← <span class="hidden sm:inline">Dashboard</span>
+    </a>
+    <span class="text-[#2a2d3e] hidden sm:inline">|</span>
+    <span class="text-[#6366f1] font-bold text-sm hidden sm:inline">⚡ PyPanel V3</span>
+  </div>
+  <div class="flex items-center gap-3 text-xs sm:text-sm">
+    <a href="/settings" class="text-gray-400 hover:text-white transition-colors">⚙</a>
+    <a href="/logout" class="text-gray-500 hover:text-red-400 transition-colors">↩</a>
+  </div>
+</header>
+
+<!-- ── Project Banner ─────────────────────────────────────────────────────── -->
+<div class="bg-[#1a1d27] border-b border-[#2a2d3e] px-3 sm:px-5 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+  <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+    <span id="status-dot" class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0
+      {% if project.status == 'running' %}bg-green-500 animate-pulse{% elif project.status == 'restarting' %}bg-yellow-400 animate-pulse{% else %}bg-red-500{% endif %}"></span>
+    <h1 class="text-white font-bold text-sm sm:text-base truncate">{{ project.name }}</h1>
+    <span id="status-badge" class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full flex-shrink-0
+      {% if project.status == 'running' %}bg-green-900/50 text-green-400{% elif project.status == 'restarting' %}bg-yellow-900/50 text-yellow-400{% else %}bg-red-900/50 text-red-400{% endif %}">
+      {{ project.status }}
+    </span>
+  </div>
+  <div class="hidden sm:flex items-center gap-4 text-xs text-gray-500">
+    <span>PID <span id="info-pid" class="text-gray-300 font-mono">{{ project.pid or '—' }}</span></span>
+    <span>Uptime <span id="info-uptime" class="text-gray-300 font-mono"
+      data-start="{{ project.start_time or '' }}" data-status="{{ project.status }}">—</span></span>
+    <span>Restarts <span id="info-restarts" class="text-gray-300">{{ project.restarts }}</span></span>
+  </div>
+  <div class="flex items-center gap-1.5">
+    <button onclick="act('start')"
+      class="text-xs px-2.5 sm:px-3 py-1.5 rounded-md bg-green-800/60 hover:bg-green-700 text-green-200 font-medium transition-colors">▶ <span class="hidden sm:inline">Start</span></button>
+    <button onclick="act('stop')"
+      class="text-xs px-2.5 sm:px-3 py-1.5 rounded-md bg-red-900/60 hover:bg-red-800 text-red-200 font-medium transition-colors">■ <span class="hidden sm:inline">Stop</span></button>
+    <button onclick="act('restart')"
+      class="text-xs px-2.5 sm:px-3 py-1.5 rounded-md bg-yellow-900/60 hover:bg-yellow-800 text-yellow-200 font-medium transition-colors">↺ <span class="hidden sm:inline">Restart</span></button>
+  </div>
+</div>
+
+<!-- ── Tab Bar ────────────────────────────────────────────────────────────── -->
+<nav class="bg-[#1a1d27] border-b border-[#2a2d3e] flex overflow-x-auto shrink-0">
+  <button data-tab="console" onclick="showTab('console')"
+    class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+    💻 Console
+  </button>
+  <button data-tab="files" onclick="showTab('files')"
+    class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+    📁 Files
+  </button>
+  <button data-tab="startup" onclick="showTab('startup')"
+    class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+    🚀 Startup
+  </button>
+  <button data-tab="settings" onclick="showTab('settings')"
+    class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1.5">
+    ⚙ Settings
+  </button>
+</nav>
+
+<!-- ── Tab Content ────────────────────────────────────────────────────────── -->
+<div class="flex-1 overflow-hidden min-h-0">
+
+  <!-- Console ── -->
+  <div id="panel-console" class="h-full flex flex-col">
+    <div class="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#12151f] border-b border-[#2a2d3e] shrink-0 gap-2 flex-wrap">
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 hidden sm:inline">Live Output</span>
+        <span id="ws-status" class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-yellow-900/40 text-yellow-400">Connecting…</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+          <input type="checkbox" id="autoscroll" checked class="accent-[#6366f1]">
+          <span class="hidden sm:inline">Auto-scroll</span>
+        </label>
+        <button onclick="clearConsole()" class="text-xs px-2 py-1 rounded bg-[#2a2d3e] text-gray-400 hover:text-white transition-colors">Clear</button>
+      </div>
+    </div>
+    <div id="console-out" class="flex-1 overflow-y-auto p-3 sm:p-4 bg-[#0b0e16] text-gray-300 break-all whitespace-pre-wrap"></div>
+    <div class="px-3 py-1 bg-[#12151f] border-t border-[#2a2d3e] text-[10px] text-gray-600 shrink-0">
+      Showing live output from <span class="font-mono text-gray-500">{{ project.name }}.log</span>
+    </div>
+  </div>
+
+  <!-- Files ── -->
+  <div id="panel-files" class="h-full hidden flex flex-col sm:flex-row">
+    <!-- Sidebar -->
+    <aside class="bg-[#12151f] border-b sm:border-b-0 sm:border-r border-[#2a2d3e] flex flex-col shrink-0 sm:w-48">
+      <div class="px-3 py-2 border-b border-[#2a2d3e] flex items-center justify-between shrink-0">
+        <span class="text-xs font-medium text-gray-400">Files</span>
+        <div class="flex gap-1">
+          <button onclick="openNewFile()" title="New File"
+            class="text-xs w-6 h-6 flex items-center justify-center rounded bg-[#2a2d3e] text-gray-400 hover:text-white transition-colors">＋</button>
+          <label title="Upload" class="text-xs w-6 h-6 flex items-center justify-center rounded bg-[#2a2d3e] text-gray-400 hover:text-white cursor-pointer transition-colors">
+            ↑<input id="upload-input" type="file" class="hidden" onchange="uploadFile(this)"/>
+          </label>
+        </div>
+      </div>
+      <!-- Mobile: horizontal row, Desktop: vertical list -->
+      <div id="file-list" class="flex-1 overflow-y-auto sm:overflow-y-auto p-1.5 flex flex-row flex-wrap sm:flex-col gap-0.5 overflow-x-auto sm:overflow-x-hidden"></div>
+    </aside>
+
+    <!-- Editor -->
+    <div class="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
+      <div id="editor-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-600 gap-3">
+        <span class="text-5xl opacity-40">📄</span>
+        <span class="text-sm">Select or create a file to edit</span>
+        <button onclick="openNewFile()" class="text-xs px-3 py-1.5 rounded-lg bg-[#2a2d3e] text-gray-400 hover:text-white transition-colors">＋ New File</button>
+      </div>
+      <div id="editor-pane" class="hidden flex-1 flex flex-col overflow-hidden min-h-0">
+        <div class="flex items-center justify-between px-3 py-2 bg-[#12151f] border-b border-[#2a2d3e] shrink-0 flex-wrap gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span id="editor-filename" class="text-xs sm:text-sm font-mono text-gray-300 truncate"></span>
+            <span id="editor-lang" class="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2d3e] text-gray-500 font-mono flex-shrink-0"></span>
+          </div>
+          <div class="flex gap-1.5 shrink-0">
+            <button onclick="setStart()" class="text-xs px-2 py-1 rounded bg-green-900/60 hover:bg-green-800/60 text-green-300 transition-colors">▶ Set Start</button>
+            <button onclick="saveFile()" class="text-xs px-2.5 py-1 rounded bg-[#6366f1] hover:bg-indigo-500 text-white font-medium transition-colors">💾 Save</button>
+            <button onclick="deleteFile()" class="text-xs px-2 py-1 rounded bg-red-900/60 hover:bg-red-800/60 text-red-300 transition-colors">🗑</button>
+          </div>
+        </div>
+        <div id="cm-host" class="flex-1 overflow-hidden min-h-0"></div>
+        <div class="px-3 py-1 bg-[#12151f] border-t border-[#2a2d3e] flex items-center justify-between shrink-0">
+          <span id="status-file" class="text-[10px] text-gray-600 font-mono truncate"></span>
+          <span id="status-pos" class="text-[10px] text-gray-600 font-mono flex-shrink-0">Ln 1, Col 1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Startup ── -->
+  <div id="panel-startup" class="h-full hidden overflow-y-auto">
+    <div class="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
+
+      <!-- Startup config card -->
+      <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-4 sm:p-5 flex flex-col gap-4">
+        <h2 class="text-white font-semibold text-sm flex items-center gap-2">🚀 Startup Configuration</h2>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-400">Startup Command</label>
+          <input id="cfg-cmd" type="text" placeholder="python3 -u {start_file}" value="{{ project.startup_command }}"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]"/>
+          <p class="text-xs text-gray-600">Use <code class="text-gray-400 bg-[#0f1117] px-1 rounded">{start_file}</code> as a placeholder for the selected startup file. Leave blank to use the default.</p>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-400">Startup File</label>
+          <select id="cfg-startfile"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-[#6366f1]">
+            {% for f in project.files %}
+            <option value="{{ f }}" {% if f == project.start_file %}selected{% endif %}>{{ f }}</option>
+            {% endfor %}
+            {% if not project.files %}
+            <option value="">— no files —</option>
+            {% endif %}
+          </select>
+          <p class="text-xs text-gray-600">Entry-point file that runs when the server starts.</p>
+        </div>
+
+        <div>
+          <button onclick="saveStartup()"
+            class="bg-[#6366f1] hover:bg-indigo-500 text-white text-sm px-5 py-2 rounded-lg font-medium transition-colors">
+            💾 Save Configuration
+          </button>
+        </div>
+      </div>
+
+      <!-- Package manager card -->
+      <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-4 sm:p-5 flex flex-col gap-4">
+        <h2 class="text-white font-semibold text-sm flex items-center gap-2">📦 Package Manager</h2>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-400">Install Package</label>
+          <div class="flex gap-2">
+            <input id="pkg-inp" type="text" placeholder="requests, flask==2.3.0, numpy…"
+              class="flex-1 min-w-0 bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]"
+              onkeydown="if(event.key==='Enter')installPkg()"/>
+            <button id="install-btn" onclick="installPkg()"
+              class="bg-[#6366f1] hover:bg-indigo-500 text-white text-sm px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors font-medium">
+              📦 Install
+            </button>
+          </div>
+          <p class="text-xs text-gray-600">Installs via <code class="text-gray-400">pip install</code>. Supports version pins like <code class="text-gray-400">flask==2.3.0</code>.</p>
+        </div>
+
+        <div id="pkg-out-wrap" class="hidden flex-col gap-1.5">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-medium text-gray-400">Output</label>
+            <button onclick="document.getElementById('pkg-out-wrap').classList.add('hidden')" class="text-xs text-gray-600 hover:text-gray-400">✕ clear</button>
+          </div>
+          <div class="bg-[#0b0e16] border border-[#2a2d3e] rounded-lg p-3 max-h-60 overflow-y-auto">
+            <pre id="pkg-out" class="text-green-400 text-xs font-mono whitespace-pre-wrap break-all leading-5"></pre>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-400">Quick Install</label>
+          <div class="flex flex-wrap gap-1.5">
+            {% for p in ['requests','flask','fastapi','uvicorn','discord.py','aiohttp','Pillow','numpy','pandas','python-dotenv','httpx','websockets','pydantic','sqlalchemy','cryptography'] %}
+            <button onclick="quickPkg('{{ p }}')"
+              class="text-xs px-2.5 py-1 rounded-md bg-[#0f1117] border border-[#2a2d3e] text-gray-400 hover:border-[#6366f1]/50 hover:text-gray-200 font-mono transition-colors">
+              {{ p }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Settings ── -->
+  <div id="panel-settings" class="h-full hidden overflow-y-auto">
+    <div class="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-6">
+
+      <!-- Info card -->
+      <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-4 sm:p-5 flex flex-col gap-4">
+        <h2 class="text-white font-semibold text-sm">ℹ Project Information</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">Name</span>
+            <span class="text-gray-200 font-mono font-medium">{{ project.name }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">Status</span>
+            <span id="settings-status" class="text-gray-200 font-medium">{{ project.status }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">PID</span>
+            <span class="text-gray-200 font-mono">{{ project.pid or '—' }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">Startup File</span>
+            <span class="text-gray-200 font-mono">{{ project.start_file }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">Restarts</span>
+            <span class="text-gray-200">{{ project.restarts }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-gray-500">Files</span>
+            <span class="text-gray-200">{{ project.files | length }}</span>
+          </div>
+        </div>
+        {% if project.startup_command %}
+        <div class="flex flex-col gap-0.5">
+          <span class="text-xs text-gray-500">Startup Command</span>
+          <code class="text-gray-200 text-xs font-mono bg-[#0f1117] px-2 py-1.5 rounded-md border border-[#2a2d3e]">{{ project.startup_command }}</code>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Danger zone -->
+      <div class="bg-[#1a1d27] border border-red-900/40 rounded-xl p-4 sm:p-5 flex flex-col gap-3">
+        <h2 class="text-red-400 font-semibold text-sm flex items-center gap-2">⚠ Danger Zone</h2>
+        <p class="text-xs text-gray-500">Deleting the project will stop the running process and permanently remove all files. This action cannot be undone.</p>
+        <button onclick="deleteProject()"
+          class="w-fit text-sm px-4 py-2 rounded-lg bg-red-900/50 hover:bg-red-800/70 text-red-200 font-medium border border-red-800/40 transition-colors">
+          🗑 Delete Project
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end tab content -->
+
+<!-- New File Dialog -->
+<div id="newfile-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" style="background:rgba(0,0,0,.65);backdrop-filter:blur(3px)">
+  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-5 w-full max-w-xs">
+    <h3 class="text-white font-semibold text-sm mb-1">New File</h3>
+    <p class="text-xs text-gray-500 mb-3">Include the extension (e.g. main.py)</p>
+    <input id="newfile-name" type="text" placeholder="main.py"
+      class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1] mb-4"
+      onkeydown="if(event.key==='Enter')createFile()"/>
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeNewFile()" class="text-sm px-3 py-1.5 rounded-md bg-[#2a2d3e] text-gray-300 hover:text-white transition-colors">Cancel</button>
+      <button onclick="createFile()" class="text-sm px-4 py-1.5 rounded-md bg-[#6366f1] hover:bg-indigo-500 text-white font-medium transition-colors">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-4 right-4 z-50">
+  <div id="toast-inner" class="px-4 py-3 rounded-lg shadow-2xl text-sm font-medium"></div>
+</div>
+
+<script>
+const PROJECT = {{ project.name | tojson }};
+const INIT_STATUS = {{ project.status | tojson }};
+const INIT_START = {{ project.start_time or 'null' }};
+
+let cmEditor = null, currentFile = null, logWs = null, wsRetries = 0;
+const WS_PROTO = location.protocol === 'https:' ? 'wss' : 'ws';
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast'), inn = document.getElementById('toast-inner');
+  inn.className = `px-4 py-3 rounded-lg shadow-2xl text-sm font-medium ${
+    type==='ok' ? 'bg-green-800 text-white' : type==='warn' ? 'bg-yellow-800 text-white' : 'bg-red-800 text-white'}`;
+  inn.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+const TABS = ['console','files','startup','settings'];
+function showTab(tab) {
+  TABS.forEach(t => {
+    document.getElementById(`panel-${t}`).classList.add('hidden');
+    document.querySelector(`[data-tab="${t}"]`).classList.remove('active');
+  });
+  document.getElementById(`panel-${tab}`).classList.remove('hidden');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  history.replaceState(null, '', `#${tab}`);
+  if (tab === 'files') { loadFiles(); if (cmEditor) setTimeout(() => cmEditor.refresh(), 50); }
+}
+const initTab = location.hash.slice(1);
+showTab(TABS.includes(initTab) ? initTab : 'console');
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+let _status = INIT_STATUS, _startTime = INIT_START;
+const STATUS_CFG = {
+  running:    { dot: 'bg-green-500 animate-pulse', badge: 'bg-green-900/50 text-green-400' },
+  restarting: { dot: 'bg-yellow-400 animate-pulse', badge: 'bg-yellow-900/50 text-yellow-400' },
+  stopped:    { dot: 'bg-red-500', badge: 'bg-red-900/50 text-red-400' },
+};
+function applyStatus(s) {
+  _status = s;
+  const c = STATUS_CFG[s] || STATUS_CFG.stopped;
+  document.getElementById('status-dot').className = `w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 ${c.dot}`;
+  const b = document.getElementById('status-badge');
+  b.className = `text-[10px] sm:text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${c.badge}`;
+  b.textContent = s;
+  const ss = document.getElementById('settings-status');
+  if (ss) ss.textContent = s;
+}
+
+setInterval(() => {
+  const el = document.getElementById('info-uptime');
+  if (!el) return;
+  if (_status !== 'running' || !_startTime) { el.textContent = '—'; return; }
+  const sec = Math.floor(Date.now() / 1000 - _startTime);
+  el.textContent = `${Math.floor(sec/3600)}h ${Math.floor(sec%3600/60)}m ${sec%60}s`;
+}, 1000);
+
+async function refreshStatus() {
+  try {
+    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    applyStatus(d.status);
+    _startTime = d.status === 'running' ? d.start_time : null;
+    document.getElementById('info-pid').textContent = d.pid || '—';
+    document.getElementById('info-restarts').textContent = d.restarts;
+  } catch (_) {}
+}
+setInterval(refreshStatus, 5000);
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+async function act(action) {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/${action}`, { method: 'POST' });
+  const d = await r.json();
+  if (r.ok) { toast(`✅ ${action}`); setTimeout(refreshStatus, 1500); }
+  else toast(`❌ ${d.detail || d.error || action + ' failed'}`, 'err');
+}
+
+// ─── Console ──────────────────────────────────────────────────────────────────
+const consoleOut = document.getElementById('console-out');
+
+function setWsStatus(label, type) {
+  const el = document.getElementById('ws-status');
+  const cls = type==='ok' ? 'bg-green-900/40 text-green-400'
+            : type==='err' ? 'bg-red-900/40 text-red-400'
+            : 'bg-yellow-900/40 text-yellow-400';
+  el.className = `text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${cls}`;
+  el.textContent = label;
+}
+
+function ansiToHtml(raw) {
+  const ANSI = {
+    '30':'ansi-gray','31':'ansi-red','32':'ansi-green','33':'ansi-yellow',
+    '34':'ansi-blue','35':'ansi-magenta','36':'ansi-cyan','37':'ansi-white',
+    '90':'ansi-gray','91':'ansi-bright-red','92':'ansi-green','93':'ansi-yellow',
+    '94':'ansi-blue','95':'ansi-magenta','96':'ansi-cyan','97':'ansi-white',
+  };
+  const escaped = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let out = '', open = false;
+  const parts = escaped.split(/(\x1b\[[0-9;]*m)/);
+  for (const p of parts) {
+    const m = p.match(/^\x1b\[([0-9;]*)m$/);
+    if (!m) { out += p; continue; }
+    const code = m[1];
+    if (!code || code === '0' || code === '00') {
+      if (open) { out += '</span>'; open = false; }
+    } else {
+      const cls = ANSI[code];
+      if (cls) { if (open) out += '</span>'; out += `<span class="${cls}">`; open = true; }
+    }
+  }
+  if (open) out += '</span>';
+  return out;
+}
+
+function appendConsole(text) {
+  const frag = document.createDocumentFragment();
+  const div = document.createElement('div');
+  div.innerHTML = ansiToHtml(text);
+  frag.appendChild(div);
+  consoleOut.appendChild(frag);
+  if (document.getElementById('autoscroll').checked) {
+    consoleOut.scrollTop = consoleOut.scrollHeight;
+  }
+}
+
+function clearConsole() { consoleOut.innerHTML = ''; }
+
+function connectWs() {
+  try {
+    logWs = new WebSocket(`${WS_PROTO}://${location.host}/ws/logs/${encodeURIComponent(PROJECT)}`);
+    logWs.onopen = () => { setWsStatus('● Connected', 'ok'); wsRetries = 0; };
+    logWs.onmessage = e => appendConsole(e.data);
+    logWs.onerror = () => setWsStatus('Error', 'err');
+    logWs.onclose = () => {
+      setWsStatus('Reconnecting…');
+      setTimeout(connectWs, Math.min(1000 * Math.pow(2, wsRetries++), 15000));
+    };
+  } catch (e) { setWsStatus('Unavailable', 'err'); }
+}
+connectWs();
+
+// ─── CodeMirror ───────────────────────────────────────────────────────────────
+function getLang(fn) {
+  if (!fn) return null;
+  const ext = (fn.split('.').pop() || '').toLowerCase();
+  const MAP = {
+    py:'python', js:'javascript', ts:'javascript', jsx:'javascript', tsx:'javascript',
+    css:'css', html:'htmlmixed', htm:'htmlmixed', xml:'xml',
+    sh:'shell', bash:'shell', zsh:'shell',
+    yaml:'yaml', yml:'yaml', json:'javascript',
+  };
+  return MAP[ext] || null;
+}
+
+function initEditor() {
+  if (cmEditor) return;
+  cmEditor = CodeMirror(document.getElementById('cm-host'), {
+    value: '', theme: 'dracula', lineNumbers: true,
+    autoCloseBrackets: true, matchBrackets: true,
+    styleActiveLine: true, autoRefresh: true,
+    indentUnit: 4, tabSize: 4, lineWrapping: false,
+    extraKeys: {
+      'Ctrl-S': () => saveFile(),
+      'Cmd-S': () => saveFile(),
+      'Tab': cm => cm.execCommand('insertSoftTab'),
+    },
+  });
+  cmEditor.on('cursorActivity', () => {
+    const c = cmEditor.getCursor();
+    document.getElementById('status-pos').textContent = `Ln ${c.line+1}, Col ${c.ch+1}`;
+  });
+}
+
+// ─── File Manager ─────────────────────────────────────────────────────────────
+async function loadFiles() {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files`);
+  const d = await r.json();
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  if (!d.files || !d.files.length) {
+    list.innerHTML = '<p class="text-xs text-gray-600 px-2 py-4 text-center w-full">No files yet</p>';
+    return;
+  }
+  d.files.forEach(fn => {
+    const isStart = fn === d.start_file;
+    const isActive = fn === currentFile;
+    const el = document.createElement('div');
+    el.className = `file-chip flex items-center gap-1.5 px-2.5 py-1.5 rounded-md cursor-pointer text-xs font-mono border min-w-0 ${
+      isActive ? 'active border-[#6366f1]/40' : 'border-transparent text-gray-400'}`;
+    el.innerHTML = `<span class="shrink-0 text-[10px] ${isStart ? 'text-green-400' : 'text-gray-600'}">${isStart ? '▶' : '·'}</span>
+      <span class="truncate" title="${fn}">${fn}</span>`;
+    el.onclick = () => openFile(fn);
+    list.appendChild(el);
+  });
+}
+
+async function openFile(fn) {
+  currentFile = fn;
+  document.getElementById('editor-placeholder').classList.add('hidden');
+  const pane = document.getElementById('editor-pane');
+  pane.classList.remove('hidden');
+  pane.style.display = 'flex';
+
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fn)}`);
+  if (!r.ok) { toast('❌ Could not open file', 'err'); return; }
+  const d = await r.json();
+
+  initEditor();
+  const lang = getLang(fn);
+  cmEditor.setOption('mode', lang);
+  cmEditor.setValue(d.content || '');
+  cmEditor.clearHistory();
+  setTimeout(() => cmEditor.refresh(), 20);
+
+  document.getElementById('editor-filename').textContent = fn;
+  document.getElementById('status-file').textContent = fn;
+  document.getElementById('editor-lang').textContent = lang || 'text';
+  await loadFiles();
+}
+
+async function saveFile() {
+  if (!currentFile || !cmEditor) return;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: cmEditor.getValue() }),
+  });
+  r.ok ? toast('💾 Saved') : toast('❌ Save failed', 'err');
+}
+
+async function setStart() {
+  if (!currentFile) return;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/start-file`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: currentFile }),
+  });
+  if (r.ok) { toast(`▶ "${currentFile}" set as start file`); await loadFiles(); }
+  else toast('❌ Failed', 'err');
+}
+
+async function deleteFile() {
+  if (!currentFile || !confirm(`Delete "${currentFile}"?`)) return;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, { method: 'DELETE' });
+  if (r.ok) {
+    toast(`🗑 Deleted`);
+    currentFile = null;
+    document.getElementById('editor-pane').classList.add('hidden');
+    document.getElementById('editor-placeholder').classList.remove('hidden');
+    await loadFiles();
+  } else toast('❌ Delete failed', 'err');
+}
+
+async function uploadFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/upload`, { method: 'POST', body: fd });
+  const d = await r.json();
+  if (r.ok) { toast(`📤 ${d.name}`); showTab('files'); await openFile(d.name); }
+  else toast(`❌ ${d.detail}`, 'err');
+  input.value = '';
+}
+
+function openNewFile() {
+  document.getElementById('newfile-name').value = '';
+  document.getElementById('newfile-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('newfile-name').focus(), 80);
+}
+function closeNewFile() { document.getElementById('newfile-modal').classList.add('hidden'); }
+
+async function createFile() {
+  const fn = document.getElementById('newfile-name').value.trim();
+  if (!fn) { toast('❌ Enter a filename', 'err'); return; }
+  closeNewFile();
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/new`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: fn }),
+  });
+  const d = await r.json();
+  if (r.ok) { toast(`✅ ${d.name}`); showTab('files'); await openFile(d.name); }
+  else toast(`❌ ${d.detail}`, 'err');
+}
+
+// ─── Startup ──────────────────────────────────────────────────────────────────
+async function saveStartup() {
+  const cmd = document.getElementById('cfg-cmd').value.trim();
+  const sf = document.getElementById('cfg-startfile').value;
+  const r1 = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/command`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command: cmd }),
+  });
+  if (sf) {
+    await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/start-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: sf }),
+    });
+  }
+  r1.ok ? toast('✅ Configuration saved') : toast('❌ Save failed', 'err');
+}
+
+async function installPkg() {
+  const pkg = document.getElementById('pkg-inp').value.trim();
+  if (!pkg) return;
+  const btn = document.getElementById('install-btn');
+  btn.textContent = '⏳ Installing…'; btn.disabled = true;
+  const wrap = document.getElementById('pkg-out-wrap');
+  const out = document.getElementById('pkg-out');
+  wrap.classList.remove('hidden'); wrap.style.display = 'flex';
+  out.textContent = `> pip install ${pkg}\n\nInstalling…`;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/packages/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ package: pkg }),
+  });
+  const d = await r.json();
+  out.textContent = `> pip install ${pkg}\n\n${d.output || d.error || '(no output)'}`;
+  btn.textContent = '📦 Install'; btn.disabled = false;
+  if (d.ok) { toast(`✅ Installed ${pkg}`); document.getElementById('pkg-inp').value = ''; }
+  else toast('❌ Install failed', 'err');
+}
+
+function quickPkg(pkg) {
+  document.getElementById('pkg-inp').value = pkg;
+  showTab('startup');
+  setTimeout(installPkg, 150);
+}
+
+// ─── Delete Project ───────────────────────────────────────────────────────────
+async function deleteProject() {
+  if (!confirm(`Delete project "${PROJECT}" and all its files?\nThis cannot be undone.`)) return;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}`, { method: 'DELETE' });
+  if (r.ok) { toast('🗑 Deleted'); setTimeout(() => location.href = '/', 800); }
+  else toast('❌ Delete failed', 'err');
+}
+</script>
+</body>
+</html>
