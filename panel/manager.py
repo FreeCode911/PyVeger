@@ -1,5 +1,6 @@
 import os
 import json
+import shlex
 import time
 import signal
 import subprocess
@@ -20,6 +21,15 @@ logger = logging.getLogger("manager")
 _db_lock = threading.Lock()
 _procs: dict[str, subprocess.Popen] = {}
 _watchers: dict[str, threading.Thread] = {}
+
+_DEFAULT_PROJECT = {
+    "status": "stopped",
+    "pid": None,
+    "start_file": "main.py",
+    "startup_command": "",
+    "start_time": None,
+    "restarts": 0,
+}
 
 
 # ─── Database ─────────────────────────────────────────────────────────────────
@@ -93,13 +103,7 @@ def create_project(name: str) -> dict:
     proj_dir.mkdir(parents=True)
     with _db_lock:
         db = _load_db()
-        db[name] = {
-            "status": "stopped",
-            "pid": None,
-            "start_file": "main.py",
-            "start_time": None,
-            "restarts": 0,
-        }
+        db[name] = dict(_DEFAULT_PROJECT)
         _save_db(db)
     return {"ok": True, "name": name}
 
@@ -116,7 +120,7 @@ def list_projects() -> list[dict]:
         if name not in db:
             with _db_lock:
                 db2 = _load_db()
-                db2[name] = {"status": "stopped", "pid": None, "start_file": "main.py", "start_time": None, "restarts": 0}
+                db2[name] = dict(_DEFAULT_PROJECT)
                 _save_db(db2)
             info = db2[name]
 
@@ -135,6 +139,7 @@ def list_projects() -> list[dict]:
             "restarts": info.get("restarts", 0),
             "start_time": start_time,
             "start_file": info.get("start_file", "main.py"),
+            "startup_command": info.get("startup_command", ""),
             "files": files,
         })
     return projects
@@ -161,6 +166,7 @@ def get_project(name: str) -> dict | None:
         "restarts": info.get("restarts", 0),
         "start_time": start_time,
         "start_file": info.get("start_file", "main.py"),
+        "startup_command": info.get("startup_command", ""),
         "files": list_project_files(name),
     }
 
@@ -176,8 +182,21 @@ def set_start_file(project: str, filename: str) -> dict:
     with _db_lock:
         db = _load_db()
         if project not in db:
-            db[project] = {}
+            db[project] = dict(_DEFAULT_PROJECT)
         db[project]["start_file"] = filename
+        _save_db(db)
+    return {"ok": True}
+
+
+def set_startup_command(project: str, command: str) -> dict:
+    project = _safe_project_name(project)
+    if not _project_dir(project).exists():
+        return {"ok": False, "error": "Project not found"}
+    with _db_lock:
+        db = _load_db()
+        if project not in db:
+            db[project] = dict(_DEFAULT_PROJECT)
+        db[project]["startup_command"] = command.strip()
         _save_db(db)
     return {"ok": True}
 
@@ -206,6 +225,21 @@ def list_project_files(project: str) -> list[str]:
     if not proj_dir.exists():
         return []
     return sorted(f.name for f in proj_dir.iterdir() if f.is_file())
+
+
+def create_project_file(project: str, filename: str) -> dict:
+    project = _safe_project_name(project)
+    filename = _safe_filename(filename)
+    if not filename or ".." in filename or "/" in filename or "\\" in filename:
+        return {"ok": False, "error": "Invalid filename"}
+    proj_dir = _project_dir(project)
+    if not proj_dir.exists():
+        return {"ok": False, "error": "Project not found"}
+    fpath = proj_dir / filename
+    if fpath.exists():
+        return {"ok": False, "error": "File already exists"}
+    fpath.write_text("")
+    return {"ok": True, "name": filename}
 
 
 def upload_file_to_project(project: str, filename: str, content: bytes) -> dict:
@@ -261,7 +295,62 @@ def save_file_content(project: str, filename: str, content: str) -> dict:
     return {"ok": True}
 
 
+# ─── Package Management ───────────────────────────────────────────────────────
+
+def _pip_cmd() -> list[str]:
+    import sys
+    return [sys.executable, "-m", "pip"]
+
+
+def install_package(project: str, package: str) -> dict:
+    project = _safe_project_name(project)
+    if not _project_dir(project).exists():
+        return {"ok": False, "error": "Project not found", "output": ""}
+    package = package.strip()
+    if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n", "\r"]):
+        return {"ok": False, "error": "Invalid package name", "output": ""}
+    try:
+        result = subprocess.run(
+            _pip_cmd() + ["install", "--break-system-packages", package],
+            capture_output=True, text=True, timeout=120,
+        )
+        output = result.stdout + result.stderr
+        return {"ok": result.returncode == 0, "output": output, "returncode": result.returncode}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Installation timed out", "output": ""}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "output": ""}
+
+
+def uninstall_package(project: str, package: str) -> dict:
+    project = _safe_project_name(project)
+    package = package.strip()
+    if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n"]):
+        return {"ok": False, "error": "Invalid package name", "output": ""}
+    try:
+        result = subprocess.run(
+            _pip_cmd() + ["uninstall", "--break-system-packages", "-y", package],
+            capture_output=True, text=True, timeout=60,
+        )
+        output = result.stdout + result.stderr
+        return {"ok": result.returncode == 0, "output": output}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "output": ""}
+
+
 # ─── Process Control ──────────────────────────────────────────────────────────
+
+def _build_command(info: dict) -> list[str]:
+    start_file = info.get("start_file", "main.py")
+    custom = info.get("startup_command", "").strip()
+    if custom:
+        cmd_str = custom.replace("{start_file}", start_file)
+        try:
+            return shlex.split(cmd_str)
+        except Exception:
+            return cmd_str.split()
+    return ["python3", "-u", start_file]
+
 
 def _watch_project(name: str, proc: subprocess.Popen):
     proc.wait()
@@ -293,7 +382,9 @@ def start_project(name: str, auto_restart: bool = False) -> dict:
 
     start_file = info.get("start_file", "main.py")
     entry = proj_dir / start_file
-    if not entry.exists():
+
+    custom_cmd = info.get("startup_command", "").strip()
+    if not custom_cmd and not entry.exists():
         return {"ok": False, "error": f"Start file '{start_file}' not found in project"}
 
     if not auto_restart:
@@ -301,9 +392,10 @@ def start_project(name: str, auto_restart: bool = False) -> dict:
         if info.get("status") == "running" and pid and _pid_alive(pid):
             return {"ok": False, "error": "Already running"}
 
+    cmd = _build_command(info)
     log_file = open(_log_path(name), "a")
     proc = subprocess.Popen(
-        ["python3", start_file],
+        cmd,
         stdout=log_file,
         stderr=subprocess.STDOUT,
         cwd=str(proj_dir),

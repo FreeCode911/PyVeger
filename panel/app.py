@@ -272,6 +272,18 @@ async def api_list_files(name: str):
     return {"files": proj["files"], "start_file": proj["start_file"]}
 
 
+@app.post("/_/projects/{name}/files/new")
+async def api_create_file(name: str, request: Request):
+    body = await request.json()
+    filename = body.get("filename", "").strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="filename is required")
+    result = manager.create_project_file(name, filename)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
 @app.get("/_/projects/{name}/files/{filename}")
 async def api_get_file(name: str, filename: str):
     content = manager.get_file_content(name, filename)
@@ -307,6 +319,32 @@ async def api_delete_file(name: str, filename: str):
     result = manager.delete_project_file(name, filename)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
+@app.post("/_/projects/{name}/command")
+async def api_set_command(name: str, request: Request):
+    body = await request.json()
+    command = body.get("command", "")
+    result = manager.set_startup_command(name, command)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+
+@app.post("/_/projects/{name}/packages/install")
+async def api_install_package(name: str, request: Request):
+    body = await request.json()
+    package = body.get("package", "").strip()
+    if not package:
+        raise HTTPException(status_code=400, detail="package is required")
+    result = manager.install_package(name, package)
+    return result
+
+
+@app.delete("/_/projects/{name}/packages/{package}")
+async def api_uninstall_package(name: str, package: str):
+    result = manager.uninstall_package(name, package)
     return result
 
 

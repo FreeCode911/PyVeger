@@ -6,21 +6,55 @@
   <title>Python Web Panel V3</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
+
+  <!-- CodeMirror Editor -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/autorefresh.min.js"></script>
+
   <style>
     body { background: #0f1117; }
-    .sdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
-    .btn { transition: opacity .15s, background .15s; cursor: pointer; }
-    .btn:hover { opacity: .85; }
-    .modal-bg { background: rgba(0,0,0,.65); backdrop-filter: blur(2px); }
-    .file-chip { transition: background .12s; }
-    .file-chip:hover { background: #2a2d3e; }
-    .file-chip.sel { background: #312d6e; border-color: #6366f1 !important; color: #e0e7ff; }
-    input[type=file] { display: none; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
-    .slide-in { animation: si .18s ease; }
-    @keyframes si { from { opacity:0;transform:translateY(6px) } to { opacity:1;transform:none } }
+    .sdot { width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0; }
+    .toast { position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999; }
+    .btn { transition:opacity .15s,background .15s;cursor:pointer; }
+    .btn:hover { opacity:.85; }
+    .modal-bg { background:rgba(0,0,0,.65);backdrop-filter:blur(2px); }
+    .file-chip { transition:background .12s; }
+    .file-chip:hover { background:#2a2d3e; }
+    .file-chip.sel { background:#312d6e;border-color:#6366f1 !important;color:#e0e7ff; }
+    input[type=file] { display:none; }
+    ::-webkit-scrollbar { width:5px;height:5px; }
+    ::-webkit-scrollbar-thumb { background:#2a2d3e;border-radius:3px; }
+    .slide-in { animation:si .18s ease; }
+    @keyframes si { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
+    /* CodeMirror overrides */
+    .CodeMirror {
+      height: 100%;
+      font-family: 'Fira Mono','Courier New',monospace;
+      font-size: 13px;
+      background: #0b0e16;
+      border: none;
+    }
+    .CodeMirror-scroll { height: 100%; }
+    .cm-wrap { height: 100%; }
+    /* Tab styles */
+    .tab-btn { transition: all .15s; }
+    .tab-btn.active { background: #1a1d27; border-bottom-color: #6366f1; color: #e0e7ff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+    /* Pkg output */
+    #pkg-output { font-family:'Fira Mono','Courier New',monospace;font-size:12px;line-height:1.6; }
   </style>
 </head>
 <body class="min-h-screen text-gray-100 font-sans">
@@ -90,8 +124,10 @@
 
       <div class="text-xs text-gray-500 space-y-1">
         <div class="flex items-center gap-1.5">
-          <span class="text-green-500 shrink-0">▶</span>
-          <span class="start-file-label font-mono text-gray-300 truncate">{{ p.start_file }}</span>
+          <span class="text-[#6366f1] shrink-0 font-mono text-[10px]">$</span>
+          <span class="start-cmd-label font-mono text-gray-300 truncate">
+            {% if p.startup_command %}{{ p.startup_command }}{% else %}python3 -u {{ p.start_file }}{% endif %}
+          </span>
         </div>
         <div class="grid grid-cols-2 gap-1">
           <span>PID: <span class="text-gray-300">{{ p.pid or '—' }}</span></span>
@@ -116,7 +152,7 @@
         {% endif %}
       </div>
       {% else %}
-      <p class="text-xs text-gray-600 italic">No files — open manager to upload</p>
+      <p class="text-xs text-gray-600 italic">No files — open file manager to upload</p>
       {% endif %}
 
       <div class="flex gap-1.5 pt-2 border-t border-[#2a2d3e]">
@@ -130,6 +166,8 @@
           class="btn flex-1 text-xs py-1.5 rounded-md bg-[#2a2d3e] hover:bg-[#333649] text-gray-300 font-medium text-center">📋</a>
         <button onclick="openFileManager('{{ p.name }}')" title="File Manager"
           class="btn flex-1 text-xs py-1.5 rounded-md bg-indigo-900/40 hover:bg-indigo-800/60 text-indigo-300 font-medium">📁</button>
+        <button onclick="openProjectConfig('{{ p.name }}')" title="Project Settings"
+          class="btn flex-1 text-xs py-1.5 rounded-md bg-[#2a2d3e] hover:bg-[#3a3d4e] text-gray-300 font-medium">⚙</button>
         <button onclick="deleteProject('{{ p.name }}')" title="Delete"
           class="btn text-xs py-1.5 px-2 rounded-md bg-[#2a2d3e] hover:bg-red-900/50 text-gray-500 hover:text-red-400">🗑</button>
       </div>
@@ -139,7 +177,7 @@
   </div>
 </main>
 
-<!-- New Project Modal -->
+<!-- ═══════════════ NEW PROJECT MODAL ═══════════════ -->
 <div id="new-modal" class="hidden fixed inset-0 modal-bg z-30 flex items-center justify-center" onclick="bgClose(event,'new-modal')">
   <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 w-80 slide-in">
     <h3 class="font-semibold text-white mb-4">New Project</h3>
@@ -153,9 +191,24 @@
   </div>
 </div>
 
-<!-- File Manager Modal -->
+<!-- ═══════════════ NEW FILE MODAL ═══════════════ -->
+<div id="newfile-modal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center" onclick="bgClose(event,'newfile-modal')">
+  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl p-6 w-80 slide-in">
+    <h3 class="font-semibold text-white mb-1 text-sm">New File</h3>
+    <p class="text-xs text-gray-500 mb-3">Enter a filename including extension</p>
+    <input id="newfile-name" type="text" placeholder="main.py"
+      class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1] mb-4 font-mono"
+      onkeydown="if(event.key==='Enter')createNewFile()" />
+    <div class="flex gap-2 justify-end">
+      <button onclick="closeModal('newfile-modal')" class="btn text-sm px-3 py-1.5 rounded-md bg-[#2a2d3e] text-gray-300">Cancel</button>
+      <button onclick="createNewFile()" class="btn text-sm px-4 py-1.5 rounded-md bg-[#6366f1] text-white font-medium">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FILE MANAGER MODAL ═══════════════ -->
 <div id="fm-modal" class="hidden fixed inset-0 modal-bg z-30 flex items-center justify-center" onclick="bgClose(event,'fm-modal')">
-  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl w-[700px] max-w-full mx-4 slide-in flex flex-col" style="max-height:84vh">
+  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl w-[850px] max-w-full mx-4 slide-in flex flex-col" style="max-height:88vh">
     <div class="flex items-center justify-between px-4 py-3 border-b border-[#2a2d3e] shrink-0">
       <div class="flex items-center gap-2">
         <span>📁</span>
@@ -163,40 +216,133 @@
         <span class="text-gray-500 text-xs">/ File Manager</span>
       </div>
       <div class="flex items-center gap-2">
+        <button onclick="openNewFileDialog()" class="btn text-xs px-2.5 py-1 rounded-md bg-[#2a2d3e] hover:bg-[#3a3d4e] text-gray-300 font-medium">＋ New File</button>
         <label for="fm-upload-input" class="btn cursor-pointer text-xs px-2.5 py-1 rounded-md bg-[#6366f1] text-white font-medium">📤 Upload</label>
         <input id="fm-upload-input" type="file" onchange="uploadToProject(this)" />
         <button onclick="closeModal('fm-modal')" class="text-gray-500 hover:text-white text-xl leading-none ml-1">&times;</button>
       </div>
     </div>
     <div class="flex flex-1 overflow-hidden min-h-0">
-      <div id="fm-files" class="w-44 shrink-0 border-r border-[#2a2d3e] p-2 overflow-y-auto flex flex-col gap-0.5 bg-[#12151f]"></div>
+      <!-- File list -->
+      <div id="fm-files" class="w-48 shrink-0 border-r border-[#2a2d3e] p-2 overflow-y-auto flex flex-col gap-0.5 bg-[#12151f]"></div>
+      <!-- Editor area -->
       <div class="flex-1 flex flex-col overflow-hidden min-h-0">
         <div id="fm-no-file" class="flex-1 flex flex-col items-center justify-center text-gray-600 gap-2">
           <span class="text-3xl">📄</span>
-          <span class="text-sm">Select or upload a file</span>
+          <span class="text-sm">Select or create a file</span>
         </div>
         <div id="fm-editor-wrap" class="hidden flex-1 flex flex-col overflow-hidden min-h-0">
           <div class="flex items-center justify-between px-3 py-2 border-b border-[#2a2d3e] bg-[#12151f] shrink-0">
-            <span id="fm-filename" class="text-xs font-mono text-gray-400"></span>
+            <div class="flex items-center gap-2">
+              <span id="fm-filename" class="text-xs font-mono text-gray-300"></span>
+              <span id="fm-lang-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2d3e] text-gray-500 font-mono"></span>
+            </div>
             <div class="flex gap-1.5">
               <button onclick="setAsStartFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-green-800/70 text-green-200 font-medium">▶ Set Start</button>
               <button onclick="saveFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-[#6366f1] text-white font-medium">💾 Save</button>
-              <button onclick="deleteFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-red-900/70 text-red-300 font-medium">🗑</button>
+              <button onclick="deleteFile()" class="btn text-xs px-2.5 py-1 rounded-md bg-red-900/70 text-red-300 font-medium">🗑 Delete</button>
             </div>
           </div>
-          <textarea id="fm-editor"
-            class="flex-1 font-mono text-xs text-green-300 bg-[#0b0e16] p-3 resize-none focus:outline-none overflow-y-auto min-h-0"
-            spellcheck="false"></textarea>
+          <!-- CodeMirror mounts here -->
+          <div id="cm-host" class="flex-1 overflow-hidden min-h-0" style="height:100%"></div>
         </div>
       </div>
+    </div>
+    <!-- Status bar -->
+    <div id="fm-statusbar" class="hidden border-t border-[#2a2d3e] px-4 py-1 bg-[#12151f] shrink-0 flex items-center justify-between text-[11px] text-gray-500">
+      <span id="fm-status-file"></span>
+      <span id="fm-status-pos">Ln 1, Col 1</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PROJECT CONFIG MODAL ═══════════════ -->
+<div id="cfg-modal" class="hidden fixed inset-0 modal-bg z-30 flex items-center justify-center" onclick="bgClose(event,'cfg-modal')">
+  <div class="bg-[#1a1d27] border border-[#2a2d3e] rounded-xl w-[600px] max-w-full mx-4 slide-in flex flex-col" style="max-height:88vh">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-[#2a2d3e] shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-[#6366f1]">⚙</span>
+        <span class="text-white font-semibold text-sm">Project Config:</span>
+        <span id="cfg-title" class="text-[#6366f1] font-semibold text-sm font-mono"></span>
+      </div>
+      <button onclick="closeModal('cfg-modal')" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+    </div>
+    <!-- Tabs -->
+    <div class="flex border-b border-[#2a2d3e] shrink-0 bg-[#12151f]">
+      <button onclick="cfgTab('startup')" id="tab-startup"
+        class="tab-btn active text-xs px-5 py-2.5 text-gray-400 border-b-2 border-transparent font-medium">🚀 Startup</button>
+      <button onclick="cfgTab('packages')" id="tab-packages"
+        class="tab-btn text-xs px-5 py-2.5 text-gray-400 border-b-2 border-transparent font-medium">📦 Packages</button>
+    </div>
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto min-h-0">
+
+      <!-- ── Startup Tab ── -->
+      <div id="cfg-startup" class="tab-panel active p-5 gap-5">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300">Startup Command</label>
+          <input id="cfg-command" type="text" placeholder="python3 -u {start_file}"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]" />
+          <p class="text-xs text-gray-600">Use <code class="text-gray-400">{start_file}</code> as a placeholder — it gets replaced with the selected startup file. Leave blank to use <code class="text-gray-400">python3 -u {start_file}</code>.</p>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300">Startup File</label>
+          <select id="cfg-startfile"
+            class="w-full bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-[#6366f1]">
+          </select>
+          <p class="text-xs text-gray-600">The entry-point file used when the project starts.</p>
+        </div>
+        <div class="pt-2">
+          <button onclick="saveProjectConfig()" class="btn bg-[#6366f1] hover:bg-indigo-500 text-white text-sm px-5 py-2 rounded-lg font-medium">💾 Save Configuration</button>
+        </div>
+      </div>
+
+      <!-- ── Packages Tab ── -->
+      <div id="cfg-packages" class="tab-panel p-5 gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300">Install Package</label>
+          <div class="flex gap-2">
+            <input id="pkg-name" type="text" placeholder="requests, flask==2.3.0, …"
+              class="flex-1 bg-[#0f1117] border border-[#2a2d3e] rounded-lg px-3 py-2 text-sm font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#6366f1]"
+              onkeydown="if(event.key==='Enter')installPackage()" />
+            <button onclick="installPackage()" id="pkg-install-btn"
+              class="btn bg-[#6366f1] hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium whitespace-nowrap">📦 Install</button>
+          </div>
+          <p class="text-xs text-gray-600">Installs via <code class="text-gray-400">pip3 install</code>. Supports version pinning: <code class="text-gray-400">flask==2.3.0</code></p>
+        </div>
+        <!-- Output terminal -->
+        <div id="pkg-output-wrap" class="hidden flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium text-gray-300">Output</label>
+            <button onclick="document.getElementById('pkg-output-wrap').classList.add('hidden')" class="text-xs text-gray-600 hover:text-gray-400">✕ clear</button>
+          </div>
+          <div class="bg-[#0b0e16] border border-[#2a2d3e] rounded-lg p-3 overflow-y-auto" style="max-height:280px">
+            <pre id="pkg-output" class="text-green-400 whitespace-pre-wrap break-all"></pre>
+          </div>
+        </div>
+        <!-- Quick-install suggestions -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium text-gray-300">Common Packages</label>
+          <div class="flex flex-wrap gap-1.5">
+            {% for pkg in ['requests','flask','fastapi','uvicorn','discord.py','aiohttp','Pillow','numpy','pandas','python-dotenv','httpx','websockets'] %}
+            <button onclick="quickInstall('{{ pkg }}')"
+              class="btn text-xs px-2.5 py-1 rounded-md bg-[#0f1117] border border-[#2a2d3e] text-gray-400 hover:border-[#6366f1]/60 hover:text-gray-200 font-mono">{{ pkg }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
 
 <script>
-let fmProject = null, fmCurrent = null;
+// ─── State ────────────────────────────────────────────────────────────────────
+let fmProject = null, fmCurrent = null, cfgProject = null;
+let cmEditor = null;   // CodeMirror instance
 
-// ── Live Stats ────────────────────────────────────────────────────────────────
+// ─── Live Stats WebSocket ─────────────────────────────────────────────────────
 (function connectStats() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(`${proto}://${location.host}/ws/stats`);
@@ -209,7 +355,7 @@ let fmProject = null, fmCurrent = null;
   ws.onclose = () => setTimeout(connectStats, 3000);
 })();
 
-// ── Uptime counters ───────────────────────────────────────────────────────────
+// ─── Uptime counters ──────────────────────────────────────────────────────────
 setInterval(() => {
   document.querySelectorAll('.uptime-cell').forEach(el => {
     if (el.dataset.status !== 'running' || !el.dataset.start) return;
@@ -218,14 +364,14 @@ setInterval(() => {
   });
 }, 1000);
 
-// ── Search ────────────────────────────────────────────────────────────────────
+// ─── Search ───────────────────────────────────────────────────────────────────
 document.getElementById('search').addEventListener('input', function() {
   const q = this.value.toLowerCase();
   document.querySelectorAll('.proj-card').forEach(c =>
     c.style.display = c.dataset.name.toLowerCase().includes(q) ? '' : 'none');
 });
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
 let _tt;
 function toast(msg, type='ok') {
   const el = document.getElementById('toast'), inner = document.getElementById('toast-inner');
@@ -237,12 +383,63 @@ function toast(msg, type='ok') {
   _tt = setTimeout(() => el.classList.add('hidden'), 3500);
 }
 
-// ── Modal helpers ─────────────────────────────────────────────────────────────
+// ─── Modal helpers ────────────────────────────────────────────────────────────
 const closeModal = id => document.getElementById(id).classList.add('hidden');
 const openModal  = id => document.getElementById(id).classList.remove('hidden');
 function bgClose(e, id) { if (e.target === e.currentTarget) closeModal(id); }
 
-// ── New Project ───────────────────────────────────────────────────────────────
+// ─── CodeMirror helpers ───────────────────────────────────────────────────────
+function getLang(filename) {
+  if (!filename) return 'null';
+  const ext = (filename.split('.').pop() || '').toLowerCase();
+  const map = {
+    py:'python', js:'javascript', ts:'javascript', jsx:'javascript', tsx:'javascript',
+    css:'css', html:'htmlmixed', htm:'htmlmixed', xml:'xml',
+    sh:'shell', bash:'shell', zsh:'shell',
+    yaml:'yaml', yml:'yaml',
+    json:'javascript', md:'null', txt:'null',
+  };
+  return map[ext] || 'null';
+}
+
+function initEditor() {
+  if (cmEditor) return;
+  const host = document.getElementById('cm-host');
+  cmEditor = CodeMirror(host, {
+    value: '',
+    theme: 'dracula',
+    lineNumbers: true,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    styleActiveLine: true,
+    autoRefresh: true,
+    indentUnit: 4,
+    tabSize: 4,
+    indentWithTabs: false,
+    lineWrapping: false,
+    extraKeys: {
+      'Ctrl-S': () => saveFile(),
+      'Cmd-S': () => saveFile(),
+      'Tab': cm => cm.execCommand('insertSoftTab'),
+    },
+  });
+  cmEditor.on('cursorActivity', () => {
+    const c = cmEditor.getCursor();
+    document.getElementById('fm-status-pos').textContent = `Ln ${c.line+1}, Col ${c.ch+1}`;
+  });
+}
+
+function setEditorContent(content, filename) {
+  initEditor();
+  const lang = getLang(filename);
+  cmEditor.setOption('mode', lang === 'null' ? null : lang);
+  cmEditor.setValue(content);
+  cmEditor.clearHistory();
+  cmEditor.refresh();
+  document.getElementById('fm-lang-badge').textContent = lang === 'null' ? 'text' : lang;
+}
+
+// ─── New Project ──────────────────────────────────────────────────────────────
 function openNewProject() {
   document.getElementById('new-name').value = '';
   openModal('new-modal');
@@ -254,20 +451,15 @@ async function createProject() {
   if (!name) { toast('❌ Enter a project name', 'err'); return; }
   closeModal('new-modal');
   const r = await fetch('/_/projects/create', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({name})
   });
   const d = await r.json();
-  if (r.ok) {
-    toast(`✅ Created "${d.name}"`);
-    setTimeout(() => location.reload(), 700);
-  } else {
-    toast(`❌ ${d.detail}`, 'err');
-  }
+  if (r.ok) { toast(`✅ Created "${d.name}"`); setTimeout(() => location.reload(), 700); }
+  else toast(`❌ ${d.detail}`, 'err');
 }
 
-// ── Project actions ───────────────────────────────────────────────────────────
+// ─── Project actions ──────────────────────────────────────────────────────────
 async function projAction(action, name) {
   const r = await fetch(`/_/projects/${encodeURIComponent(name)}/${action}`, {method:'POST'});
   const d = await r.json();
@@ -289,14 +481,16 @@ async function deleteProject(name) {
   else toast(`❌ ${d.detail}`, 'err');
 }
 
-// ── File Manager ──────────────────────────────────────────────────────────────
+// ─── File Manager ─────────────────────────────────────────────────────────────
 async function openFileManager(name) {
   fmProject = name; fmCurrent = null;
   document.getElementById('fm-title').textContent = name;
   document.getElementById('fm-editor-wrap').classList.add('hidden');
   document.getElementById('fm-no-file').classList.remove('hidden');
+  document.getElementById('fm-statusbar').classList.add('hidden');
   await loadFiles();
   openModal('fm-modal');
+  setTimeout(() => { if (cmEditor) cmEditor.refresh(); }, 100);
 }
 
 async function loadFiles() {
@@ -305,7 +499,7 @@ async function loadFiles() {
   const list = document.getElementById('fm-files');
   list.innerHTML = '';
   if (!d.files || !d.files.length) {
-    list.innerHTML = '<p class="text-xs text-gray-600 px-2 py-6 text-center">No files<br/>Upload one above</p>';
+    list.innerHTML = '<p class="text-xs text-gray-600 px-2 py-6 text-center">No files<br/>Create or upload one</p>';
     return;
   }
   d.files.forEach(fname => {
@@ -313,7 +507,10 @@ async function loadFiles() {
     const el = document.createElement('div');
     el.className = `file-chip flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono cursor-pointer border ${
       fmCurrent===fname ? 'sel border-[#6366f1]/50' : 'border-transparent text-gray-400 hover:text-gray-200'}`;
-    el.innerHTML = `${isStart ? '<span class="text-green-400 shrink-0 text-[10px]">▶</span>' : '<span class="w-3 shrink-0"></span>'}<span class="truncate">${fname}</span>`;
+    el.innerHTML = `${isStart
+      ? '<span class="text-green-400 shrink-0 text-[10px]">▶</span>'
+      : '<span class="w-3 shrink-0"></span>'}
+      <span class="truncate" title="${fname}">${fname}</span>`;
     el.onclick = () => openFile(fname);
     list.appendChild(el);
   });
@@ -322,17 +519,19 @@ async function loadFiles() {
 async function openFile(fname) {
   fmCurrent = fname;
   document.getElementById('fm-filename').textContent = fname;
+  document.getElementById('fm-status-file').textContent = fname;
   const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fname)}`);
   const d = await r.json();
-  document.getElementById('fm-editor').value = d.content || '';
   document.getElementById('fm-no-file').classList.add('hidden');
   document.getElementById('fm-editor-wrap').classList.remove('hidden');
+  document.getElementById('fm-statusbar').classList.remove('hidden');
+  setEditorContent(d.content || '', fname);
   await loadFiles();
 }
 
 async function saveFile() {
   if (!fmCurrent) return;
-  const content = document.getElementById('fm-editor').value;
+  const content = cmEditor ? cmEditor.getValue() : '';
   const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/${encodeURIComponent(fmCurrent)}`,
     {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
   r.ok ? toast('💾 Saved') : toast('❌ Save failed','err');
@@ -346,8 +545,8 @@ async function setAsStartFile() {
   if (r.ok) {
     toast(`▶ "${fmCurrent}" set as start file`);
     await loadFiles();
-    const badge = document.querySelector(`.proj-card[data-name="${fmProject}"] .start-file-label`);
-    if (badge) badge.textContent = fmCurrent;
+    const badge = document.querySelector(`.proj-card[data-name="${fmProject}"] .start-cmd-label`);
+    if (badge && !badge.textContent.trim().includes('{')) badge.textContent = `python3 -u ${fmCurrent}`;
   } else toast(`❌ ${d.detail}`, 'err');
 }
 
@@ -359,6 +558,7 @@ async function deleteFile() {
     fmCurrent = null;
     document.getElementById('fm-editor-wrap').classList.add('hidden');
     document.getElementById('fm-no-file').classList.remove('hidden');
+    document.getElementById('fm-statusbar').classList.add('hidden');
     await loadFiles();
   } else toast('❌ Delete failed','err');
 }
@@ -371,6 +571,109 @@ async function uploadToProject(input) {
   if (r.ok) { toast(`📤 Uploaded ${d.name}`); await openFile(d.name); }
   else toast(`❌ ${d.detail}`, 'err');
   input.value = '';
+}
+
+// ─── New File ─────────────────────────────────────────────────────────────────
+function openNewFileDialog() {
+  document.getElementById('newfile-name').value = '';
+  openModal('newfile-modal');
+  setTimeout(() => document.getElementById('newfile-name').focus(), 80);
+}
+
+async function createNewFile() {
+  const filename = document.getElementById('newfile-name').value.trim();
+  if (!filename) { toast('❌ Enter a filename', 'err'); return; }
+  closeModal('newfile-modal');
+  const r = await fetch(`/_/projects/${encodeURIComponent(fmProject)}/files/new`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename})});
+  const d = await r.json();
+  if (r.ok) { toast(`✅ Created ${d.name}`); await openFile(d.name); }
+  else toast(`❌ ${d.detail}`, 'err');
+}
+
+// ─── Project Config Modal ─────────────────────────────────────────────────────
+async function openProjectConfig(name) {
+  cfgProject = name;
+  document.getElementById('cfg-title').textContent = name;
+  cfgTab('startup');
+  // Load project data
+  const r = await fetch(`/_/projects/${encodeURIComponent(name)}`);
+  const d = await r.json();
+  document.getElementById('cfg-command').value = d.startup_command || '';
+  // Populate startup file dropdown
+  const sel = document.getElementById('cfg-startfile');
+  sel.innerHTML = '';
+  (d.files || []).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f; opt.textContent = f;
+    if (f === d.start_file) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (!d.files || !d.files.length) {
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = '— no files yet —';
+    sel.appendChild(opt);
+  }
+  openModal('cfg-modal');
+}
+
+function cfgTab(tab) {
+  ['startup','packages'].forEach(t => {
+    document.getElementById(`cfg-${t}`).classList.toggle('active', t===tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+  });
+}
+
+async function saveProjectConfig() {
+  const command = document.getElementById('cfg-command').value.trim();
+  const startFile = document.getElementById('cfg-startfile').value;
+  // Save command
+  const r1 = await fetch(`/_/projects/${encodeURIComponent(cfgProject)}/command`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command})});
+  // Save start file if changed
+  if (startFile) {
+    await fetch(`/_/projects/${encodeURIComponent(cfgProject)}/start-file`,
+      {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:startFile})});
+  }
+  if (r1.ok) {
+    toast('✅ Configuration saved');
+    // Update card display
+    const cmdLabel = document.querySelector(`.proj-card[data-name="${cfgProject}"] .start-cmd-label`);
+    if (cmdLabel) {
+      cmdLabel.textContent = command || `python3 -u ${startFile}`;
+    }
+  } else {
+    const d = await r1.json();
+    toast(`❌ ${d.detail}`, 'err');
+  }
+}
+
+// ─── Package Manager ──────────────────────────────────────────────────────────
+async function installPackage() {
+  const pkg = document.getElementById('pkg-name').value.trim();
+  if (!pkg) { toast('❌ Enter a package name', 'err'); return; }
+  const btn = document.getElementById('pkg-install-btn');
+  btn.textContent = '⏳ Installing…';
+  btn.disabled = true;
+  const wrap = document.getElementById('pkg-output-wrap');
+  const out = document.getElementById('pkg-output');
+  wrap.classList.remove('hidden');
+  wrap.style.display = 'flex';
+  out.textContent = `> pip3 install ${pkg}\n\nInstalling…`;
+  const r = await fetch(`/_/projects/${encodeURIComponent(cfgProject)}/packages/install`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({package:pkg})});
+  const d = await r.json();
+  out.textContent = `> pip3 install ${pkg}\n\n${d.output || d.error || '(no output)'}`;
+  btn.textContent = '📦 Install';
+  btn.disabled = false;
+  if (d.ok) { toast(`✅ Installed ${pkg}`); document.getElementById('pkg-name').value = ''; }
+  else toast(`❌ Install failed`, 'err');
+}
+
+function quickInstall(pkg) {
+  document.getElementById('pkg-name').value = pkg;
+  cfgTab('packages');
+  installPackage();
 }
 </script>
 </body>

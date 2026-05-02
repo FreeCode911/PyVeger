@@ -1,1 +1,25 @@
-{}
+{
+  "admin": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "start_time": null,
+    "restarts": 0
+  },
+  "testproject": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "startup_command": "python3 -u {start_file}",
+    "start_time": null,
+    "restarts": 0
+  },
+  "demo-bot": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "startup_command": "python3 -u {start_file}",
+    "start_time": null,
+    "restarts": 0
+  }
+}
