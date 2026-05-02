@@ -1,10 +1,10 @@
-# PyPanel V3
+# PyVeger
 
 A Python-based web management panel built with FastAPI and Jinja2 templates.
 
 ## Overview
 
-PyPanel V3 is a self-hosted project manager that lets you run and manage Python scripts via a web UI. It supports:
+PyVeger is a self-hosted project manager that lets you run and manage Python scripts via a web UI. It supports:
 
 - **Project management**: Create, start, stop, restart Python projects
 - **File manager**: Upload, edit, and manage project files in-browser
