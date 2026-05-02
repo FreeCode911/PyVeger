@@ -71,6 +71,7 @@
           <button type="button" onclick="tunnelAction('stop')"  class="text-xs px-3 py-1.5 rounded-md bg-red-900/70 hover:bg-red-800 text-red-200 font-medium">Stop</button>
         </div>
       </div>
+      <p id="tun-error" class="hidden text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-800/50 rounded-lg px-3 py-2"></p>
     </section>
 
     <!-- Discord Bot -->
@@ -108,16 +109,24 @@ async function loadTunnelStatus() {
     const d = await r.json();
     const dot = document.getElementById('tun-dot');
     const lbl = document.getElementById('tun-label');
+    const errEl = document.getElementById('tun-error');
     if (d.tunnel.status === 'running') {
       dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-green-500';
       lbl.className = 'text-green-400 text-xs'; lbl.textContent = '🟢 Connected';
+      if (errEl) errEl.classList.add('hidden');
+    } else if (d.tunnel.status === 'error') {
+      dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500';
+      lbl.className = 'text-yellow-400 text-xs'; lbl.textContent = '⚠️ Error';
+      if (errEl) { errEl.textContent = d.tunnel.error || 'Tunnel failed — check your token'; errEl.classList.remove('hidden'); }
     } else {
       dot.className = 'inline-block w-2.5 h-2.5 rounded-full bg-red-500';
       lbl.className = 'text-red-400 text-xs'; lbl.textContent = '🔴 Stopped';
+      if (errEl) errEl.classList.add('hidden');
     }
   } catch(e) {}
 }
 loadTunnelStatus();
+setInterval(loadTunnelStatus, 3000);
 
 async function tunnelAction(action) {
   await fetch(`/_/tunnel/${action}`, {method:'POST'});

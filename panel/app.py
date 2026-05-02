@@ -328,6 +328,7 @@ async def api_save_settings(request: Request):
     form = await request.form()
     cfg = _load_config()
     old_dc_token = cfg.get("discord_token", "")
+    old_cf_token = cfg.get("cloudflare_token", "")
     cf_token = str(form.get("cloudflare_token", "")).strip()
     dc_token = str(form.get("discord_token", "")).strip()
     allowed_raw = str(form.get("allowed_users", "")).strip()
@@ -341,9 +342,15 @@ async def api_save_settings(request: Request):
     if new_pass:
         cfg["password"] = new_pass
     _save_config(cfg)
-    if cf_token and tunnel.get_status()["status"] != "running":
-        tunnel.start_tunnel()
-    elif not cf_token:
+    current_tunnel = tunnel.get_status()["status"]
+    if cf_token:
+        if current_tunnel == "running" and cf_token != old_cf_token:
+            tunnel.stop_tunnel()
+            time.sleep(0.5)
+            tunnel.start_tunnel()
+        elif current_tunnel != "running":
+            tunnel.start_tunnel()
+    else:
         tunnel.stop_tunnel()
     if dc_token and dc_token != old_dc_token:
         discord_bot.start_bot()

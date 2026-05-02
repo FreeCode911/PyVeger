@@ -18,8 +18,9 @@ logger = logging.getLogger("tunnel")
 
 _proc: subprocess.Popen | None = None
 _lock = threading.Lock()
-_status = {"status": "stopped", "pid": None}
+_status = {"status": "stopped", "pid": None, "error": None}
 _watcher_thread: threading.Thread | None = None
+_stop_requested = False
 
 
 def _load_token() -> str:
@@ -56,34 +57,62 @@ def ensure_cloudflared():
         _download_cloudflared()
 
 
-def _watch_tunnel(proc: subprocess.Popen):
+def _watch_tunnel(proc: subprocess.Popen, started_at: float):
+    global _stop_requested
     proc.wait()
+    exit_code = proc.returncode
+    runtime = time.time() - started_at
+
+    with _lock:
+        if _status.get("pid") != proc.pid:
+            return
+        _status["pid"] = None
+
+    if _stop_requested:
+        with _lock:
+            _status["status"] = "stopped"
+            _status["error"] = None
+        _stop_requested = False
+        return
+
+    if runtime < 10:
+        msg = f"Tunnel exited after {runtime:.1f}s (exit code {exit_code}) — check your token"
+        logger.warning(msg)
+        with _lock:
+            _status["status"] = "error"
+            _status["error"] = msg
+        return
+
+    logger.info(f"Tunnel disconnected after {runtime:.0f}s, restarting in 5s…")
     with _lock:
         _status["status"] = "stopped"
-        _status["pid"] = None
-    token = _load_token()
-    if token:
-        logger.info("Tunnel crashed, restarting in 5s...")
-        time.sleep(5)
+        _status["error"] = None
+    time.sleep(5)
+    if _load_token():
         start_tunnel()
 
 
 def start_tunnel() -> dict:
-    global _proc, _watcher_thread
+    global _proc, _watcher_thread, _stop_requested
     token = _load_token()
     if not token:
         return {"ok": False, "error": "No Cloudflare token configured"}
 
     with _lock:
-        if _status.get("status") == "running":
+        current = _status.get("status")
+        if current == "running":
             return {"ok": False, "error": "Tunnel already running"}
+
+    _stop_requested = False
 
     try:
         ensure_cloudflared()
     except Exception as e:
         return {"ok": False, "error": f"Failed to download cloudflared: {e}"}
 
+    LOGS_DIR.mkdir(exist_ok=True)
     log_file = open(TUNNEL_LOG, "a")
+    started_at = time.time()
     proc = subprocess.Popen(
         [str(CLOUDFLARED_BIN), "tunnel", "run", "--token", token],
         stdout=log_file,
@@ -94,26 +123,33 @@ def start_tunnel() -> dict:
     with _lock:
         _status["status"] = "running"
         _status["pid"] = proc.pid
+        _status["error"] = None
 
-    _watcher_thread = threading.Thread(target=_watch_tunnel, args=(proc,), daemon=True)
+    _watcher_thread = threading.Thread(
+        target=_watch_tunnel, args=(proc, started_at), daemon=True
+    )
     _watcher_thread.start()
     return {"ok": True, "pid": proc.pid}
 
 
 def stop_tunnel() -> dict:
-    global _proc
+    global _proc, _stop_requested
+    _stop_requested = True
     with _lock:
-        if _status.get("status") != "running" or not _proc:
+        if _status.get("status") not in ("running", "error") or not _proc:
             _status["status"] = "stopped"
             _status["pid"] = None
+            _status["error"] = None
             return {"ok": True, "message": "Already stopped"}
-        try:
-            _proc.terminate()
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
+        proc = _proc
         _status["status"] = "stopped"
         _status["pid"] = None
+        _status["error"] = None
         _proc = None
+    try:
+        proc.terminate()
+    except Exception:
+        pass
     return {"ok": True}
 
 
