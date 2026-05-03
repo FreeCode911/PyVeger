@@ -1,4 +1,7 @@
-# PyVegar V3
+<div align="center">
+  <img src="static/logo.svg" width="96" height="96" alt="PyVegar Logo"/>
+  <h1>PyVegar V3</h1>
+</div>
 
 [![License](https://img.shields.io/badge/license-Personal-informational)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11-blue?style=flat-square)](https://python.org)
