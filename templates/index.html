@@ -412,15 +412,15 @@ function _getLogoFromCache(slug){
   try{var c=localStorage.getItem('pv3_logo_'+slug);if(c){_logoDL[slug]=c;return c;}}catch(e){}
   return null;
 }
-function _downloadAndCacheLogo(slug){
-  if(_logoDL[slug]||_getLogoFromCache(slug))return;
+function _fetchAndCacheLogo(slug){
+  if(_logoDL[slug])return;
   fetch('https://cdn.simpleicons.org/'+slug+'/ffffff').then(r=>r.blob()).then(blob=>{
     var reader=new FileReader();
     reader.onload=function(e){
       var dataUri=e.target.result;
       _logoDL[slug]=dataUri;
       try{localStorage.setItem('pv3_logo_'+slug,dataUri);}catch(e){}
-      document.querySelectorAll(`[data-logo-pending="${slug}"]`).forEach(img=>{img.src=dataUri;img.style.display='block';img.removeAttribute('data-logo-pending');});
+      setTimeout(()=>{document.querySelectorAll(`[data-pv3-logo-slug="${slug}"]`).forEach(img=>{img.src=dataUri;img.style.display='block';});},0);
     };
     reader.readAsDataURL(blob);
   }).catch(e=>{});
@@ -428,9 +428,11 @@ function _downloadAndCacheLogo(slug){
 function _renderLogoImg(slug){
   var cached=_getLogoFromCache(slug);
   if(cached)return `<img src="${cached}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:block" onerror="this.remove()">`;
-  _downloadAndCacheLogo(slug);
-  return `<img data-logo-pending="${slug}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onerror="this.remove()">`;
+  return `<img data-pv3-logo-slug="${slug}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onerror="this.remove()">`;
 }
+// Pre-fetch all logos on page load into cache
+var _logoPreFetchDone=Promise.all(['python','nodedotjs','go','ruby','php','deno','bun'].map(slug=>new Promise(r=>{var cached=_getLogoFromCache(slug);if(cached){r();return;}fetch('https://cdn.simpleicons.org/'+slug+'/ffffff').then(res=>res.blob()).then(blob=>{var reader=new FileReader();reader.onload=function(e){var dataUri=e.target.result;_logoDL[slug]=dataUri;try{localStorage.setItem('pv3_logo_'+slug,dataUri);}catch(ex){}r();};reader.readAsDataURL(blob);}).catch(()=>r());})));
+_logoPreFetchDone.then(()=>{document.querySelectorAll('[data-pv3-logo-slug]').forEach(img=>{var slug=img.dataset.pv3LogoSlug;var cached=_getLogoFromCache(slug);if(cached){img.src=cached;img.style.display='block';}});});
 function renderLangChip(el,lang,cmd,file){
   const lc=LANG_MAP[lang];
   const sub=file||cmd||'';
@@ -460,7 +462,7 @@ function renderLangChip(el,lang,cmd,file){
       `</div>`;
   }
 }
-document.querySelectorAll('[data-lang-chip]').forEach(el=>renderLangChip(el,el.dataset.lang,el.dataset.cmd,el.dataset.file));
+_logoPreFetchDone.then(()=>{document.querySelectorAll('[data-lang-chip]').forEach(el=>renderLangChip(el,el.dataset.lang,el.dataset.cmd,el.dataset.file));});
 
 function applyCard(p){
   const card=document.querySelector(`.proj-card[data-id="${CSS.escape(p.id)}"]`);
