@@ -373,9 +373,10 @@
 
 <script>
 // Stats WS — live header stats + live card updates
-var _statsWs, _statsDead=false, _statsFailCount=0, _statsStarted=false;
+var _statsWs, _statsDead=false, _statsFailCount=0, _statsStarted=false, _lastFailTime=0;
 function _reconnectStats(){
-  if(_statsDead||_statsFailCount>30)return;
+  if(_statsDead)return;
+  if(_statsFailCount>3){var now=Date.now();if(now-_lastFailTime<2000){console.warn('Stats: reload page to reconnect');return;}else{_statsFailCount=0;}}
   var proto=location.protocol==='https:'?'wss':'ws';
   _statsWs=new WebSocket(proto+'://'+location.host+'/ws/stats');
   _statsWs.onopen=function(){_statsFailCount=0;_statsStarted=true;};
@@ -394,8 +395,8 @@ function _reconnectStats(){
       if(d.tunnel!=null)applyTunnelChip(d.tunnel);
     }catch(err){console.warn('Stats WS parse error:',err);}
   };
-  _statsWs.onerror=function(err){_statsFailCount++;};
-  _statsWs.onclose=function(){if(!_statsDead&&_statsFailCount<=30){setTimeout(_reconnectStats,Math.min(10000,1000+_statsFailCount*500));}};}
+  _statsWs.onerror=function(){_statsFailCount++;_lastFailTime=Date.now();if(_statsFailCount>6)window.location.reload();};
+  _statsWs.onclose=function(){if(!_statsDead){_statsFailCount++;_lastFailTime=Date.now();setTimeout(_reconnectStats,Math.min(5000,500+_statsFailCount*800));}};}
 function _initStats(){if(!_statsStarted)_reconnectStats();}
 if(window.PV3)PV3.onNavigate(function(){_statsDead=true;if(_statsWs)_statsWs.close();});
 setTimeout(_initStats,500);
