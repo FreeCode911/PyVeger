@@ -16,11 +16,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from log_config import setup_logging
+
 import manager
 import tunnel
 import discord_bot
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+setup_logging()
 logger = logging.getLogger("app")
 
 BASE_DIR = Path(__file__).parent
@@ -643,4 +645,4 @@ async def ws_stats(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False, log_config=None)
