@@ -565,6 +565,23 @@ var _runtimesReady=false;
 
 var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
 var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
+var _logoCache={};
+function _getLogo(slug){
+  if(_logoCache[slug])return _logoCache[slug];
+  var cached=localStorage.getItem('pv3_logo_'+slug);
+  if(cached){_logoCache[slug]=cached;return cached;}
+  return null;
+}
+function _cacheLogo(slug,dataUri){
+  _logoCache[slug]=dataUri;
+  try{localStorage.setItem('pv3_logo_'+slug,dataUri);}catch(e){}
+}
+function _renderLogo(slug,color){
+  var cached=_getLogo(slug);
+  if(cached)return `<img src="${cached}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`;
+  var url='https://cdn.simpleicons.org/'+slug+'/ffffff';
+  return `<img src="${url}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onload="this.style.display='block';var d=this.src;_cacheLogo('${slug}',d)" onerror="this.remove()">`;
+}
 function _populateLangSelect(){
   const hidden=document.getElementById('new-lang');
   const list=document.getElementById('lang-dd-list');
@@ -581,7 +598,7 @@ function _populateLangSelect(){
     opt.innerHTML=
       `<span class="lang-dd-opt-icon" style="position:relative;background:${color};overflow:hidden">`+
         `<span style="font-size:8px;font-weight:900;color:#fff;letter-spacing:-.5px">${abbr}</span>`+
-        `<img src="https://cdn.simpleicons.org/${slug}/ffffff" width="20" height="20" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onload="this.style.display='block'" onerror="this.remove()">`+
+        _renderLogo(slug,color)+
       `</span>`+
       `<span class="lang-dd-opt-name">${rt.name}</span>`+
       (rt.version?`<span class="lang-dd-opt-ver">${rt.version}</span>`:'');
@@ -599,7 +616,7 @@ function _populateLangSelect(){
       `<span style="display:inline-flex;align-items:center;gap:8px">`+
         `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
           `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
-          `<img src="https://cdn.simpleicons.org/${slug}/ffffff" width="20" height="20" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onload="this.style.display='block'" onerror="this.remove()">`+
+          _renderLogo(slug,color)+
         `</span>`+
         `<span style="color:var(--t1);font-weight:500">${rt.name}</span>`+
         (rt.version?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${rt.version}</span>`:'')+
@@ -615,7 +632,7 @@ function selectLangOpt(val,name,ver,color,abbr,slug){
     `<span style="display:inline-flex;align-items:center;gap:8px">`+
       `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
         `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
-        `<img src="https://cdn.simpleicons.org/${slug}/ffffff" width="20" height="20" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onload="this.style.display='block'" onerror="this.remove()">`+
+        _renderLogo(slug,color)+
       `</span>`+
       `<span style="color:var(--t1);font-weight:500">${name}</span>`+
       (ver?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${ver}</span>`:'')+
