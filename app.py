@@ -739,9 +739,17 @@ async def ws_logs(websocket: WebSocket, project_id: str):
 async def ws_stats(websocket: WebSocket):
     token = websocket.cookies.get(SESSION_COOKIE)
     if not _valid_session(token):
-        await websocket.close(code=1008)
+        logger.debug(f"ws_stats: Invalid session token, closing connection")
+        try:
+            await websocket.close(code=1008)
+        except:
+            pass
         return
-    await websocket.accept()
+    try:
+        await websocket.accept()
+    except Exception as e:
+        logger.debug(f"ws_stats: Failed to accept connection: {e}")
+        return
     try:
         while True:
             cpu = psutil.cpu_percent(interval=None)
