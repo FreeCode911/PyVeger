@@ -3,6 +3,7 @@
   <h1>PyVegar V3</h1>
 </div>
 
+[![Version](https://img.shields.io/badge/version-3.2-fb3640?style=flat-square)](version.json)
 [![License](https://img.shields.io/badge/license-Personal-informational)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11-blue?style=flat-square)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=flat-square)](https://fastapi.tiangolo.com)
@@ -15,7 +16,8 @@
 
 ## ✨ Features
 
-- ⚡ **Modern Responsive UI** — Dark/light theme with localStorage persistence, works on mobile and desktop
+- ⚡ **SPA Navigation** — Single-page app router with animated progress bar and fade transitions; no full page reloads
+- 🔐 **End-to-End Security** — bcrypt password hashing, login rate-limiting, security headers (CSP, HSTS, X-Frame-Options), hardened session cookie
 - 🐍 **Multi-Project Management** — Create, start, stop, restart, and delete Python projects; UUID-based project IDs
 - 📁 **Full File Manager** — Recursive folder tree, create files/folders inside subfolders, rename, move, delete, upload
 - 📝 **In-Browser Editor** — Syntax-aware textarea with Tab indentation and Ctrl+S save
@@ -27,9 +29,9 @@
 - 🌐 **Cloudflare Quick Tunnel** — No account needed, one-click temporary public URL via trycloudflare.com
 - 🔒 **Cloudflare Account Tunnels** — Create named tunnels via CF API, persistent URLs on your own domain; start/stop/delete from the panel
 - 🤖 **Discord Bot** — Full slash command suite: start, stop, restart, logs, files, edit files, system stats
-- 🔐 **Session Auth** — Cookie-based login (7-day TTL) with configurable credentials
-- 🎨 **Modern Server Logs** — Coloured, structured output with PyVegar ASCII branding banner; HTTP lines parsed; WebSocket events formatted
+- 🎨 **Imperial Red + Night Theme** — Pure `#FB3640` accent and `#080808` background throughout
 - 🖼️ **Favicon** — PyVegar logo shown in browser tab on all pages
+- 📱 **Fully Responsive** — Works on desktop and mobile with adaptive layouts
 
 ---
 
@@ -65,7 +67,7 @@ Then open [http://localhost:8000](http://localhost:8000) — default login is `a
 | Username | `admin` |
 | Password | `admin` |
 
-> Change these in **Settings → Panel Login** immediately after first use.
+> Change these in **Settings → Security** immediately after first use.
 
 ---
 
@@ -78,12 +80,13 @@ PyVegar/
 ├── log_config.py       # Coloured log formatter + PyVegar startup banner
 ├── tunnel.py           # Cloudflare quick tunnel + account tunnel API
 ├── discord_bot.py      # Discord bot slash commands
-├── config.json         # Credentials, tokens, CF tunnel data
+├── config.json         # Credentials (bcrypt-hashed), tokens, CF tunnel data
 ├── database.json       # Project metadata (status, PID, start file, restarts)
+├── version.json        # Version history shown in Settings → About
 ├── runtimes_cache.json # Detected runtimes (auto-generated on first boot)
 ├── requirements.txt    # Python dependencies
 ├── templates/          # Jinja2 HTML (login, index, server, logs, settings)
-├── static/             # Static assets (tw.css, logo.svg)
+├── static/             # Static assets (tw.css, logo.svg, spa.js)
 ├── scripts/            # Project files — each project in its own UUID subfolder
 └── logs/               # Per-project log files (UUID-named)
 ```
@@ -95,11 +98,26 @@ PyVegar/
 | Layer | Tech |
 |-------|------|
 | Backend | Python 3.11, [FastAPI](https://fastapi.tiangolo.com/) |
-| Frontend | HTML5, CSS variables, [Tailwind CDN](https://tailwindcss.com/), [Lucide Icons](https://lucide.dev/) |
+| Frontend | HTML5, CSS variables, [Lucide Icons](https://lucide.dev/), vanilla SPA router |
 | Realtime | FastAPI WebSockets — logs + stats, 1 s push interval |
+| Security | bcrypt, slowapi rate-limiting, SecurityHeaders middleware |
 | Tunneling | Cloudflare cloudflared + Cloudflare API |
 | Bot | [discord.py](https://discordpy.readthedocs.io/) |
 | Process | psutil, subprocess |
+
+---
+
+## 🔐 Security
+
+PyVegar V3.2 ships with multiple security layers enabled by default:
+
+| Layer | Detail |
+|-------|--------|
+| Password hashing | bcrypt (`$2b$12$`) — migrated automatically on first boot |
+| Login rate-limiting | 5 failed attempts → 5-minute lockout per IP |
+| Security headers | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy |
+| Session cookie | `samesite=strict`, `httponly`, `secure` |
+| Password change | Settings → Security — current password required, strength meter shown |
 
 ---
 
@@ -214,21 +232,29 @@ Server page → Packages tab → type package name → Install
 
 ## 📋 Changelog
 
-### V3.1 — Current
+### V3.2 — Current
+
+- **SPA navigation** — Full single-page app router (`static/spa.js`): animated Imperial Red progress bar, 125 ms fade transitions, click interception, browser back/forward via `popstate`
+- **Ghost-free WebSockets** — `PV3.onNavigate` cleanup registry fires before every page swap, closing all WS connections and clearing timers to prevent duplicate reconnect loops
+- **End-to-end security** — bcrypt password hashing (auto-migrated on boot), login rate-limiting (5 attempts → 5-min lockout per IP), `SecurityHeadersMiddleware` (CSP, HSTS, X-Frame, X-Content-Type, Referrer-Policy), session cookie hardened to `samesite=strict`
+- **Security panel** — Settings → Security: change password with live strength bar, security status pills, lockout warning + remaining-attempts counter on login page
+
+### V3.1
 
 - **New panel logo** — Solid-filled PV monogram (professional panel style), transparent variant (`logo-transparent.svg`), and SVG favicon on every page
 - **Floating taskbar** — Curved pill-shaped navbar with backdrop blur, Imperial Red border glow, and drop shadow; consistent height and style on all pages
 - **Imperial Red + Night theme** — Pure `#FB3640` accent and `#080808` background throughout; zero green tints or colour mixing
 - **GitHub update check** — Settings → About shows current commit hash with a **Check** button (GitHub API) and **Update Now** button (runs `git pull`)
+- **Mobile taskbar** — Pill reverts to flat full-width bar on small screens for a clean mobile layout
+- **Restart All fix** — Fixed async blocking issue and JS error that prevented Restart All from working
 
 ### V3.0
 
 - **Modern server logs** — colour-coded output (`log_config.py`): level badges (`●` `▲` `✖`), parsed HTTP lines, WebSocket events, PyVegar ASCII banner on startup
-- **Real-time status badge** — WebSocket stats payload includes project `id`; status badge updates every 1 s (was stuck after start/stop)
+- **Real-time status badge** — WebSocket stats payload includes project `id`; status badge updates every 1 s
 - **Live uptime tile** — server info card shows formatted uptime (`2h 14m`, `45s`) refreshed every second
 - **UUID project IDs** — projects keyed and folder-named by UUID for full portability
-- **Favicon** — PyVegar logo in browser tab on all pages
-- **Code cleanup** — removed dead `_hash()`, `SCRIPTS_DIR` (app.py), `_migrate_db()` (manager.py), and unused `status_txt` (discord_bot.py)
+- **Auto-restart** — processes that crash are automatically restarted with configurable delay
 
 ---
 
