@@ -567,9 +567,9 @@ var _runtimesReady=false;
   _runtimesReady=true;
 })();
 
-var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
-var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
-var LANG_LOGOS={python:'python',nodejs:'nodedotjs',go:'go',ruby:'ruby',php:'php',deno:'deno',bun:'bun',javascript:'javascript',typescript:'typescript',java:'java',csharp:'csharp',cpp:'cpp',c:'c',kotlin:'kotlin',swift:'swift',rust:'rust',perl:'perl',haskell:'haskell',julia:'julia',scala:'scala',lua:'lua',bash:'bash',r:'r',groovy:'groovy',dart:'dart',elixir:'elixir',erlang:'erlang',fsharp:'fsharp',clojure:'clojure',ocaml:'ocaml',racket:'racket',scheme:'scheme'};
+var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',javascript:'#f1e05a',typescript:'#2b7489',java:'#b07219',csharp:'#178600',cpp:'#f34b7d',c:'#555555',kotlin:'#7f52ff',swift:'#fa7343',rust:'#ce422b',perl:'#0298c3',haskell:'#5e5086',julia:'#9558b2',scala:'#c22d40',lua:'#000080',bash:'#89e051',r:'#198ce7',groovy:'#4298b8',dart:'#00b4ab',elixir:'#6e4a7e',erlang:'#b83998',fsharp:'#b845fc',clojure:'#5881d8',ocaml:'#3be133',racket:'#3c5caa',scheme:'#1e4785',other:'#fb3640'};
+var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',javascript:'JS',typescript:'TS',java:'Ja',csharp:'C#',cpp:'C++',c:'C',kotlin:'Kt',swift:'Sw',rust:'Rs',perl:'Pl',haskell:'Hs',julia:'Ju',scala:'Sc',lua:'Lua',bash:'Sh',r:'R',groovy:'Gr',dart:'Dt',elixir:'Ex',erlang:'Er',fsharp:'FS',clojure:'Cl',ocaml:'Ml',racket:'Rk',scheme:'Sc',other:'?'};
+var LANG_LOGOS={python:'python',nodejs:'nodedotjs',go:'go',ruby:'ruby',php:'php',deno:'deno',bun:'bun',javascript:'javascript',typescript:'typescript',java:'java',csharp:'csharp',cpp:'cpp',c:'c',kotlin:'kotlin',swift:'swift',rust:'rust',perl:'perl',haskell:'haskell',julia:'julia',scala:'scala',lua:'lua',bash:'bash',shell:'bash',r:'r',groovy:'groovy',dart:'dart',elixir:'elixir',erlang:'erlang',fsharp:'fsharp',clojure:'clojure',ocaml:'ocaml',racket:'racket',scheme:'scheme'};
 function _getLogoSlug(langVal){
   return LANG_LOGOS[langVal]||langVal.replace(/\s+/g,'').toLowerCase();
 }
