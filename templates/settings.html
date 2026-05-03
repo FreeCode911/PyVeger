@@ -100,6 +100,13 @@
       .hdr .hidden{display:none}
       header .btn-primary,.btn-ok,.btn-err,.btn-ghost{font-size:11px;padding:6px 10px}
     }
+
+    @media(max-width:640px){
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
+           box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
+      html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
   </style>
 </head>
 <body>

@@ -143,6 +143,13 @@
     .pg-btn:disabled{opacity:.3;cursor:not-allowed}
     .pg-active{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}
     html[data-theme=light] .pg-btn{background:var(--inp);border-color:var(--inpb)}
+
+    @media(max-width:640px){
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
+           box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
+      html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
   </style>
 </head>
 <body>
