@@ -569,6 +569,16 @@ var _runtimesReady=false;
 
 var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
 var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
+var LANG_LOGOS={python:'python',nodejs:'nodedotjs',go:'go',ruby:'ruby',php:'php',deno:'deno',bun:'bun',javascript:'javascript',typescript:'typescript',java:'java',csharp:'csharp',cpp:'cpp',c:'c',kotlin:'kotlin',swift:'swift',rust:'rust',perl:'perl',haskell:'haskell',julia:'julia',scala:'scala',lua:'lua',bash:'bash',r:'r',groovy:'groovy',dart:'dart',elixir:'elixir',erlang:'erlang',fsharp:'fsharp',clojure:'clojure',ocaml:'ocaml',racket:'racket',scheme:'scheme'};
+function _getLogoSlug(langVal){
+  return LANG_LOGOS[langVal]||langVal.replace(/\s+/g,'').toLowerCase();
+}
+function _buildLangOptIcon(color,abbr,slug){
+  return `<span class="lang-dd-opt-icon" style="position:relative;background:${color};overflow:hidden">`+
+    `<span style="font-size:8px;font-weight:900;color:#fff;letter-spacing:-.5px">${abbr}</span>`+
+    `<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`+
+  `</span>`;
+}
 function _populateLangSelect(){
   const hidden=document.getElementById('new-lang');
   const list=document.getElementById('lang-dd-list');
@@ -577,24 +587,29 @@ function _populateLangSelect(){
   _runtimes.forEach((rt,i)=>{
     const color=LANG_COLORS[rt.value]||'#fb3640';
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    const slug=_getLogoSlug(rt.value);
     const opt=document.createElement('div');
     opt.className='lang-dd-opt'+(i===0?' selected':'');
     opt.dataset.value=rt.value;
     opt.innerHTML=
-      `<span class="lang-dd-opt-icon" style="background:${color}">${abbr}</span>`+
+      _buildLangOptIcon(color,abbr,slug)+
       `<span class="lang-dd-opt-name">${rt.name}</span>`+
       (rt.version?`<span class="lang-dd-opt-ver">${rt.version}</span>`:'');
-    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,abbr);
+    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,abbr,slug);
     list.appendChild(opt);
   });
   if(_runtimes.length>0){
     const rt=_runtimes[0];
     const color=LANG_COLORS[rt.value]||'#fb3640';
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    const slug=_getLogoSlug(rt.value);
     hidden.value=rt.value;
     label.innerHTML=
       `<span style="display:inline-flex;align-items:center;gap:8px">`+
-        `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+        `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
+          `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
+          `<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`+
+        `</span>`+
         `<span style="color:var(--t1);font-weight:500">${rt.name}</span>`+
         (rt.version?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${rt.version}</span>`:'')+
       `</span>`;
@@ -602,12 +617,15 @@ function _populateLangSelect(){
     onLangChange(rt.value);
   }
 }
-function selectLangOpt(val,name,ver,color,abbr){
+function selectLangOpt(val,name,ver,color,abbr,slug){
   document.getElementById('new-lang').value=val;
   const label=document.getElementById('lang-dd-label');
   label.innerHTML=
     `<span style="display:inline-flex;align-items:center;gap:8px">`+
-      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
+        `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
+        `<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`+
+      `</span>`+
       `<span style="color:var(--t1);font-weight:500">${name}</span>`+
       (ver?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${ver}</span>`:'')+
     `</span>`;
