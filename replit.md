@@ -19,7 +19,7 @@ PyVegar V3 lets you run and monitor multiple Python (and other language) project
 - Username: `admin`
 - Password: `admin`
 
-Change in **Settings → Panel Login** on first use.
+Change in **Settings → Security** on first use.
 
 ## Structure
 
