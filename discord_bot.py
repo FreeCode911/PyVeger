@@ -403,7 +403,6 @@ def _run_bot(token: str):
             color=0x6366f1, timestamp=discord.utils.utcnow(),
         )
         p = manager.get_project(project)
-        status_txt = f"{_status_emoji(p['status'])} {p['status']}" if p else "unknown"
         embed.set_footer(text=f"Last {lines} lines · Status: {p['status'] if p else '—'} · PyVegar")
         await interaction.followup.send(embed=embed)
 

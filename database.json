@@ -9,5 +9,16 @@
     "language": "python",
     "id": "3c9c90e8-ea34-4bf4-bf27-688377637239",
     "name": "test"
+  },
+  "3a7ef452-b077-4dcb-ab93-5b63b3e38268": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "startup_command": "python3 -u main.py",
+    "start_time": null,
+    "restarts": 0,
+    "language": "python",
+    "id": "3a7ef452-b077-4dcb-ab93-5b63b3e38268",
+    "name": "test"
   }
 }
