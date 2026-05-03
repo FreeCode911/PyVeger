@@ -32,7 +32,7 @@
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
-    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1300px;margin:0 auto;}
+    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1260px;margin:0 auto;}
     .section{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;margin-bottom:18px}
     html[data-theme=light] .section{box-shadow:0 1px 4px rgba(0,0,0,.06)}
     .sec-hdr{padding:12px 18px;border-bottom:1px solid var(--bdr);background:var(--card2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -112,7 +112,7 @@
   <div style="max-width:880px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="display:flex;align-items:center;gap:10px">
       <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
-        <img src="/static/logo.svg?v=6" width="30" height="30" style="border-radius:8px;flex-shrink:0" alt="PyVegar">
+        <img src="/static/logo.svg?v=7" width="30" height="30" style="border-radius:8px;flex-shrink:0" alt="PyVegar">
         <span style="font-weight:700;font-size:15px;color:var(--acc)">PyVegar</span>
       </a>
       <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
@@ -191,28 +191,71 @@
   <!-- ══ ABOUT / CREDITS ═════════════════════════════════════════════════════ -->
   <p class="sec-title"><i data-lucide="info" style="width:13px;height:13px"></i> About</p>
   <div class="section">
+    <!-- Header row: logo + name + version -->
     <div style="padding:20px 18px;display:flex;align-items:center;gap:16px">
-      <div style="flex-shrink:0;width:52px;height:52px;border-radius:14px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.25);display:flex;align-items:center;justify-content:center">
-        <i data-lucide="server" style="width:24px;height:24px;color:#fb3640"></i>
-      </div>
-      <div>
+      <img src="/static/logo.svg?v=7" width="52" height="52" style="border-radius:14px;flex-shrink:0;box-shadow:0 4px 16px rgba(251,54,64,.35)" alt="PyVegar">
+      <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:-.01em">PyVegar</div>
         <div style="font-size:12px;color:var(--t3);margin-top:2px">Python server management panel</div>
-        <div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">
-          <span style="width:6px;height:6px;border-radius:50%;background:#fb3640;display:inline-block"></span>
-          <span style="font-size:11px;font-weight:600;color:#fb3640">v3.0</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">
+            <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;display:inline-block"></span>
+            <span style="font-size:11px;font-weight:600;color:#fb3640">v3.1</span>
+          </span>
+          <span id="local-sha" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);background:var(--inp);border:1px solid var(--inpb);border-radius:5px;padding:2px 7px">loading…</span>
         </div>
       </div>
     </div>
+
+    <!-- Update row -->
+    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--t2)">Updates</div>
+        <div id="update-status" style="font-size:11px;color:var(--t3);margin-top:2px">Click check to compare with GitHub</div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;flex-shrink:0">
+        <button id="btn-check-update" onclick="checkUpdate()" class="btn-ghost" style="font-size:12px">
+          <i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Check
+        </button>
+        <button id="btn-apply-update" onclick="applyUpdate()" class="btn-primary" style="font-size:12px;display:none">
+          <i data-lucide="download" style="width:12px;height:12px"></i> Update Now
+        </button>
+      </div>
+    </div>
+    <!-- Update output log -->
+    <div id="update-out" style="display:none;padding:0 18px 14px">
+      <pre id="update-log" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;margin:0;max-height:120px;overflow-y:auto"></pre>
+    </div>
+
+    <!-- Changelog -->
+    <div class="row" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase">What's new in v3.1</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
+          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">New logo</b> — Solid-filled PV panel monogram, transparent variant, and SVG favicon on all pages</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
+          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">Floating taskbar</b> — Curved pill navbar with backdrop blur and Imperial Red glow across all pages</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
+          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">Imperial Red + Night theme</b> — Pure #FB3640 accent and #080808 background, zero colour mixing</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
+          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">GitHub update check</b> — Check and pull latest commits directly from the panel</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Links row -->
     <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--t3)">Developer</span>
       <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--acc);text-decoration:none">
         <i data-lucide="github" style="width:13px;height:13px"></i> FreeCode911
       </a>
-    </div>
-    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--t3)">License</span>
-      <span style="font-size:12px;font-weight:600;color:var(--t2)">MIT</span>
     </div>
     <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--t3)">Built with</span>
@@ -223,11 +266,60 @@
       </div>
     </div>
     <div class="row" style="border-bottom:none">
-      <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--inp);border:1px solid var(--inpb);color:var(--t2);text-decoration:none;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:600;transition:border-color .15s" onmouseover="this.style.borderColor='var(--bdr2)'" onmouseout="this.style.borderColor='var(--inpb)'">
+      <a href="https://github.com/FreeCode911/PyVeger" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--inp);border:1px solid var(--inpb);color:var(--t2);text-decoration:none;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:600;transition:border-color .15s" onmouseover="this.style.borderColor='var(--bdr2)'" onmouseout="this.style.borderColor='var(--inpb)'">
         <i data-lucide="github" style="width:13px;height:13px"></i> View on GitHub
       </a>
     </div>
   </div>
+
+  <script>
+  async function checkUpdate(){
+    const btn=document.getElementById('btn-check-update');
+    const st=document.getElementById('update-status');
+    btn.disabled=true; btn.innerHTML='<i data-lucide="loader" style="width:12px;height:12px"></i> Checking…'; lucide.createIcons();
+    try{
+      const r=await fetch('/_/update/check');
+      const d=await r.json();
+      document.getElementById('local-sha').textContent=d.local||'unknown';
+      if(d.error){
+        st.textContent='Could not reach GitHub: '+d.error;
+        st.style.color='#f87171';
+      } else if(d.up_to_date){
+        st.innerHTML='<span style="color:#4ade80">✓ Up to date</span> — <span style="font-family:monospace">'+d.local+'</span>';
+        document.getElementById('btn-apply-update').style.display='none';
+      } else {
+        st.innerHTML='Update available: <b style="color:var(--t1)">'+d.remote+'</b> — '+d.message;
+        st.style.color='#fbbf24';
+        document.getElementById('btn-apply-update').style.display='inline-flex';
+      }
+    }catch(e){st.textContent='Error: '+e;st.style.color='#f87171';}
+    btn.disabled=false; btn.innerHTML='<i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Check'; lucide.createIcons();
+  }
+  async function applyUpdate(){
+    const btn=document.getElementById('btn-apply-update');
+    const out=document.getElementById('update-out');
+    const log=document.getElementById('update-log');
+    btn.disabled=true; btn.innerHTML='<i data-lucide="loader" style="width:12px;height:12px"></i> Pulling…'; lucide.createIcons();
+    out.style.display='block'; log.textContent='Running git pull…';
+    try{
+      const r=await fetch('/_/update/apply',{method:'POST'});
+      const d=await r.json();
+      log.textContent=d.output||'(no output)';
+      if(d.ok){
+        log.style.color='#4ade80';
+        document.getElementById('update-status').innerHTML='<span style="color:#4ade80">✓ Updated — restart the panel to apply</span>';
+        btn.style.display='none';
+      } else {
+        log.style.color='#f87171';
+      }
+    }catch(e){log.textContent='Error: '+e;log.style.color='#f87171';}
+    btn.disabled=false; btn.innerHTML='<i data-lucide="download" style="width:12px;height:12px"></i> Update Now'; lucide.createIcons();
+  }
+  // Load local SHA on page load
+  fetch('/_/update/check').then(r=>r.json()).then(d=>{
+    if(d.local) document.getElementById('local-sha').textContent=d.local;
+  }).catch(()=>{});
+  </script>
 
   <!-- ══ OTHER SETTINGS ══════════════════════════════════════════════════════ -->
   <p class="sec-title"><i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> Other Settings</p>

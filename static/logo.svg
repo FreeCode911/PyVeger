@@ -1,21 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <!-- background -->
   <rect width="100" height="100" rx="22" fill="#fb3640"/>
-  <!-- depth layer: darken bottom quarter -->
-  <path d="M0,72 L0,78 Q0,100 22,100 L78,100 Q100,100 100,78 L100,72 Z" fill="rgba(0,0,0,0.20)"/>
-  <!-- glass highlight: bright ellipse top-centre -->
-  <ellipse cx="50" cy="20" rx="30" ry="10" fill="rgba(255,255,255,0.14)"/>
+  <!-- subtle depth: darker bottom edge -->
+  <path d="M0,75 L0,78 Q0,100 22,100 L78,100 Q100,100 100,78 L100,75 Z" fill="rgba(0,0,0,0.18)"/>
+  <!-- glass highlight top -->
+  <ellipse cx="50" cy="19" rx="29" ry="9" fill="rgba(255,255,255,0.13)"/>
   <!-- inner border ring -->
-  <rect x="2" y="2" width="96" height="96" rx="20" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+  <rect x="2" y="2" width="96" height="96" rx="20" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
 
-  <!-- P bowl arc -->
-  <path d="M 24 18 L 49 18 Q 74 18 74 37 Q 74 56 49 56 L 24 56"
-        fill="none" stroke="white" stroke-width="11"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Solid filled P (evenodd counter) -->
+  <path fill-rule="evenodd" fill="white"
+    d="M 22 17 L 56 17 Q 79 17 79 37 Q 79 57 56 57 L 36 57 L 36 83 L 22 83 Z
+       M 36 28 L 54 28 Q 67 28 67 37 Q 67 47 54 47 L 36 47 Z"/>
 
-  <!-- P stem flowing into V:
-       down from top of stem → turns into left leg of V → right leg back up -->
-  <path d="M 24 18 L 24 56 L 43 82 L 62 56"
-        fill="none" stroke="white" stroke-width="11"
+  <!-- small V accent mark — lower right, semi-transparent -->
+  <path d="M 60 63 L 70 77 L 80 63"
+        fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="6"
         stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

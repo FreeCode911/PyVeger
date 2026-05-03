@@ -214,7 +214,14 @@ Server page → Packages tab → type package name → Install
 
 ## 📋 Changelog
 
-### V3 — Current
+### V3.1 — Current
+
+- **New panel logo** — Solid-filled PV monogram (professional panel style), transparent variant (`logo-transparent.svg`), and SVG favicon on every page
+- **Floating taskbar** — Curved pill-shaped navbar with backdrop blur, Imperial Red border glow, and drop shadow; consistent height and style on all pages
+- **Imperial Red + Night theme** — Pure `#FB3640` accent and `#080808` background throughout; zero green tints or colour mixing
+- **GitHub update check** — Settings → About shows current commit hash with a **Check** button (GitHub API) and **Update Now** button (runs `git pull`)
+
+### V3.0
 
 - **Modern server logs** — colour-coded output (`log_config.py`): level badges (`●` `▲` `✖`), parsed HTTP lines, WebSocket events, PyVegar ASCII banner on startup
 - **Real-time status badge** — WebSocket stats payload includes project `id`; status badge updates every 1 s (was stuck after start/stop)

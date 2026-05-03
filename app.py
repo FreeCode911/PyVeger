@@ -6,6 +6,7 @@ import asyncio
 import logging
 import secrets
 import time
+import urllib.request as _urlreq
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -640,6 +641,53 @@ async def ws_stats(websocket: WebSocket):
         pass
     except Exception as e:
         logger.warning(f"ws_stats error: {e}")
+
+
+# ── Update check ──────────────────────────────────────────────────────────────
+
+GITHUB_REPO = "FreeCode911/PyVeger"
+
+@app.get("/_/update/check")
+async def api_check_update(request: Request):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not _valid_session(token):
+        raise HTTPException(status_code=401)
+    try:
+        local_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=BASE_DIR, stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        local_sha = "unknown"
+    try:
+        req = _urlreq.Request(
+            f"https://api.github.com/repos/{GITHUB_REPO}/commits/main",
+            headers={"User-Agent": "PyVegar-Panel/3"}
+        )
+        with _urlreq.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read())
+        remote_sha = data["sha"]
+        remote_msg = data["commit"]["message"].split("\n")[0][:80]
+        up_to_date = local_sha[:7] == remote_sha[:7]
+        return {"local": local_sha[:7], "remote": remote_sha[:7],
+                "message": remote_msg, "up_to_date": up_to_date}
+    except Exception as e:
+        return {"error": str(e), "local": local_sha[:7], "up_to_date": None}
+
+
+@app.post("/_/update/apply")
+async def api_apply_update(request: Request):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not _valid_session(token):
+        raise HTTPException(status_code=401)
+    try:
+        result = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            cwd=BASE_DIR, capture_output=True, text=True, timeout=30
+        )
+        return {"ok": result.returncode == 0,
+                "output": (result.stdout + result.stderr).strip()}
+    except Exception as e:
+        return {"ok": False, "output": str(e)}
 
 
 if __name__ == "__main__":
