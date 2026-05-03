@@ -13,12 +13,12 @@
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     code,.mono{font-family:'JetBrains Mono',monospace}
     :root{
-      --bg:#000f08;--bg2:#0d0d0d;--card:#141414;--card2:#0d0d0d;
-      --bdr:#222222;--bdr2:#2e2e2e;--bdrh:#3a3a3a;
+      --bg:#000f08;--bg2:#0a0a0a;--card:#111111;--card2:#0a0a0a;
+      --bdr:#1d1d1d;--bdr2:#282828;--bdrh:#333333;
       --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;--t5:#1e2535;
-      --hbg:rgba(0,0,0,.88);
+      --hbg:rgba(0,0,0,.92);
       --inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
-      --acc:#fb3640;--acc2:#c42028;
+      --acc:#fb3640;--acc2:#fb3640;
       --ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
     }
     html[data-theme=light]{
@@ -27,10 +27,10 @@
       --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
       --hbg:rgba(248,250,252,.92);
       --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
-      --acc:#e01020;--acc2:#b01018;
+      --acc:#e01020;--acc2:#e01020;
       --ok:#16a34a;--warn:#d97706;--err:#dc2626;
     }
-    body{background:var(--bg);color:var(--t1);min-height:100vh;background-image:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(251,54,64,.06),transparent 70%);}
+    body{background:var(--bg);color:var(--t1);min-height:100vh;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55)}
@@ -157,7 +157,7 @@
 <header class="hdr px-4 sm:px-6 py-2.5">
   <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px">
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-      <img src="/static/logo.svg" width="32" height="32" style="border-radius:9px;flex-shrink:0;box-shadow:0 4px 12px rgba(251,54,64,.35)" alt="PyVegar">
+      <img src="/static/logo.svg?v=5" width="32" height="32" style="border-radius:9px;flex-shrink:0;box-shadow:0 4px 12px rgba(251,54,64,.35)" alt="PyVegar">
       <span style="font-weight:700;font-size:16px;color:var(--acc)">PyVegar</span>
     </div>
     <div class="hidden md:flex items-center gap-2">

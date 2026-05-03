@@ -11,14 +11,15 @@
     "name": "test"
   },
   "3a7ef452-b077-4dcb-ab93-5b63b3e38268": {
-    "status": "stopped",
+    "status": "error",
     "pid": null,
     "start_file": "main.py",
     "startup_command": "python3 -u main.py",
-    "start_time": null,
-    "restarts": 0,
+    "start_time": 1777805140.5148883,
+    "restarts": 2,
     "language": "python",
     "id": "3a7ef452-b077-4dcb-ab93-5b63b3e38268",
-    "name": "test"
+    "name": "test",
+    "crash_count": 2
   }
 }

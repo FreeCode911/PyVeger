@@ -12,12 +12,12 @@
   <style>
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     :root{
-      --bg:#000f08;--bg2:#0d0d0d;--card:#141414;
-      --bdr:#222222;--bdr2:#2e2e2e;
+      --bg:#000f08;--bg2:#0a0a0a;--card:#111111;
+      --bdr:#1d1d1d;--bdr2:#282828;
       --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;--t5:#1e2535;
-      --hbg:rgba(0,0,0,.88);--trm:#0a0a0a;
+      --hbg:rgba(0,0,0,.92);--trm:#0a0a0a;
       --inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
-      --acc:#fb3640;--acc2:#c42028;
+      --acc:#fb3640;--acc2:#fb3640;
     }
     html[data-theme=light]{
       --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;
@@ -25,9 +25,9 @@
       --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
       --hbg:rgba(248,250,252,.92);--trm:#1e293b;
       --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
-      --acc:#e01020;--acc2:#b01018;
+      --acc:#e01020;--acc2:#e01020;
     }
-    body{background:var(--bg);color:var(--t1);min-height:100vh;background-image:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(251,54,64,.06),transparent 70%);}
+    body{background:var(--bg);color:var(--t1);min-height:100vh;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55)}
@@ -79,7 +79,7 @@
 <div class="hdr px-4 sm:px-6 py-2.5">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <a href="/" class="breadcrumb-link">
-      <img src="/static/logo.svg" width="24" height="24" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
+      <img src="/static/logo.svg?v=5" width="24" height="24" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
       PyVegar
     </a>
     <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
