@@ -406,6 +406,31 @@ var LANG_MAP={
   deno:  { label:'Deno',    abbr:'Dn',  slug:'deno',      color:'#8b949e', bg:'rgba(139,148,158,.18)', bd:'rgba(139,148,158,.22)'},
   bun:   { label:'Bun',     abbr:'Bun', slug:'bun',       color:'#c0713d', bg:'rgba(192,113,61,.18)',  bd:'rgba(192,113,61,.22)' },
 };
+var _logoDL={};
+function _getLogoFromCache(slug){
+  if(_logoDL[slug])return _logoDL[slug];
+  try{var c=localStorage.getItem('pv3_logo_'+slug);if(c){_logoDL[slug]=c;return c;}}catch(e){}
+  return null;
+}
+function _downloadAndCacheLogo(slug){
+  if(_logoDL[slug]||_getLogoFromCache(slug))return;
+  fetch('https://cdn.simpleicons.org/'+slug+'/ffffff').then(r=>r.blob()).then(blob=>{
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var dataUri=e.target.result;
+      _logoDL[slug]=dataUri;
+      try{localStorage.setItem('pv3_logo_'+slug,dataUri);}catch(e){}
+      document.querySelectorAll(`[data-logo-pending="${slug}"]`).forEach(img=>{img.src=dataUri;img.style.display='block';img.removeAttribute('data-logo-pending');});
+    };
+    reader.readAsDataURL(blob);
+  }).catch(e=>{});
+}
+function _renderLogoImg(slug){
+  var cached=_getLogoFromCache(slug);
+  if(cached)return `<img src="${cached}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:block" onerror="this.remove()">`;
+  _downloadAndCacheLogo(slug);
+  return `<img data-logo-pending="${slug}" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onerror="this.remove()">`;
+}
 function renderLangChip(el,lang,cmd,file){
   const lc=LANG_MAP[lang];
   const sub=file||cmd||'';
@@ -414,6 +439,7 @@ function renderLangChip(el,lang,cmd,file){
       `<div style="background:linear-gradient(135deg,${lc.bg} 0%,transparent 110%);border-bottom:1px solid ${lc.bd};padding:10px 16px;display:flex;align-items:center;gap:11px;position:relative;overflow:hidden;min-height:50px">`+
         `<span style="width:34px;height:34px;border-radius:9px;background:${lc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:1;position:relative;overflow:hidden">`+
           `<span style="font-size:${lc.abbr.length>2?'8':'11'}px;font-weight:900;color:#fff;letter-spacing:-.5px">${lc.abbr}</span>`+
+          _renderLogoImg(lc.slug)+
         `</span>`+
         `<div style="min-width:0;flex:1;z-index:1">`+
           `<div style="font-size:13.5px;font-weight:700;color:${lc.color};line-height:1.2;margin-bottom:2px">${lc.label}</div>`+

@@ -153,7 +153,7 @@ _CSP = (
     "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com https://fonts.googleapis.com; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
-    "img-src 'self' data:; "
+    "img-src 'self' data: https://cdn.simpleicons.org; "
     "connect-src 'self' wss: ws:; "
     "frame-ancestors 'none';"
 )
