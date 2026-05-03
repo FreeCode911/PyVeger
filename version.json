@@ -1,0 +1,27 @@
+{
+  "version": "3.1",
+  "releases": [
+    {
+      "version": "3.1",
+      "label": "Current",
+      "changes": [
+        { "title": "New logo", "desc": "Solid-filled PV panel monogram, transparent variant, and SVG favicon on every page" },
+        { "title": "Floating taskbar", "desc": "Curved pill navbar with backdrop blur and Imperial Red glow across all pages" },
+        { "title": "Imperial Red + Night theme", "desc": "Pure #FB3640 accent and #080808 background throughout — zero colour mixing" },
+        { "title": "GitHub update check", "desc": "Settings → About shows current commit hash with Check and Update Now buttons" },
+        { "title": "Mobile taskbar", "desc": "Pill reverts to flat full-width bar on small screens for a clean mobile layout" },
+        { "title": "Restart All fix", "desc": "Fixed async blocking issue and JS error that prevented Restart All from working" }
+      ]
+    },
+    {
+      "version": "3.0",
+      "label": "",
+      "changes": [
+        { "title": "Modern server logs", "desc": "Colour-coded output with level badges, parsed HTTP lines, and WebSocket events" },
+        { "title": "Real-time status badge", "desc": "WebSocket stats payload includes project id; status badge updates every 1s" },
+        { "title": "Live uptime tile", "desc": "Server info card shows formatted uptime refreshed every second" },
+        { "title": "Auto-restart", "desc": "Processes that crash are automatically restarted with configurable delay" }
+      ]
+    }
+  ]
+}

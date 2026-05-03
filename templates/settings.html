@@ -199,16 +199,16 @@
   <!-- ══ ABOUT / CREDITS ═════════════════════════════════════════════════════ -->
   <p class="sec-title"><i data-lucide="info" style="width:13px;height:13px"></i> About</p>
   <div class="section">
-    <!-- Header row: logo + name + version -->
+    <!-- Header row: logo + name + version (populated by JS) -->
     <div style="padding:20px 18px;display:flex;align-items:center;gap:16px">
       <img src="/static/logo.svg?v=7" width="52" height="52" style="border-radius:14px;flex-shrink:0;box-shadow:0 4px 16px rgba(251,54,64,.35)" alt="PyVegar">
       <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:-.01em">PyVegar</div>
         <div style="font-size:12px;color:var(--t3);margin-top:2px">Python server management panel</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
-          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">
+          <span id="about-version-badge" style="display:inline-flex;align-items:center;gap:5px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">
             <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;display:inline-block"></span>
-            <span style="font-size:11px;font-weight:600;color:#fb3640">v3.1</span>
+            <span id="about-version-num" style="font-size:11px;font-weight:600;color:#fb3640">…</span>
           </span>
           <span id="local-sha" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4);background:var(--inp);border:1px solid var(--inpb);border-radius:5px;padding:2px 7px">loading…</span>
         </div>
@@ -235,28 +235,8 @@
       <pre id="update-log" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t2);background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;margin:0;max-height:120px;overflow-y:auto"></pre>
     </div>
 
-    <!-- Changelog -->
-    <div class="row" style="display:flex;flex-direction:column;gap:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase">What's new in v3.1</div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
-          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">New logo</b> — Solid-filled PV panel monogram, transparent variant, and SVG favicon on all pages</span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
-          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">Floating taskbar</b> — Curved pill navbar with backdrop blur and Imperial Red glow across all pages</span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
-          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">Imperial Red + Night theme</b> — Pure #FB3640 accent and #080808 background, zero colour mixing</span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
-          <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">GitHub update check</b> — Check and pull latest commits directly from the panel</span>
-        </div>
-      </div>
-    </div>
+    <!-- Changelog — rendered dynamically from version.json -->
+    <div id="about-changelog"></div>
 
     <!-- Links row -->
     <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -281,6 +261,58 @@
   </div>
 
   <script>
+  // ── Load version.json and render About section ────────────────────────────
+  async function loadAbout(){
+    try{
+      const r=await fetch('/_/version');
+      const d=await r.json();
+      // version badge
+      const vnum=document.getElementById('about-version-num');
+      if(vnum) vnum.textContent='v'+d.version;
+      // changelog
+      const cl=document.getElementById('about-changelog');
+      if(cl&&d.releases&&d.releases.length){
+        // show latest release first, rest collapsed
+        let html='';
+        d.releases.forEach((rel,i)=>{
+          const isLatest=i===0;
+          const label=rel.label?` <span style="font-size:9px;font-weight:700;color:#fb3640;background:rgba(251,54,64,.12);border:1px solid rgba(251,54,64,.2);border-radius:4px;padding:1px 5px;vertical-align:middle;text-transform:uppercase">${rel.label}</span>`:'';
+          const items=rel.changes.map(c=>
+            `<div style="display:flex;align-items:flex-start;gap:8px">
+              <span style="width:5px;height:5px;border-radius:50%;background:#fb3640;flex-shrink:0;margin-top:5px"></span>
+              <span style="font-size:12px;color:var(--t2)"><b style="color:var(--t1)">${c.title}</b> — ${c.desc}</span>
+            </div>`
+          ).join('');
+          if(isLatest){
+            html+=`<div class="row" style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase">
+                What's new in v${rel.version}${label}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">${items}</div>
+            </div>`;
+          } else {
+            html+=`<div class="row" style="display:flex;flex-direction:column;gap:0">
+              <details style="list-style:none">
+                <summary style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:6px;padding:2px 0">
+                  <svg id="chev-${i}" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;transition:transform .2s"><polyline points="9 18 15 12 9 6"/></svg>
+                  v${rel.version}${label}
+                </summary>
+                <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">${items}</div>
+              </details>
+            </div>`;
+          }
+        });
+        cl.innerHTML=html;
+        // rotate chevron when open
+        cl.querySelectorAll('details').forEach((det,i)=>{
+          const chev=document.getElementById('chev-'+(i+1));
+          if(chev) det.addEventListener('toggle',()=>{chev.style.transform=det.open?'rotate(90deg)':'rotate(0deg)';});
+        });
+      }
+    }catch(e){console.warn('version.json load failed',e);}
+  }
+
+  // ── Update check ─────────────────────────────────────────────────────────
   async function checkUpdate(){
     const btn=document.getElementById('btn-check-update');
     const st=document.getElementById('update-status');
@@ -323,7 +355,9 @@
     }catch(e){log.textContent='Error: '+e;log.style.color='#f87171';}
     btn.disabled=false; btn.innerHTML='<i data-lucide="download" style="width:12px;height:12px"></i> Update Now'; lucide.createIcons();
   }
-  // Load local SHA on page load
+
+  // Init
+  loadAbout();
   fetch('/_/update/check').then(r=>r.json()).then(d=>{
     if(d.local) document.getElementById('local-sha').textContent=d.local;
   }).catch(()=>{});

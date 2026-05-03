@@ -645,6 +645,19 @@ async def ws_stats(websocket: WebSocket):
         logger.warning(f"ws_stats error: {e}")
 
 
+# ── Version / Changelog ───────────────────────────────────────────────────────
+
+VERSION_FILE = BASE_DIR / "version.json"
+
+@app.get("/_/version")
+async def api_version():
+    try:
+        with open(VERSION_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {"version": "?", "releases": []}
+
+
 # ── Update check ──────────────────────────────────────────────────────────────
 
 GITHUB_REPO = "FreeCode911/PyVeger"
