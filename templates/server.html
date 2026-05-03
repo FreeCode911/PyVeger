@@ -32,7 +32,7 @@
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
     ::-webkit-scrollbar-track{background:transparent}
-    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ff8a8f);flex-shrink:0}
+    .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55);flex-shrink:0}
     .hdr{background:var(--hbg);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);flex-shrink:0}
     .tab-bar{border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0}
     .tab{
@@ -47,8 +47,8 @@
     .inp{background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:9px;padding:8px 12px;font-size:13px;transition:all .2s;width:100%}
     .inp::placeholder{color:var(--t3)}
     .inp:focus{outline:none;border-color:rgba(251,54,64,.65);box-shadow:0 0 0 3px rgba(251,54,64,.1)}
-    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
-    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,54,64,.38)}
+    .btn-primary{background:var(--acc);color:#fff;border:none;cursor:pointer;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.4);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,54,64,.6)}
     .btn-ok{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22);cursor:pointer;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
     .btn-ok:hover{background:rgba(34,197,94,.2)}
     html[data-theme=light] .btn-ok{color:#16a34a;background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.2)}
@@ -106,7 +106,7 @@
     }
     .row-act:hover{background:var(--inpb)}
     .row-act.del:hover{background:rgba(239,68,68,.18);color:#f87171}
-    .row-act.ren:hover{background:rgba(251,54,64,.18);color:#ff6b70}
+    .row-act.ren:hover{background:rgba(251,54,64,.18);color:#fb3640}
     .row-act.mv:hover{background:rgba(251,191,36,.15);color:#fbbf24}
     .row-act.nf:hover{background:rgba(34,197,94,.15);color:#4ade80}
 
@@ -198,7 +198,7 @@
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <a href="/" style="display:flex;align-items:center;gap:7px;text-decoration:none">
       <img src="/static/logo.svg" width="28" height="28" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
-      <span style="font-weight:700;font-size:14px;background:linear-gradient(135deg,#ff6b70,#ffb3b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+      <span style="font-weight:700;font-size:14px;color:var(--acc)">PyVegar</span>
     </a>
     <i data-lucide="chevron-right" style="width:13px;height:13px;color:var(--t4)"></i>
     <span style="font-size:13px;font-weight:700;color:var(--t1)">{{ project.name | replace('_', ' ') }}</span>

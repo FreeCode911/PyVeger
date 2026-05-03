@@ -30,7 +30,7 @@
     body{background:var(--bg);color:var(--t1);min-height:100vh}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
-    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ff8a8f)}
+    .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55)}
     .hdr{background:var(--hbg);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:20}
     .section{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;margin-bottom:18px}
     html[data-theme=light] .section{box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -47,8 +47,8 @@
     .inp::placeholder{color:var(--t4);font-family:'Inter',sans-serif}
     .inp:focus{outline:none;border-color:rgba(251,54,64,.65);box-shadow:0 0 0 3px rgba(251,54,64,.1)}
     .inp-sans{font-family:'Inter',sans-serif}
-    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
-    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,54,64,.38)}
+    .btn-primary{background:var(--acc);color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.4);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,54,64,.6)}
     .btn-ok{background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.18);cursor:pointer;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
     .btn-ok:hover{background:rgba(34,197,94,.18)}
     html[data-theme=light] .btn-ok{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
@@ -113,7 +113,7 @@
     <div style="display:flex;align-items:center;gap:10px">
       <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
         <img src="/static/logo.svg" width="30" height="30" style="border-radius:8px;flex-shrink:0" alt="PyVegar">
-        <span style="font-weight:700;font-size:15px;background:linear-gradient(135deg,#ff6b70,#ffb3b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+        <span style="font-weight:700;font-size:15px;color:var(--acc)">PyVegar</span>
       </a>
       <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
       <span style="font-size:13px;font-weight:600;color:var(--t2)">Settings</span>
@@ -142,7 +142,7 @@
     <div class="sec-hdr">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:32px;height:32px;border-radius:9px;background:rgba(251,54,64,.12);border:1px solid rgba(251,54,64,.2);display:flex;align-items:center;justify-content:center">
-          <i data-lucide="cloud" style="width:16px;height:16px;color:#ff6b70"></i>
+          <i data-lucide="cloud" style="width:16px;height:16px;color:#fb3640"></i>
         </div>
         <div>
           <div style="font-weight:600;font-size:13px;color:var(--t1)">Run-Token Tunnel</div>
@@ -192,15 +192,15 @@
   <p class="sec-title"><i data-lucide="info" style="width:13px;height:13px"></i> About</p>
   <div class="section">
     <div style="padding:20px 18px;display:flex;align-items:center;gap:16px">
-      <div style="flex-shrink:0;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,rgba(251,54,64,.18),rgba(196,32,40,.18));border:1px solid rgba(251,54,64,.25);display:flex;align-items:center;justify-content:center">
-        <i data-lucide="server" style="width:24px;height:24px;color:#ff6b70"></i>
+      <div style="flex-shrink:0;width:52px;height:52px;border-radius:14px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.25);display:flex;align-items:center;justify-content:center">
+        <i data-lucide="server" style="width:24px;height:24px;color:#fb3640"></i>
       </div>
       <div>
         <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:-.01em">PyVegar</div>
         <div style="font-size:12px;color:var(--t3);margin-top:2px">Python server management panel</div>
         <div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">
-          <span style="width:6px;height:6px;border-radius:50%;background:#ff6b70;display:inline-block"></span>
-          <span style="font-size:11px;font-weight:600;color:#ff6b70">v3.0</span>
+          <span style="width:6px;height:6px;border-radius:50%;background:#fb3640;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:600;color:#fb3640">v3.0</span>
         </div>
       </div>
     </div>

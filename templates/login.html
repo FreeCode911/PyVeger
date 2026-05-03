@@ -26,12 +26,10 @@
     body{
       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;
       background:var(--bg);color:var(--t1);
-      background-image:
-        radial-gradient(ellipse 80% 60% at 20% 40%,rgba(251,54,64,.12),transparent 70%),
-        radial-gradient(ellipse 60% 50% at 80% 70%,rgba(196,32,40,.08),transparent 60%);
+      background-image:radial-gradient(ellipse 70% 50% at 30% 40%,rgba(251,54,64,.07),transparent 70%);
     }
     html[data-theme=light] body{
-      background-image:radial-gradient(ellipse 80% 60% at 20% 40%,rgba(251,54,64,.06),transparent 70%);
+      
     }
     .glass{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:28px}
     html[data-theme=light] .glass{box-shadow:0 4px 24px rgba(0,0,0,.08)}
@@ -45,10 +43,10 @@
     .btn-primary{
       width:100%;padding:13px;border-radius:11px;font-size:14px;font-weight:600;color:#fff;
       cursor:pointer;border:none;
-      background:linear-gradient(135deg,var(--acc),var(--acc2));
-      box-shadow:0 4px 20px rgba(251,54,64,.32);transition:transform .15s,box-shadow .15s;
+      background:var(--acc);
+      box-shadow:0 4px 20px rgba(251,54,64,.4);transition:transform .15s,box-shadow .15s;
     }
-    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(251,54,64,.42)}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(251,54,64,.6)}
     .btn-primary:active{transform:none;opacity:.9}
     .theme-btn{
       position:fixed;top:16px;right:16px;width:36px;height:36px;border-radius:10px;
@@ -76,7 +74,7 @@
   <div class="text-center fadeup" style="margin-bottom:28px;animation-delay:.05s">
     <img src="/static/logo.svg" width="64" height="64" style="border-radius:18px;box-shadow:0 8px 32px rgba(251,54,64,.45);display:block;margin:0 auto" alt="PyVegar">
     <h1 style="font-size:26px;font-weight:700;color:var(--t1);margin:12px 0 4px;letter-spacing:-.5px">
-      <span style="background:linear-gradient(135deg,#ff6b70,#ff8a8f);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+      <span style="color:var(--acc)">PyVegar</span>
     </h1>
     <p style="font-size:13px;color:var(--t3)">Sign in to your panel</p>
   </div>
