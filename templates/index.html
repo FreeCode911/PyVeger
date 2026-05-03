@@ -122,6 +122,38 @@
     #toast{position:fixed;bottom:20px;right:20px;z-index:9999}
     @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .lang-dd{position:relative;width:100%}
+    .lang-dd-btn{
+      width:100%;display:flex;align-items:center;gap:8px;
+      background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);
+      border-radius:10px;padding:10px 14px;font-size:13px;font-family:'Inter',sans-serif;
+      cursor:pointer;transition:border-color .2s,box-shadow .2s;text-align:left;
+    }
+    .lang-dd-btn:focus,.lang-dd-btn.open{
+      outline:none;border-color:rgba(251,54,64,.7);box-shadow:0 0 0 3px rgba(251,54,64,.12);
+    }
+    .lang-dd-list{
+      position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:200;
+      background:var(--card);border:1.5px solid rgba(251,54,64,.25);
+      border-radius:10px;overflow:hidden;
+      box-shadow:0 8px 32px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.2);
+      max-height:220px;overflow-y:auto;
+    }
+    html[data-theme=light] .lang-dd-list{box-shadow:0 8px 24px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06)}
+    .lang-dd-opt{
+      display:flex;align-items:center;gap:10px;padding:9px 14px;
+      font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s,color .12s;
+      border-bottom:1px solid var(--bdr);
+    }
+    .lang-dd-opt:last-child{border-bottom:none}
+    .lang-dd-opt:hover{background:rgba(251,54,64,.07);color:var(--t1)}
+    .lang-dd-opt.selected{background:rgba(251,54,64,.1);color:var(--acc);font-weight:600}
+    .lang-dd-opt-icon{
+      width:24px;height:24px;border-radius:6px;display:flex;align-items:center;
+      justify-content:center;flex-shrink:0;font-size:9px;font-weight:800;color:#fff;
+    }
+    .lang-dd-opt-name{font-weight:600;color:inherit}
+    .lang-dd-opt-ver{font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace;margin-left:auto;flex-shrink:0}
     .icon-sun{display:block} .icon-moon{display:none}
     html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
     .cmd-block{
@@ -309,13 +341,16 @@
         <i id="rt-refresh-icon" data-lucide="refresh-cw" style="width:11px;height:11px"></i> Refresh
       </button>
     </div>
-    <select id="new-lang"
-      style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px;outline:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none;appearance:none"
-      onfocus="this.style.borderColor='rgba(251,54,64,.7)'"
-      onblur="this.style.borderColor='var(--inpb)'"
-      onchange="onLangChange(this.value)">
-      <option value="" disabled selected>Loading…</option>
-    </select>
+    <!-- hidden value store — createProj reads this -->
+    <input type="hidden" id="new-lang" value="">
+    <!-- custom styled dropdown -->
+    <div id="lang-dd" class="lang-dd" style="margin-bottom:12px">
+      <button type="button" id="lang-dd-btn" onclick="toggleLangDd()" class="lang-dd-btn">
+        <span id="lang-dd-label" style="flex:1;text-align:left;color:var(--t3)">Loading…</span>
+        <svg id="lang-dd-chev" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;transition:transform .18s;color:var(--t4)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="lang-dd-list" class="lang-dd-list" style="display:none"></div>
+    </div>
     <div id="new-other-block" class="hidden" style="margin-bottom:12px">
       <input id="new-cmd" type="text"
         style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;outline:none;transition:all .2s"
@@ -528,25 +563,86 @@ let _runtimesReady=false;
   _runtimesReady=true;
 })();
 
+const LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
+const LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
 function _populateLangSelect(){
-  const sel=document.getElementById('new-lang');
-  sel.innerHTML='';
-  _runtimes.forEach(rt=>{
-    const opt=document.createElement('option');
-    opt.value=rt.value;
-    opt.textContent=rt.version?`${rt.name}  —  ${rt.version}`:rt.name;
-    sel.appendChild(opt);
+  const hidden=document.getElementById('new-lang');
+  const list=document.getElementById('lang-dd-list');
+  const label=document.getElementById('lang-dd-label');
+  list.innerHTML='';
+  _runtimes.forEach((rt,i)=>{
+    const color=LANG_COLORS[rt.value]||'#fb3640';
+    const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    const opt=document.createElement('div');
+    opt.className='lang-dd-opt'+(i===0?' selected':'');
+    opt.dataset.value=rt.value;
+    opt.innerHTML=
+      `<span class="lang-dd-opt-icon" style="background:${color}">${abbr}</span>`+
+      `<span class="lang-dd-opt-name">${rt.name}</span>`+
+      (rt.version?`<span class="lang-dd-opt-ver">${rt.version}</span>`:'');
+    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,abbr);
+    list.appendChild(opt);
   });
-  if(_runtimes.length>0){sel.value=_runtimes[0].value;onLangChange(_runtimes[0].value);}
+  if(_runtimes.length>0){
+    const rt=_runtimes[0];
+    const color=LANG_COLORS[rt.value]||'#fb3640';
+    const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    hidden.value=rt.value;
+    label.innerHTML=
+      `<span style="display:inline-flex;align-items:center;gap:8px">`+
+        `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+        `<span style="color:var(--t1);font-weight:500">${rt.name}</span>`+
+        (rt.version?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${rt.version}</span>`:'')+
+      `</span>`;
+    label.style.color='';
+    onLangChange(rt.value);
+  }
+}
+function selectLangOpt(val,name,ver,color,abbr){
+  document.getElementById('new-lang').value=val;
+  const label=document.getElementById('lang-dd-label');
+  label.innerHTML=
+    `<span style="display:inline-flex;align-items:center;gap:8px">`+
+      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+      `<span style="color:var(--t1);font-weight:500">${name}</span>`+
+      (ver?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${ver}</span>`:'')+
+    `</span>`;
+  label.style.color='';
+  document.querySelectorAll('.lang-dd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.value===val));
+  closeLangDd();
+  onLangChange(val);
+}
+function toggleLangDd(){
+  const list=document.getElementById('lang-dd-list');
+  const btn=document.getElementById('lang-dd-btn');
+  const chev=document.getElementById('lang-dd-chev');
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  btn.classList.toggle('open',open);
+  chev.style.transform=open?'rotate(180deg)':'rotate(0deg)';
+  if(open) document.addEventListener('click',_ddOutsideClick,{once:true,capture:true});
+}
+function closeLangDd(){
+  const list=document.getElementById('lang-dd-list');
+  const btn=document.getElementById('lang-dd-btn');
+  const chev=document.getElementById('lang-dd-chev');
+  list.style.display='none';
+  btn.classList.remove('open');
+  chev.style.transform='rotate(0deg)';
+}
+function _ddOutsideClick(e){
+  const dd=document.getElementById('lang-dd');
+  if(dd&&!dd.contains(e.target)) closeLangDd();
+  else if(dd&&dd.contains(e.target)) document.addEventListener('click',_ddOutsideClick,{once:true,capture:true});
 }
 
 async function refreshRuntimes(){
   const btn=document.getElementById('rt-refresh-btn');
   const icon=document.getElementById('rt-refresh-icon');
-  const sel=document.getElementById('new-lang');
+  const label=document.getElementById('lang-dd-label');
   btn.disabled=true;
   icon.style.animation='spin .8s linear infinite';
-  sel.innerHTML='<option disabled selected>Scanning…</option>';
+  if(label){label.textContent='Scanning…';label.style.color='var(--t3)';}
   try{
     const res=await fetch('/_/runtimes/refresh',{method:'POST'});
     const d=await res.json();
@@ -567,8 +663,8 @@ async function openNew(){
   setTimeout(()=>document.getElementById('new-name').focus(),80);
   if(!_runtimesReady){
     // still loading — wait up to 4s then fallback
-    const sel=document.getElementById('new-lang');
-    sel.innerHTML='<option disabled selected>Loading…</option>';
+    const lbl=document.getElementById('lang-dd-label');
+    if(lbl){lbl.textContent='Loading…';lbl.style.color='var(--t3)';}
     for(let i=0;i<40;i++){
       await new Promise(r=>setTimeout(r,100));
       if(_runtimesReady)break;
