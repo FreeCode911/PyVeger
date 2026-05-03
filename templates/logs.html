@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Logs — {{ project_name | replace('_', ' ') }}</title>
+  <script>(function(){var t=localStorage.getItem('pv3t')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/tw.css"/>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <style>
+    *{font-family:'Inter',sans-serif;box-sizing:border-box}
+    :root{
+      --bg:#07090f;--bg2:#0a0d14;--card:#0d1117;
+      --bdr:#1a2236;--bdr2:#2a3650;
+      --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;--t5:#1e2535;
+      --hbg:rgba(7,9,15,.88);--trm:#020406;
+      --inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
+      --acc:#6366f1;--acc2:#8b5cf6;
+    }
+    html[data-theme=light]{
+      --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;
+      --bdr:#e2e8f0;--bdr2:#cbd5e1;
+      --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
+      --hbg:rgba(248,250,252,.92);--trm:#1e293b;
+      --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
+      --acc:#4f46e5;--acc2:#7c3aed;
+    }
+    body{background:var(--bg);color:var(--t1);min-height:100vh}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899)}
+    .hdr{
+      background:var(--hbg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:10;
+    }
+    .icon-btn{
+      display:flex;align-items:center;justify-content:center;
+      width:32px;height:32px;border-radius:8px;background:var(--inp);
+      border:1px solid var(--inpb);color:var(--t3);cursor:pointer;transition:all .15s;
+    }
+    .icon-btn:hover{background:var(--card);color:var(--t1)}
+    .ghost-btn{
+      background:var(--inp);border:1px solid var(--inpb);color:var(--t3);
+      border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;transition:all .15s;
+    }
+    .ghost-btn:hover{background:var(--card);color:var(--t1)}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500}
+    .badge-live{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#4ade80}
+    .badge-connecting{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);color:#fbbf24}
+    .badge-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);color:#f87171}
+    html[data-theme=light] .badge-live{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .badge-connecting{color:#d97706;background:rgba(217,119,6,.08);border-color:rgba(217,119,6,.18)}
+    html[data-theme=light] .badge-error{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.18)}
+    .terminal-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden}
+    html[data-theme=light] .terminal-wrap{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+    .term-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--bdr)}
+    .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+    #log-box{
+      font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;
+      height:76vh;overflow-y:auto;padding:14px 16px;
+      background:#020406;color:#4ade80;
+    }
+    html[data-theme=light] #log-box{background:#1e293b;color:#a3e635}
+    .log-line{padding:0 4px;border-radius:3px}
+    .log-line:hover{background:rgba(255,255,255,.05)}
+    .log-sys{color:#fbbf24;font-weight:600}
+    .log-div{color:rgba(251,191,36,.3);user-select:none}
+    .icon-sun{display:block} .icon-moon{display:none}
+    html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
+    .breadcrumb-link{color:var(--acc);text-decoration:none;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+    .breadcrumb-link:hover{opacity:.8}
+  </style>
+</head>
+<body>
+<div class="top-bar"></div>
+
+<div class="hdr px-4 sm:px-6 py-2.5">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <a href="/" class="breadcrumb-link">
+      <img src="/static/logo.svg" width="24" height="24" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
+      PyVegar
+    </a>
+    <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
+    <a href="/server/{{ project_id }}" style="font-size:13px;font-weight:600;color:var(--t2);text-decoration:none" onmouseover="this.style.color='var(--t1)'" onmouseout="this.style.color='var(--t2)'">{{ project_name | replace('_', ' ') }}</a>
+    <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
+    <span style="font-size:12px;color:var(--t4)">Logs</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="conn-badge" class="badge badge-connecting">
+        <i data-lucide="loader" style="width:10px;height:10px"></i> Connecting…
+      </span>
+      <button onclick="clearLog()" class="ghost-btn">Clear</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);cursor:pointer;user-select:none">
+        <input type="checkbox" id="autoscroll" checked style="accent-color:var(--acc)"/> Auto-scroll
+      </label>
+      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+        <i data-lucide="sun" class="icon-sun" style="width:15px;height:15px"></i>
+        <i data-lucide="moon" class="icon-moon" style="width:15px;height:15px"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<main style="max-width:1200px;margin:0 auto;padding:20px 16px 40px">
+  <div class="terminal-wrap">
+    <div class="term-bar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;gap:6px">
+          <div class="dot" style="background:#ef4444;opacity:.5"></div>
+          <div class="dot" style="background:#f59e0b;opacity:.5"></div>
+          <div class="dot" style="background:#22c55e;opacity:.5"></div>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t4)">{{ project_name | replace('_', ' ') }}.log</span>
+      </div>
+      <span id="line-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t5)">0 lines</span>
+    </div>
+    <div id="log-box">
+      <div id="log-content"></div>
+      <div id="log-end"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const projectId = {{ project_id | tojson }};
+const logContent = document.getElementById('log-content');
+let lineCount = 0;
+
+const logBox = document.getElementById('log-box');
+
+function addLines(text) {
+  const atBottom = logBox.scrollHeight - logBox.scrollTop - logBox.clientHeight < 80;
+  text.split('\n').forEach(line => {
+    if (!line) return;
+    const div = document.createElement('div');
+    if (line.startsWith('[SYSTEM]')) {
+      div.className = 'log-line log-sys';
+    } else if (/^─+$/.test(line.trim())) {
+      div.className = 'log-line log-div';
+    } else {
+      div.className = 'log-line';
+    }
+    div.textContent = line;
+    logContent.appendChild(div);
+    lineCount++;
+  });
+  document.getElementById('line-count').textContent = lineCount + ' lines';
+  const autoOn = document.getElementById('autoscroll').checked;
+  if (autoOn && atBottom) requestAnimationFrame(() => { logBox.scrollTop = logBox.scrollHeight; });
+}
+
+function clearDisplay() {
+  logContent.innerHTML = ''; lineCount = 0;
+  document.getElementById('line-count').textContent = '0 lines';
+}
+
+async function clearLog() {
+  const r = await fetch(`/_/projects/${encodeURIComponent(projectId)}/clear-log`, {method:'POST'});
+  if (r.ok) clearDisplay();
+}
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(projectId)}`);
+  const badge = document.getElementById('conn-badge');
+  ws.onopen = () => {
+    badge.className = 'badge badge-live';
+    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.6)"></span> Live';
+  };
+  ws.onmessage = e => {
+    if (e.data === '\x00CLEAR\x00') { clearDisplay(); return; }
+    addLines(e.data);
+  };
+  ws.onclose = () => {
+    badge.className = 'badge badge-error';
+    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span> Reconnecting…';
+    setTimeout(connect, 3000);
+  };
+  ws.onerror = () => ws.close();
+}
+connect();
+
+function toggleTheme() {
+  var c = document.documentElement.getAttribute('data-theme') || 'dark';
+  var n = c === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', n);
+  localStorage.setItem('pv3t', n);
+  lucide.createIcons();
+}
+lucide.createIcons();
+</script>
+
+<footer style="text-align:center;padding:10px 16px;font-size:11px;color:var(--t5);border-top:1px solid var(--bdr)">
+  © 2026 <strong style="color:var(--t4);font-weight:600">PyVegar</strong> &nbsp;·&nbsp; <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="color:var(--acc);text-decoration:none;font-weight:600">FreeCode911</a>
+</footer>
+</body>
+</html>

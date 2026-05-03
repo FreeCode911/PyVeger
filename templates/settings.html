@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Settings — PyVegar</title>
+  <script>(function(){var t=localStorage.getItem('pv3t')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/tw.css"/>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <style>
+    *{font-family:'Inter',sans-serif;box-sizing:border-box}
+    :root{
+      --bg:#07090f;--bg2:#0a0d14;--card:#0d1117;--card2:#0b0e17;
+      --bdr:#1a2236;--bdr2:#2a3650;
+      --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;--t5:#1e2535;
+      --hbg:rgba(7,9,15,.88);--inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
+      --acc:#6366f1;--acc2:#8b5cf6;
+      --trm:rgba(255,255,255,.04);
+    }
+    html[data-theme=light]{
+      --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;--card2:#f4f6fb;
+      --bdr:#e2e8f0;--bdr2:#cbd5e1;
+      --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
+      --hbg:rgba(248,250,252,.92);--inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
+      --acc:#4f46e5;--acc2:#7c3aed;
+      --trm:rgba(0,0,0,.04);
+    }
+    body{background:var(--bg);color:var(--t1);min-height:100vh}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899)}
+    .hdr{background:var(--hbg);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:20}
+    .section{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;margin-bottom:18px}
+    html[data-theme=light] .section{box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .sec-hdr{padding:12px 18px;border-bottom:1px solid var(--bdr);background:var(--card2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .row{padding:14px 18px;border-bottom:1px solid var(--bdr)}
+    .row:last-child{border-bottom:none}
+    .sub-title{font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.07em;text-transform:uppercase;padding:10px 18px 0;display:flex;align-items:center;gap:6px}
+    .lbl{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
+    .inp{
+      width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);
+      border-radius:10px;padding:9px 13px;font-size:13px;font-family:'JetBrains Mono',monospace;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .inp::placeholder{color:var(--t4);font-family:'Inter',sans-serif}
+    .inp:focus{outline:none;border-color:rgba(99,102,241,.65);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+    .inp-sans{font-family:'Inter',sans-serif}
+    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(99,102,241,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.38)}
+    .btn-ok{background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.18);cursor:pointer;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-ok:hover{background:rgba(34,197,94,.18)}
+    html[data-theme=light] .btn-ok{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .btn-ok:hover{background:rgba(22,163,74,.2)}
+    .btn-err{background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.16);cursor:pointer;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-err:hover{background:rgba(239,68,68,.18)}
+    html[data-theme=light] .btn-err{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.18)}
+    html[data-theme=light] .btn-err:hover{background:rgba(220,38,38,.18)}
+    .btn-ghost{background:var(--inp);color:var(--t2);border:1px solid var(--inpb);cursor:pointer;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-ghost:hover{background:var(--card2);color:var(--t1)}
+    .icon-btn{width:34px;height:34px;border-radius:9px;background:var(--inp);border:1px solid var(--inpb);display:flex;align-items:center;justify-content:center;color:var(--t3);cursor:pointer;transition:all .15s;text-decoration:none}
+    .icon-btn:hover{background:var(--card);color:var(--t1)}
+    .badge-run{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+    .badge-stop{background:rgba(239,68,68,.09);color:#f87171;border:1px solid rgba(239,68,68,.18);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+    html[data-theme=light] .badge-run{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .badge-stop{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.16)}
+    .hint{font-size:11px;color:var(--t3);margin-top:5px;line-height:1.5}
+    .sec-title{font-size:12px;font-weight:700;color:var(--t4);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;padding:0 4px;display:flex;align-items:center;gap:6px}
+    /* Log viewer */
+    .log-viewer{
+      background:#050709;border-top:1px solid var(--bdr);
+      font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.65;
+      color:#94a3b8;height:260px;overflow-y:auto;padding:12px 14px;
+      white-space:pre-wrap;word-break:break-all;
+    }
+    html[data-theme=light] .log-viewer{background:#1e293b;color:#94a3b8}
+    .log-viewer .l-info{color:#60a5fa}
+    .log-viewer .l-warn{color:#fbbf24}
+    .log-viewer .l-err {color:#f87171}
+    .log-viewer .l-ok  {color:#4ade80}
+    .log-hdr{padding:8px 14px;border-top:1px solid var(--bdr);background:var(--card2);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .log-dot{width:7px;height:7px;border-radius:50%;background:#475569;flex-shrink:0;transition:background .3s}
+    .log-dot.live{background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    #toast{position:fixed;bottom:20px;right:20px;z-index:9999}
+    .icon-sun{display:block} .icon-moon{display:none}
+    html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:600px){
+      .two-col{grid-template-columns:1fr!important}
+      .sec-hdr{flex-direction:column;align-items:flex-start!important}
+      main{padding-left:12px!important;padding-right:12px!important}
+      .row{padding:12px 14px}
+    }
+    @media(max-width:480px){
+      .hdr .hidden{display:none}
+      header .btn-primary,.btn-ok,.btn-err,.btn-ghost{font-size:11px;padding:6px 10px}
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar"></div>
+
+<div id="toast" class="hidden">
+  <div id="toast-inner" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease"></div>
+</div>
+
+<!-- Header -->
+<header class="hdr px-4 sm:px-6 py-2.5">
+  <div style="max-width:880px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+        <img src="/static/logo.svg" width="30" height="30" style="border-radius:8px;flex-shrink:0" alt="PyVegar">
+        <span style="font-weight:700;font-size:15px;background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+      </a>
+      <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--t5)"></i>
+      <span style="font-size:13px;font-weight:600;color:var(--t2)">Settings</span>
+    </div>
+    <div style="display:flex;gap:7px">
+      <a href="/" class="icon-btn" title="Dashboard"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i></a>
+      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+        <i data-lucide="sun" class="icon-sun" style="width:16px;height:16px"></i>
+        <i data-lucide="moon" class="icon-moon" style="width:16px;height:16px"></i>
+      </button>
+      <a href="/logout" class="icon-btn" title="Logout"
+         onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'"
+         onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'">
+        <i data-lucide="log-out" style="width:15px;height:15px"></i>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main style="max-width:880px;margin:0 auto;padding:20px 16px 80px">
+
+  <!-- ══ CLOUDFLARE RUN-TOKEN TUNNEL ════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="shield" style="width:13px;height:13px"></i> Cloudflare Tunnel</p>
+  <div class="section">
+    <!-- Header row with status badge -->
+    <div class="sec-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:9px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center">
+          <i data-lucide="cloud" style="width:16px;height:16px;color:#818cf8"></i>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--t1)">Run-Token Tunnel</div>
+          <div style="font-size:11px;color:var(--t4)">Persistent named tunnel via Cloudflare Zero Trust</div>
+        </div>
+      </div>
+      <span id="named-badge" class="{% if tunnel.status == 'running' %}badge-run{% else %}badge-stop{% endif %}" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500">
+        <span id="named-dot" style="width:6px;height:6px;border-radius:50%;{% if tunnel.status == 'running' %}background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5){% else %}background:#ef4444{% endif %}"></span>
+        <span id="named-status-text">{{ tunnel.status }}</span>
+      </span>
+    </div>
+
+    <!-- Token input + save -->
+    <div class="row">
+      <label class="lbl" for="cf-token">Tunnel Run Token</label>
+      <input id="cf-token" type="password" class="inp" value="{{ cloudflare_token }}" placeholder="eyJh…"/>
+      <p class="hint">Cloudflare Dashboard → Zero Trust → Networks → Tunnels → your tunnel → Configure → Install &amp; Run → copy the token</p>
+    </div>
+    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;gap:7px">
+        <button type="button" onclick="tunnelAction('start')" class="btn-ok">
+          <i data-lucide="play" style="width:12px;height:12px"></i> Start
+        </button>
+        <button type="button" onclick="tunnelAction('stop')" class="btn-err">
+          <i data-lucide="square" style="width:12px;height:12px"></i> Stop
+        </button>
+      </div>
+      <button type="button" onclick="saveSettings()" class="btn-primary" style="flex-shrink:0">
+        <i data-lucide="save" style="width:13px;height:13px"></i> Save Token
+      </button>
+    </div>
+
+    <!-- Live log viewer -->
+    <div class="log-hdr">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="log-dot" id="log-dot"></span>
+        <span style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.05em;text-transform:uppercase">Tunnel Log</span>
+      </div>
+      <button onclick="clearLog()" class="btn-ghost" style="padding:3px 10px;font-size:11px">
+        <i data-lucide="trash-2" style="width:11px;height:11px"></i> Clear
+      </button>
+    </div>
+    <div id="tunnel-log" class="log-viewer">Connecting to log stream…</div>
+  </div>
+
+  <!-- ══ ABOUT / CREDITS ═════════════════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="info" style="width:13px;height:13px"></i> About</p>
+  <div class="section">
+    <div style="padding:20px 18px;display:flex;align-items:center;gap:16px">
+      <div style="flex-shrink:0;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(139,92,246,.18));border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center">
+        <i data-lucide="server" style="width:24px;height:24px;color:#818cf8"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:-.01em">PyVegar</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:2px">Python server management panel</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:2px 8px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#818cf8;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:600;color:#818cf8">v3.0</span>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--t3)">Developer</span>
+      <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--acc);text-decoration:none">
+        <i data-lucide="github" style="width:13px;height:13px"></i> FreeCode911
+      </a>
+    </div>
+    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--t3)">License</span>
+      <span style="font-size:12px;font-weight:600;color:var(--t2)">MIT</span>
+    </div>
+    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--t3)">Built with</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <span style="font-size:11px;font-weight:600;color:var(--t2);background:var(--inp);border:1px solid var(--inpb);border-radius:5px;padding:2px 7px">FastAPI</span>
+        <span style="font-size:11px;font-weight:600;color:var(--t2);background:var(--inp);border:1px solid var(--inpb);border-radius:5px;padding:2px 7px">Python</span>
+        <span style="font-size:11px;font-weight:600;color:var(--t2);background:var(--inp);border:1px solid var(--inpb);border-radius:5px;padding:2px 7px">WebSocket</span>
+      </div>
+    </div>
+    <div class="row" style="border-bottom:none">
+      <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--inp);border:1px solid var(--inpb);color:var(--t2);text-decoration:none;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:600;transition:border-color .15s" onmouseover="this.style.borderColor='var(--bdr2)'" onmouseout="this.style.borderColor='var(--inpb)'">
+        <i data-lucide="github" style="width:13px;height:13px"></i> View on GitHub
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ OTHER SETTINGS ══════════════════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> Other Settings</p>
+  <div class="section">
+    <!-- Discord bot -->
+    <div class="sub-title"><i data-lucide="message-circle" style="width:12px;height:12px"></i> Discord Bot</div>
+    <div class="row">
+      <label class="lbl" for="dc-token">Discord Token</label>
+      <input id="dc-token" type="password" class="inp" value="{{ discord_token }}" placeholder="MTk4NjIy…"/>
+    </div>
+    <div class="row">
+      <label class="lbl" for="allowed">Allowed Users</label>
+      <input id="allowed" type="text" class="inp inp-sans" value="{{ allowed_users }}" placeholder="User1, User2"/>
+      <p class="hint">Comma-separated Discord usernames allowed to control servers</p>
+    </div>
+
+    <!-- Panel credentials -->
+    <div class="sub-title"><i data-lucide="lock" style="width:12px;height:12px"></i> Panel Login</div>
+    <div class="row">
+      <label class="lbl" for="p-user">Username</label>
+      <input id="p-user" type="text" class="inp inp-sans" value="{{ username }}"/>
+    </div>
+    <div class="row">
+      <label class="lbl" for="p-pass">New Password</label>
+      <input id="p-pass" type="password" class="inp" placeholder="Leave blank to keep current"/>
+    </div>
+    <div class="row" style="display:flex;justify-content:flex-end">
+      <button type="button" onclick="saveSettings()" class="btn-primary"><i data-lucide="save" style="width:14px;height:14px"></i> Save Settings</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Theme ─────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('pv3t', t);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg, type) {
+  type = type || 'ok';
+  const inn = document.getElementById('toast-inner');
+  const bg = type==='ok'?'#065f46':type==='warn'?'#78350f':'#7f1d1d';
+  const bd = type==='ok'?'rgba(34,197,94,.3)':type==='warn'?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+  inn.setAttribute('style', `padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease;color:#f1f5f9;background:${bg};border:1px solid ${bd}`);
+  inn.textContent = msg;
+  document.getElementById('toast').classList.remove('hidden');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => document.getElementById('toast').classList.add('hidden'), 3200);
+}
+
+// ── Save all settings via fetch (no page reload) ──────────────────────────────
+async function saveSettings() {
+  const payload = {
+    cloudflare_token: document.getElementById('cf-token').value,
+    discord_token:    document.getElementById('dc-token').value,
+    allowed_users:    document.getElementById('allowed').value,
+    username:         document.getElementById('p-user').value,
+    password:         document.getElementById('p-pass').value,
+  };
+  const r = await fetch('/_/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if (r.ok) {
+    toast('Settings saved');
+    document.getElementById('p-pass').value = '';
+    setTimeout(refreshBadge, 1200);
+  } else {
+    const d = await r.json().catch(() => ({}));
+    toast(d.detail || 'Save failed', 'err');
+  }
+}
+
+// ── Tunnel start / stop ───────────────────────────────────────────────────────
+async function tunnelAction(action) {
+  const r = await fetch(`/_/tunnel/${action}`, {method:'POST'});
+  const d = await r.json();
+  if (r.ok) {
+    toast(`Tunnel ${action === 'start' ? 'started' : 'stopped'}`);
+    setTimeout(refreshBadge, 1000);
+  } else {
+    toast(d.detail || 'Failed', 'err');
+  }
+}
+
+async function refreshBadge() {
+  try {
+    const r = await fetch('/_/status');
+    const d = await r.json();
+    const st = d.tunnel?.status || 'stopped';
+    const badge = document.getElementById('named-badge');
+    const dot   = document.getElementById('named-dot');
+    const txt   = document.getElementById('named-status-text');
+    if (st === 'running') {
+      badge.className = 'badge-run';
+      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
+    } else {
+      badge.className = 'badge-stop';
+      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
+    }
+    txt.textContent = st;
+  } catch(e) {}
+}
+setInterval(refreshBadge, 5000);
+
+// ── Live tunnel log via WebSocket ─────────────────────────────────────────────
+const logEl  = document.getElementById('tunnel-log');
+const logDot = document.getElementById('log-dot');
+let _logWs   = null;
+let _logLines = [];
+const MAX_LINES = 500;
+
+function colorLine(line) {
+  if (/error|failed|fatal/i.test(line)) return `<span class="l-err">${esc(line)}</span>`;
+  if (/warn/i.test(line))               return `<span class="l-warn">${esc(line)}</span>`;
+  if (/info|registered|connected|tunnel/i.test(line)) return `<span class="l-info">${esc(line)}</span>`;
+  if (/ok|success|started|running/i.test(line))       return `<span class="l-ok">${esc(line)}</span>`;
+  return esc(line);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function appendLog(text) {
+  const newLines = text.split('\n').filter(l => l.trim());
+  _logLines.push(...newLines);
+  if (_logLines.length > MAX_LINES) _logLines = _logLines.slice(-MAX_LINES);
+  const atBottom = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 20;
+  logEl.innerHTML = _logLines.map(colorLine).join('\n');
+  if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function clearLog() {
+  try {
+    await fetch('/_/tunnel/clear-log', { method: 'POST' });
+  } catch(e) {}
+  _logLines = [];
+  logEl.innerHTML = '';
+  toast('Log cleared');
+}
+
+function connectLog() {
+  if (_logWs) { _logWs.close(); _logWs = null; }
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  _logWs = new WebSocket(`${proto}://${location.host}/ws/logs/tunnel`);
+
+  _logWs.onopen = () => {
+    logDot.classList.add('live');
+    _logLines = [];
+    logEl.textContent = '';
+  };
+
+  _logWs.onmessage = e => appendLog(e.data);
+
+  _logWs.onclose = () => {
+    logDot.classList.remove('live');
+    setTimeout(connectLog, 3000);
+  };
+
+  _logWs.onerror = () => _logWs.close();
+}
+
+connectLog();
+
+// ── Live tunnel badge via ws/stats ────────────────────────────────────────
+(function connectStatusWs(){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws/stats`);
+  ws.onmessage = e => {
+    let d; try { d = JSON.parse(e.data); } catch { return; }
+    if (d.tunnel == null) return;
+    const st     = d.tunnel;
+    const badge  = document.getElementById('named-badge');
+    const dot    = document.getElementById('named-dot');
+    const txt    = document.getElementById('named-status-text');
+    if (!badge) return;
+    if (st === 'running') {
+      badge.className = 'badge-run';
+      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
+    } else {
+      badge.className = 'badge-stop';
+      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
+    }
+    txt.textContent = st;
+  };
+  ws.onclose = () => setTimeout(connectStatusWs, 3000);
+})();
+
+lucide.createIcons();
+</script>
+
+<footer style="text-align:center;padding:10px 16px;font-size:11px;color:var(--t5);border-top:1px solid var(--bdr)">
+  © 2026 <strong style="color:var(--t4);font-weight:600">PyVegar</strong> &nbsp;·&nbsp; <a href="https://github.com/FreeCode911" target="_blank" rel="noopener" style="color:var(--acc);text-decoration:none;font-weight:600">FreeCode911</a>
+</footer>
+</body>
+</html>

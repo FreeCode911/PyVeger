@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Login — PyVegar</title>
+  <script>(function(){var t=localStorage.getItem('pv3t')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/tw.css"/>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <style>
+    *{font-family:'Inter',sans-serif;box-sizing:border-box}
+    :root{
+      --bg:#07090f;--card:#0e1219;--bdr:rgba(255,255,255,.08);
+      --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;
+      --inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
+      --acc:#6366f1;--acc2:#8b5cf6;
+    }
+    html[data-theme=light]{
+      --bg:#f1f5f9;--card:#ffffff;--bdr:rgba(0,0,0,.1);
+      --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;
+      --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.12);
+      --acc:#4f46e5;--acc2:#7c3aed;
+    }
+    body{
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;
+      background:var(--bg);color:var(--t1);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 20% 40%,rgba(99,102,241,.12),transparent 70%),
+        radial-gradient(ellipse 60% 50% at 80% 70%,rgba(139,92,246,.08),transparent 60%);
+    }
+    html[data-theme=light] body{
+      background-image:radial-gradient(ellipse 80% 60% at 20% 40%,rgba(99,102,241,.06),transparent 70%);
+    }
+    .glass{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:28px}
+    html[data-theme=light] .glass{box-shadow:0 4px 24px rgba(0,0,0,.08)}
+    .inp{
+      width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);
+      border-radius:11px;padding:11px 14px;font-size:14px;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .inp::placeholder{color:var(--t4)}
+    .inp:focus{outline:none;border-color:rgba(99,102,241,.65);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+    .btn-primary{
+      width:100%;padding:13px;border-radius:11px;font-size:14px;font-weight:600;color:#fff;
+      cursor:pointer;border:none;
+      background:linear-gradient(135deg,var(--acc),var(--acc2));
+      box-shadow:0 4px 20px rgba(99,102,241,.32);transition:transform .15s,box-shadow .15s;
+    }
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(99,102,241,.42)}
+    .btn-primary:active{transform:none;opacity:.9}
+    .theme-btn{
+      position:fixed;top:16px;right:16px;width:36px;height:36px;border-radius:10px;
+      background:var(--inp);border:1px solid var(--inpb);color:var(--t3);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;
+    }
+    .theme-btn:hover{background:var(--card);color:var(--t1)}
+    .icon-sun{display:block} .icon-moon{display:none}
+    html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
+    @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+    .logo-bolt{display:inline-block;animation:bob 3.5s ease-in-out infinite;font-size:44px}
+    @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    .fadeup{animation:fadein .45s ease both}
+  </style>
+</head>
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+  <i data-lucide="sun" class="icon-sun" style="width:16px;height:16px"></i>
+  <i data-lucide="moon" class="icon-moon" style="width:16px;height:16px"></i>
+</button>
+
+<div style="width:100%;max-width:360px;position:relative;z-index:10">
+
+  <div class="text-center fadeup" style="margin-bottom:28px;animation-delay:.05s">
+    <img src="/static/logo.svg" width="64" height="64" style="border-radius:18px;box-shadow:0 8px 32px rgba(99,102,241,.45);display:block;margin:0 auto" alt="PyVegar">
+    <h1 style="font-size:26px;font-weight:700;color:var(--t1);margin:12px 0 4px;letter-spacing:-.5px">
+      <span style="background:linear-gradient(135deg,#818cf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+    </h1>
+    <p style="font-size:13px;color:var(--t3)">Sign in to your panel</p>
+  </div>
+
+  {% if error %}
+  <div class="fadeup" style="margin-bottom:14px;padding:11px 14px;border-radius:11px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.08);color:#f87171;font-size:13px;display:flex;align-items:center;gap:8px;animation-delay:.1s">
+    <i data-lucide="alert-circle" style="width:15px;height:15px;flex-shrink:0"></i>
+    Invalid username or password
+  </div>
+  {% endif %}
+
+  <div class="glass fadeup" style="animation-delay:.1s">
+    <form method="POST" action="/login">
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px">Username</label>
+        <input class="inp" name="username" type="text" autocomplete="username" autofocus placeholder="admin"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px">Password</label>
+        <input class="inp" name="password" type="password" autocomplete="current-password" placeholder="••••••••"/>
+      </div>
+      <button type="submit" class="btn-primary">Sign In</button>
+    </form>
+  </div>
+
+  <p class="fadeup" style="text-align:center;font-size:11px;color:var(--t4);margin-top:18px;animation-delay:.2s">
+    Credentials in <code style="color:var(--t3);background:var(--inp);padding:1px 5px;border-radius:4px;font-size:11px">config.json</code>
+  </p>
+</div>
+
+<script>
+function toggleTheme(){
+  var c=document.documentElement.getAttribute('data-theme')||'dark',n=c==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('pv3t',n);
+  lucide.createIcons();
+}
+lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{{ project.name | replace('_', ' ') }} — PyVegar</title>
+  <script>(function(){var t=localStorage.getItem('pv3t')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/tw.css"/>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <style>
+    *{font-family:'Inter',sans-serif;box-sizing:border-box}
+    code,.mono{font-family:'JetBrains Mono',monospace}
+    :root{
+      --bg:#07090f;--bg2:#0a0d14;--card:#0d1117;--card2:#0b0e17;
+      --bdr:#1a2236;--bdr2:#2a3650;
+      --t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--t4:#475569;--t5:#334155;
+      --hbg:rgba(7,9,15,.88);--trm:#020406;
+      --inp:rgba(255,255,255,.06);--inpb:rgba(255,255,255,.12);
+      --acc:#6366f1;--acc2:#8b5cf6;
+    }
+    html[data-theme=light]{
+      --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;--card2:#f4f6fb;
+      --bdr:#e2e8f0;--bdr2:#cbd5e1;
+      --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
+      --hbg:rgba(248,250,252,.92);--trm:#1e293b;
+      --inp:rgba(0,0,0,.04);--inpb:rgba(0,0,0,.12);
+      --acc:#4f46e5;--acc2:#7c3aed;
+    }
+    body{background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
+    ::-webkit-scrollbar-track{background:transparent}
+    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899);flex-shrink:0}
+    .hdr{background:var(--hbg);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);flex-shrink:0}
+    .tab-bar{border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0}
+    .tab{
+      padding:10px 18px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;
+      border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+      display:inline-flex;align-items:center;gap:6px;margin-bottom:-1px;text-decoration:none;
+    }
+    .tab.active{color:var(--acc);border-bottom-color:var(--acc)}
+    .tab:hover:not(.active){color:var(--t2)}
+    .icon-btn{width:32px;height:32px;border-radius:8px;background:var(--inp);border:1px solid var(--inpb);display:flex;align-items:center;justify-content:center;color:var(--t2);cursor:pointer;transition:all .15s;text-decoration:none;flex-shrink:0}
+    .icon-btn:hover{background:var(--card2);color:var(--t1);border-color:var(--bdr2)}
+    .inp{background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:9px;padding:8px 12px;font-size:13px;transition:all .2s;width:100%}
+    .inp::placeholder{color:var(--t3)}
+    .inp:focus{outline:none;border-color:rgba(99,102,241,.65);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(99,102,241,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.38)}
+    .btn-ok{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22);cursor:pointer;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-ok:hover{background:rgba(34,197,94,.2)}
+    html[data-theme=light] .btn-ok{color:#16a34a;background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.2)}
+    .btn-err{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.22);cursor:pointer;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-err:hover{background:rgba(239,68,68,.2)}
+    html[data-theme=light] .btn-err{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.18)}
+    .btn-warn{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2);cursor:pointer;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-warn:hover{background:rgba(245,158,11,.2)}
+    html[data-theme=light] .btn-warn{color:#d97706;background:rgba(217,119,6,.08);border-color:rgba(217,119,6,.18)}
+    .btn-ghost{background:var(--inp);color:var(--t2);border:1px solid var(--inpb);cursor:pointer;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .btn-ghost:hover{background:var(--card2);color:var(--t1);border-color:var(--bdr2)}
+    .stat-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+    .running-badge{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22)}
+    .stopped-badge{background:rgba(239,68,68,.09);color:#f87171;border:1px solid rgba(239,68,68,.18)}
+    .restart-badge{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+    .error-badge{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+    html[data-theme=light] .running-badge{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .stopped-badge{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.16)}
+    html[data-theme=light] .restart-badge{color:#d97706;background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.2)}
+    html[data-theme=light] .error-badge{color:#b91c1c;background:rgba(185,28,28,.1);border-color:rgba(185,28,28,.25)}
+
+    /* ── Layout ── */
+    .page{flex:1;display:flex;flex-direction:column;min-height:0}
+    .body-wrap{flex:1;display:flex;min-height:0;overflow:hidden}
+    .pane{flex-direction:column}
+
+    /* ── File sidebar ── */
+    #file-sidebar{
+      width:240px;flex-shrink:0;border-right:1px solid var(--bdr);
+      background:var(--card2);display:flex;flex-direction:column;min-height:0;overflow:hidden;
+    }
+    .sidebar-hdr{padding:8px 10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .sidebar-hdr-title{font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.06em;text-transform:uppercase;flex:1}
+    .sidebar-scroll{flex:1;overflow-y:auto;padding:4px 0}
+
+    /* ── Tree items ── */
+    .tree-row{
+      display:flex;align-items:center;gap:5px;padding:4px 8px;cursor:pointer;
+      transition:background .12s;min-width:0;user-select:none;position:relative;
+    }
+    .tree-row:hover{background:var(--inp)}
+    .tree-row.active{background:rgba(99,102,241,.14)}
+    html[data-theme=light] .tree-row.active{background:rgba(79,70,229,.08)}
+    .tree-name{font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .tree-row.active .tree-name{color:var(--acc);font-weight:600}
+    .dir-row .tree-name{color:var(--t1);font-weight:500}
+    html[data-theme=light] .dir-row .tree-name{color:var(--t1)}
+
+    /* ── Row action buttons ── */
+    .row-actions{display:flex;align-items:center;gap:1px;flex-shrink:0;opacity:0;transition:opacity .12s}
+    .tree-row:hover .row-actions{opacity:1}
+    .row-act{
+      width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+      border-radius:4px;cursor:pointer;color:var(--t3);transition:all .12s;flex-shrink:0;
+    }
+    .row-act:hover{background:var(--inpb)}
+    .row-act.del:hover{background:rgba(239,68,68,.18);color:#f87171}
+    .row-act.ren:hover{background:rgba(99,102,241,.18);color:#818cf8}
+    .row-act.mv:hover{background:rgba(251,191,36,.15);color:#fbbf24}
+    .row-act.nf:hover{background:rgba(34,197,94,.15);color:#4ade80}
+
+    /* ── Editor ── */
+    #editor-area{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+    #editor-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t3)}
+    .editor-topbar{padding:8px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;background:var(--card2);flex-shrink:0;min-width:0}
+    .editor-topbar .fname{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #editor-pane{flex:1;display:flex;flex-direction:column;min-height:0}
+    textarea#raw-editor{flex:1;resize:none;background:var(--trm);color:#c9d1d9;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;padding:16px;border:none;outline:none;width:100%;height:100%;min-height:400px}
+    html[data-theme=light] textarea#raw-editor{background:#1e293b;color:#e2e8f0}
+
+    /* ── Main panel ── */
+    #main-panel{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0}
+
+    /* ── Console ── */
+    #pane-console{display:flex;flex-direction:column;min-height:0;overflow:hidden;gap:0}
+    #pane-console .pcard-console{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    #pane-console .pcard-info{flex:0 0 auto}
+    #console-area{
+      font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;
+      background:var(--trm);color:#4ade80;padding:14px 16px;
+      flex:1;min-height:0;overflow-y:scroll;border-radius:0 0 14px 14px;
+    }
+    html[data-theme=light] #console-area{background:#1e293b;color:#a3e635}
+    .console-line:hover{background:rgba(255,255,255,.04)}
+    .console-sys{color:#fbbf24;font-weight:600}
+    .console-div{color:rgba(251,191,36,.3);user-select:none}
+
+    /* ── Cards ── */
+    .pcard{background:var(--card);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;margin:14px}
+    html[data-theme=light] .pcard{box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .pcard-hdr{padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--card2);display:flex;align-items:center;gap:8px}
+    .pcard-hdr-title{font-size:12px;font-weight:600;color:var(--t2);letter-spacing:.04em;flex:1;display:flex;align-items:center;gap:6px}
+    .pcard-body{padding:14px 16px}
+
+    /* ── Modal ── */
+    .modal-bg{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px}
+    .modal-bg.open{display:flex}
+    .modal-card{background:var(--card);border:1px solid var(--bdr2);border-radius:18px;box-shadow:0 25px 60px rgba(0,0,0,.6);padding:22px;width:100%;max-width:400px}
+    html[data-theme=light] .modal-card{border-color:var(--bdr);box-shadow:0 16px 40px rgba(0,0,0,.15);background:#fff}
+    @keyframes modalin{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+    .modal-card{animation:modalin .2s ease both}
+    .modal-title{font-weight:700;font-size:14px;color:var(--t1);margin:0}
+    .modal-label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+    .modal-hint{font-size:11px;color:var(--t3);margin-top:6px}
+    .modal-hint code{font-family:'JetBrains Mono',monospace;background:var(--inp);padding:1px 5px;border-radius:3px;color:var(--t2)}
+    @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    #toast{position:fixed;bottom:20px;right:20px;z-index:9999}
+    .icon-sun{display:block} .icon-moon{display:none}
+    html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
+
+    /* ── Mobile back button ── */
+    .mobile-back{display:none;align-items:center;gap:5px;color:var(--acc);cursor:pointer;font-size:12px;font-weight:600;padding:4px 9px;border-radius:7px;background:var(--inp);border:1px solid var(--inpb);flex-shrink:0;white-space:nowrap}
+    .mobile-back:hover{background:var(--card2);color:var(--acc2)}
+
+    /* ── Mobile responsive ── */
+    @media(max-width:640px){
+      .hdr{padding-top:6px;padding-bottom:6px}
+      .body-wrap{flex-direction:column!important}
+      #file-sidebar{width:100%!important;border-right:none!important;border-bottom:1px solid var(--bdr);max-height:45vh;flex-shrink:0}
+      #editor-area{min-height:0;flex:1}
+      #file-sidebar.mob-hide{display:none!important}
+      #editor-area.mob-hide{display:none!important}
+      .mobile-back{display:flex!important}
+      .editor-topbar{flex-wrap:wrap;gap:5px}
+      .editor-topbar .fname{min-width:100px}
+      #set-start-btn{display:none}
+      textarea#raw-editor{font-size:12px;padding:10px}
+      .pcard-body{padding:10px 12px}
+      .pcard{margin:8px}
+    }
+    @media(max-width:480px){
+      .tab{padding:8px 10px;font-size:12px;gap:4px}
+      .tab i{display:none}
+      .btn-ok,.btn-err,.btn-warn,.btn-ghost{padding:5px 9px;font-size:11px}
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar"></div>
+
+<div id="toast" class="hidden">
+  <div id="toast-inner" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease"></div>
+</div>
+
+<!-- Header -->
+<div class="hdr px-4 py-2.5" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <a href="/" style="display:flex;align-items:center;gap:7px;text-decoration:none">
+      <img src="/static/logo.svg" width="28" height="28" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
+      <span style="font-weight:700;font-size:14px;background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+    </a>
+    <i data-lucide="chevron-right" style="width:13px;height:13px;color:var(--t4)"></i>
+    <span style="font-size:13px;font-weight:700;color:var(--t1)">{{ project.name | replace('_', ' ') }}</span>
+    <span id="status-badge" class="stat-badge {% if project.status == 'running' %}running-badge{% elif project.status == 'restarting' %}restart-badge{% else %}stopped-badge{% endif %}">
+      <span id="status-dot" style="width:6px;height:6px;border-radius:50%;{% if project.status == 'running' %}background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5){% elif project.status == 'restarting' %}background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4){% else %}background:#ef4444{% endif %}"></span>
+      <span id="status-text">{{ project.status }}</span>
+    </span>
+    <span id="pid-txt" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3)">{% if project.pid %}PID {{ project.pid }}{% endif %}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <button id="btn-start" onclick="action('start')" class="btn-ok"><i data-lucide="play" style="width:12px;height:12px"></i> Start</button>
+    <button id="btn-stop" onclick="action('stop')" class="btn-err"><i data-lucide="square" style="width:12px;height:12px"></i> Stop</button>
+    <button id="btn-restart" onclick="action('restart')" class="btn-warn"><i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Restart</button>
+
+    <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+      <i data-lucide="sun" class="icon-sun" style="width:15px;height:15px"></i>
+      <i data-lucide="moon" class="icon-moon" style="width:15px;height:15px"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Tab bar -->
+<div class="tab-bar px-3">
+  <a class="tab active" id="tab-files" onclick="switchTab('files')" href="#">
+    <i data-lucide="folder-open" style="width:14px;height:14px"></i> Files
+  </a>
+  <a class="tab" id="tab-console" onclick="switchTab('console')" href="#">
+    <i data-lucide="terminal" style="width:14px;height:14px"></i> Console
+  </a>
+  <a class="tab" id="tab-startup" onclick="switchTab('startup')" href="#">
+    <i data-lucide="settings" style="width:14px;height:14px"></i> Startup
+  </a>
+  <a class="tab" id="tab-packages" onclick="switchTab('packages')" href="#">
+    <i data-lucide="package" style="width:14px;height:14px"></i> Packages
+  </a>
+</div>
+
+<div class="page">
+  <!-- ═══ FILES TAB ═══════════════════════════════════════════════════════ -->
+  <div id="pane-files" class="body-wrap" style="flex:1;min-height:0">
+    <!-- Sidebar -->
+    <div id="file-sidebar">
+      <div class="sidebar-hdr">
+        <span class="sidebar-hdr-title">Explorer</span>
+        <button onclick="showNewFile()" class="icon-btn" title="New file" style="width:22px;height:22px;border-radius:5px">
+          <i data-lucide="file-plus" style="width:12px;height:12px"></i>
+        </button>
+        <button onclick="showNewFolder()" class="icon-btn" title="New folder" style="width:22px;height:22px;border-radius:5px">
+          <i data-lucide="folder-plus" style="width:12px;height:12px"></i>
+        </button>
+        <button onclick="triggerUpload()" class="icon-btn" title="Upload file" style="width:22px;height:22px;border-radius:5px">
+          <i data-lucide="upload" style="width:12px;height:12px"></i>
+        </button>
+        <input id="upload-input" type="file" style="display:none" onchange="uploadFile(this)"/>
+      </div>
+      <div id="file-list" class="sidebar-scroll">
+        <div style="padding:20px 10px;text-align:center;font-size:11px;color:var(--t3)">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Editor area -->
+    <div id="editor-area">
+      <div id="editor-placeholder">
+        <i data-lucide="file-code" style="width:40px;height:40px;opacity:.2"></i>
+        <span style="font-size:13px">Select a file to edit</span>
+      </div>
+      <div id="editor-pane" style="display:none;flex:1;flex-direction:column;min-height:0">
+        <div class="editor-topbar">
+          <button onclick="backToFiles()" class="mobile-back"><i data-lucide="chevron-left" style="width:13px;height:13px"></i> Files</button>
+          <i id="editor-icon" data-lucide="file" style="width:14px;height:14px;color:var(--t3);flex-shrink:0"></i>
+          <span id="editor-fname" class="fname">—</span>
+          <button id="set-start-btn" onclick="setStartFile()" class="btn-ghost" style="padding:4px 10px;font-size:11px">
+            <i data-lucide="play" style="width:11px;height:11px"></i> Set Start
+          </button>
+          <button onclick="saveFile()" class="btn-ok" style="padding:4px 10px;font-size:11px">
+            <i data-lucide="save" style="width:11px;height:11px"></i> Save
+          </button>
+        </div>
+        <textarea id="raw-editor" spellcheck="false" onkeydown="handleEditorKey(event)"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONSOLE TAB ══════════════════════════════════════════════════════ -->
+  <div id="pane-console" class="pane" style="display:none;flex:1;padding:14px;flex-direction:column;gap:10px">
+    <div class="pcard pcard-console">
+      <div class="pcard-hdr">
+        <div class="pcard-hdr-title"><i data-lucide="terminal" style="width:14px;height:14px;color:var(--acc)"></i> Console Output</div>
+        <button onclick="clearConsole()" class="btn-ghost" style="padding:4px 10px;font-size:11px">Clear</button>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+          <input type="checkbox" id="autoscroll" checked style="accent-color:var(--acc)"/> Auto-scroll
+        </label>
+        <span id="ws-badge" style="padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(245,158,11,.08);color:#fbbf24;border:1px solid rgba(245,158,11,.18)">● Connecting</span>
+      </div>
+      <div id="console-area"></div>
+    </div>
+    <!-- Server Info card -->
+    <div class="pcard pcard-info">
+      <div class="pcard-hdr"><div class="pcard-hdr-title"><i data-lucide="info" style="width:14px;height:14px;color:var(--acc)"></i> Server Info</div></div>
+      <div class="pcard-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Status</div>
+          <div id="info-status" style="font-size:12px;font-weight:600;color:var(--t1)">{{ project.status }}</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Runtime</div>
+          <div style="font-size:12px;color:var(--t2);font-family:'JetBrains Mono',monospace">{{ project.language or '—' }}</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">PID</div>
+          <div id="info-pid" class="mono" style="font-size:12px;color:var(--t2)">{{ project.pid or '—' }}</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Uptime</div>
+          <div id="info-uptime" style="font-size:12px;color:var(--t2)">{% if project.uptime %}{{ project.uptime }}s{% else %}—{% endif %}</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Restarts</div>
+          <div id="info-restarts" style="font-size:12px;color:var(--t2)">{{ project.restarts }}</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Files</div>
+          <div style="font-size:12px;color:var(--t2)">{{ project.files | length }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STARTUP TAB ══════════════════════════════════════════════════════ -->
+  <div id="pane-startup" class="pane" style="display:none;flex:1;overflow:auto;padding:14px">
+    <div class="pcard">
+      <div class="pcard-hdr">
+        <div class="pcard-hdr-title"><i data-lucide="play" style="width:14px;height:14px;color:var(--acc)"></i> Startup Configuration</div>
+      </div>
+      <div class="pcard-body">
+        <div style="margin-bottom:14px">
+          <label class="modal-label">Start File</label>
+          <div style="display:flex;gap:8px">
+            <input id="start-file-input" class="inp" style="font-family:'JetBrains Mono',monospace" value="{{ project.start_file }}" placeholder="main.py"/>
+            <button onclick="setStartFile()" class="btn-ok"><i data-lucide="save" style="width:12px;height:12px"></i> Set</button>
+          </div>
+          <p class="modal-hint">The file Python will run on start (e.g. <code>main.py</code>, <code>src/app.py</code>)</p>
+        </div>
+        <div>
+          <label class="modal-label">Custom Command <span style="color:var(--t3);font-weight:400;text-transform:none">(optional)</span></label>
+          <div style="display:flex;gap:8px">
+            <input id="cmd-input" class="inp" style="font-family:'JetBrains Mono',monospace" value="{{ project.startup_command }}" placeholder="python3 -u {start_file}"/>
+            <button onclick="saveCommand()" class="btn-ok"><i data-lucide="save" style="width:12px;height:12px"></i> Save</button>
+          </div>
+          <p class="modal-hint">Use <code>{start_file}</code> as a placeholder. Leave empty for default <code>python3 -u main.py</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PACKAGES TAB ══════════════════════════════════════════════════════ -->
+  <div id="pane-packages" class="pane" style="display:none;flex:1;overflow:auto;padding:14px">
+    <div class="pcard">
+      <div class="pcard-hdr"><div class="pcard-hdr-title"><i data-lucide="package" style="width:14px;height:14px;color:var(--acc)"></i> Package Manager</div></div>
+      <div class="pcard-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input id="pkg-input" class="inp" style="font-family:'JetBrains Mono',monospace" placeholder="discord.py, flask, requests…" onkeydown="if(event.key==='Enter')installPkg()"/>
+          <button onclick="installPkg()" class="btn-primary" style="flex-shrink:0"><i data-lucide="download" style="width:13px;height:13px"></i> Install</button>
+        </div>
+        <pre id="pkg-output" style="background:var(--trm);color:#4ade80;padding:12px 14px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;min-height:60px;overflow-x:auto;white-space:pre-wrap;display:none"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEW FILE MODAL ═══ -->
+<div id="modal-new-file" class="modal-bg" onclick="if(event.target===this)closeModal('new-file')">
+  <div class="modal-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i data-lucide="file-plus" style="width:15px;height:15px;color:var(--acc)"></i>
+      </div>
+      <h3 class="modal-title">New File</h3>
+    </div>
+    <label class="modal-label">File Path</label>
+    <input id="new-file-name" class="inp" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="main.py or utils/helper.py" onkeydown="if(event.key==='Enter')createFile()"/>
+    <p class="modal-hint" style="margin-bottom:16px">Use a path to create inside a folder, e.g. <code>utils/helper.py</code></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeModal('new-file')" class="btn-ghost">Cancel</button>
+      <button onclick="createFile()" class="btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i> Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NEW FOLDER MODAL ═══ -->
+<div id="modal-new-folder" class="modal-bg" onclick="if(event.target===this)closeModal('new-folder')">
+  <div class="modal-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i data-lucide="folder-plus" style="width:15px;height:15px;color:#fbbf24"></i>
+      </div>
+      <h3 class="modal-title">New Folder</h3>
+    </div>
+    <label class="modal-label">Folder Path</label>
+    <input id="new-folder-name" class="inp" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="utils or src/components" onkeydown="if(event.key==='Enter')createFolder()"/>
+    <p class="modal-hint" style="margin-bottom:16px">Nested paths like <code>src/utils</code> are supported</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeModal('new-folder')" class="btn-ghost">Cancel</button>
+      <button onclick="createFolder()" class="btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i> Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RENAME / MOVE MODAL ═══ -->
+<div id="modal-rename" class="modal-bg" onclick="if(event.target===this)closeModal('rename')">
+  <div class="modal-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i id="rename-modal-icon" data-lucide="pencil" style="width:15px;height:15px;color:var(--acc)"></i>
+      </div>
+      <h3 id="rename-modal-title" class="modal-title">Rename / Move</h3>
+    </div>
+    <label class="modal-label">Current Path</label>
+    <div id="rename-current" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t2);background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;margin-bottom:12px;word-break:break-all"></div>
+    <label class="modal-label">New Path</label>
+    <input id="rename-new-path" class="inp" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="new_name.py or subfolder/file.py" onkeydown="if(event.key==='Enter')doRename()"/>
+    <p class="modal-hint" style="margin-bottom:16px">Change just the name to rename, or change the path to move it.<br>Example: <code>utils/helper.py</code> moves it into <code>utils/</code>.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeModal('rename')" class="btn-ghost">Cancel</button>
+      <button onclick="doRename()" class="btn-primary"><i data-lucide="check" style="width:13px;height:13px"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROJECT = {{ project.id | tojson }};
+const PROJECT_NAME = {{ project.name | tojson }};
+let currentFile = null;
+let _startFile = {{ project.start_file | tojson }};
+let _expandedDirs = new Set();
+let _renameTarget = null;
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name) {
+  ['files','console','startup','packages'].forEach(t => {
+    const pane = document.getElementById(`pane-${t}`);
+    const tab = document.getElementById(`tab-${t}`);
+    if (!pane || !tab) return;
+    pane.style.display = t === name ? (t === 'files' ? 'flex' : 'flex') : 'none';
+    tab.classList.toggle('active', t === name);
+  });
+  document.getElementById('pane-files').style.display = name === 'files' ? 'flex' : 'none';
+  if (name === 'console') {
+    if (!_wsConnected) connectWs();
+    requestAnimationFrame(() => {
+      const a = document.getElementById('console-area');
+      if (a && document.getElementById('autoscroll')?.checked) a.scrollTop = a.scrollHeight;
+    });
+  }
+  return false;
+}
+document.getElementById('pane-console').style.display = 'none';
+document.getElementById('pane-startup').style.display = 'none';
+document.getElementById('pane-packages').style.display = 'none';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(s) { return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escHtml(s) { return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const m = {py:'code-2',js:'code',ts:'code',jsx:'code',tsx:'code',css:'paintbrush',html:'globe',json:'braces',md:'file-text',txt:'file-text',sh:'terminal',yaml:'file-code',yml:'file-code',env:'lock',toml:'file-code',ini:'file-code',cfg:'settings'};
+  return m[ext] || 'file';
+}
+
+// ── File Tree ──────────────────────────────────────────────────────────────
+async function loadTree() {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/tree`);
+  if (!r.ok) return;
+  const d = await r.json();
+  _startFile = d.start_file;
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  if (!d.tree || !d.tree.length) {
+    list.innerHTML = '<div style="padding:24px 10px;text-align:center;font-size:11px;color:var(--t3)">No files yet</div>';
+  } else {
+    renderTree(d.tree, list, 0);
+  }
+  lucide.createIcons();
+}
+
+function renderTree(nodes, container, depth) {
+  for (const node of nodes) {
+    if (node.type === 'dir') {
+      const isOpen = _expandedDirs.has(node.path);
+      const wrap = document.createElement('div');
+
+      const dirRow = document.createElement('div');
+      dirRow.className = 'tree-row dir-row';
+      dirRow.style.paddingLeft = (6 + depth * 14) + 'px';
+      dirRow.innerHTML = `
+        <i data-lucide="${isOpen ? 'chevron-down' : 'chevron-right'}" style="width:11px;height:11px;color:var(--t3);flex-shrink:0"></i>
+        <i data-lucide="${isOpen ? 'folder-open' : 'folder'}" style="width:13px;height:13px;color:#fbbf24;flex-shrink:0"></i>
+        <span class="tree-name" title="${escHtml(node.path)}">${escHtml(node.name)}</span>
+        <span class="row-actions" onclick="event.stopPropagation()">
+          <span class="row-act nf" onclick="showNewFile('${esc(node.path)}')" title="New file here">
+            <i data-lucide="file-plus" style="width:11px;height:11px"></i>
+          </span>
+          <span class="row-act ren" onclick="showRename('${esc(node.path)}', true)" title="Rename folder">
+            <i data-lucide="pencil" style="width:11px;height:11px"></i>
+          </span>
+          <span class="row-act del" onclick="deleteItem('${esc(node.path)}')" title="Delete folder">
+            <i data-lucide="trash-2" style="width:11px;height:11px"></i>
+          </span>
+        </span>`;
+      dirRow.addEventListener('click', (e) => {
+        if (e.target.closest('.row-actions')) return;
+        if (_expandedDirs.has(node.path)) _expandedDirs.delete(node.path);
+        else _expandedDirs.add(node.path);
+        loadTree();
+      });
+
+      const childWrap = document.createElement('div');
+      childWrap.style.display = isOpen ? '' : 'none';
+      if (isOpen && node.children && node.children.length) {
+        renderTree(node.children, childWrap, depth + 1);
+      } else if (isOpen) {
+        childWrap.innerHTML = `<div style="padding:5px 8px 5px ${6+(depth+1)*14}px;font-size:11px;color:var(--t3)">Empty</div>`;
+      }
+      wrap.appendChild(dirRow);
+      wrap.appendChild(childWrap);
+      container.appendChild(wrap);
+    } else {
+      const isStart = (node.path === _startFile || node.name === _startFile);
+      const isActive = node.path === currentFile;
+      const fileRow = document.createElement('div');
+      fileRow.className = 'tree-row' + (isActive ? ' active' : '');
+      fileRow.style.paddingLeft = (20 + depth * 14) + 'px';
+      fileRow.innerHTML = `
+        <i data-lucide="${isStart ? 'play' : fileIcon(node.name)}" style="width:12px;height:12px;${isStart ? 'color:#4ade80;' : 'color:var(--t3);'}flex-shrink:0"></i>
+        <span class="tree-name" title="${escHtml(node.path)}">${escHtml(node.name)}</span>
+        <span class="row-actions" onclick="event.stopPropagation()">
+          <span class="row-act ren" onclick="showRename('${esc(node.path)}', false)" title="Rename / Move">
+            <i data-lucide="pencil" style="width:11px;height:11px"></i>
+          </span>
+          <span class="row-act del" onclick="deleteItem('${esc(node.path)}')" title="Delete">
+            <i data-lucide="trash-2" style="width:11px;height:11px"></i>
+          </span>
+        </span>`;
+      fileRow.addEventListener('click', (e) => {
+        if (e.target.closest('.row-actions')) return;
+        openFile(node.path);
+      });
+      container.appendChild(fileRow);
+    }
+  }
+}
+
+// ── Mobile view helpers ────────────────────────────────────────────────────
+function _isMobile() { return window.innerWidth <= 640; }
+function _fmtUptime(s) {
+  if (!s && s !== 0) return '—';
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h`;
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${m}m ${s % 60}s`;
+}
+function backToFiles() {
+  document.getElementById('file-sidebar').classList.remove('mob-hide');
+  document.getElementById('editor-area').classList.add('mob-hide');
+}
+
+// ── File Operations ────────────────────────────────────────────────────────
+async function openFile(fp) {
+  currentFile = fp;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${fp}`);
+  if (!r.ok) { toast('Could not open file', 'err'); return; }
+  const d = await r.json();
+  document.getElementById('raw-editor').value = d.content;
+  document.getElementById('editor-fname').textContent = fp;
+  document.getElementById('editor-icon').setAttribute('data-lucide', fileIcon(fp.split('/').pop()));
+  document.getElementById('editor-placeholder').style.display = 'none';
+  document.getElementById('editor-pane').style.display = 'flex';
+  lucide.createIcons();
+  if (_isMobile()) {
+    document.getElementById('file-sidebar').classList.add('mob-hide');
+    document.getElementById('editor-area').classList.remove('mob-hide');
+  }
+  loadTree();
+}
+
+async function saveFile() {
+  if (!currentFile) return;
+  const content = document.getElementById('raw-editor').value;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${currentFile}`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({content})
+  });
+  if (r.ok) toast('Saved');
+  else { const d = await r.json(); toast(d.detail || 'Save failed', 'err'); }
+}
+
+function handleEditorKey(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveFile(); }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const t = e.target, s = t.selectionStart, end = t.selectionEnd;
+    t.value = t.value.substring(0, s) + '  ' + t.value.substring(end);
+    t.selectionStart = t.selectionEnd = s + 2;
+  }
+}
+
+async function setStartFile() {
+  const file = currentFile || document.getElementById('start-file-input').value.trim();
+  if (!file) { toast('Select or enter a file first', 'warn'); return; }
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/start-file`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({filename: file.split('/').pop()})
+  });
+  if (r.ok) { _startFile = file; toast(`Start file → ${file}`); loadTree(); }
+  else { const d = await r.json(); toast(d.detail || 'Failed', 'err'); }
+}
+
+async function deleteItem(itemPath) {
+  const ok = await showConfirm(`Delete "${itemPath}"?`, 'This cannot be undone.');
+  if (!ok) return;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/items/${itemPath}`, {method: 'DELETE'});
+  if (r.ok) {
+    toast('Deleted');
+    if (currentFile && (currentFile === itemPath || currentFile.startsWith(itemPath + '/'))) {
+      currentFile = null;
+      document.getElementById('editor-pane').style.display = 'none';
+      document.getElementById('editor-placeholder').style.display = '';
+    }
+    loadTree();
+  } else { const d = await r.json(); toast(d.detail || 'Delete failed', 'err'); }
+}
+
+// ── New file/folder modals ─────────────────────────────────────────────────
+function showNewFile(folderPath) {
+  const inp = document.getElementById('new-file-name');
+  inp.value = folderPath ? folderPath + '/' : '';
+  document.getElementById('modal-new-file').classList.add('open');
+  setTimeout(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 80);
+}
+
+function showNewFolder(folderPath) {
+  const inp = document.getElementById('new-folder-name');
+  inp.value = folderPath ? folderPath + '/' : '';
+  document.getElementById('modal-new-folder').classList.add('open');
+  setTimeout(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 80);
+}
+
+function closeModal(name) {
+  document.getElementById(`modal-${name}`).classList.remove('open');
+}
+
+async function createFile() {
+  const name = document.getElementById('new-file-name').value.trim();
+  if (!name) { toast('Enter a filename', 'warn'); return; }
+  closeModal('new-file');
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/new`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({filename: name})
+  });
+  const d = await r.json();
+  if (r.ok) {
+    toast(`Created ${d.name}`);
+    const parts = d.name.split('/');
+    for (let i = 1; i < parts.length; i++) _expandedDirs.add(parts.slice(0, i).join('/'));
+    await loadTree();
+    openFile(d.name);
+  } else toast(d.detail || 'Failed', 'err');
+}
+
+async function createFolder() {
+  const name = document.getElementById('new-folder-name').value.trim();
+  if (!name) { toast('Enter a folder name', 'warn'); return; }
+  closeModal('new-folder');
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/folders`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({path: name})
+  });
+  const d = await r.json();
+  if (r.ok) {
+    toast(`Folder created: ${d.path}`);
+    const parts = d.path.split('/');
+    for (let i = 1; i <= parts.length; i++) _expandedDirs.add(parts.slice(0, i).join('/'));
+    loadTree();
+  } else toast(d.detail || 'Failed', 'err');
+}
+
+// ── Rename / Move ──────────────────────────────────────────────────────────
+function showRename(itemPath, isDir) {
+  _renameTarget = itemPath;
+  document.getElementById('rename-current').textContent = itemPath;
+  document.getElementById('rename-new-path').value = itemPath;
+  document.getElementById('rename-modal-title').textContent = isDir ? 'Rename Folder' : 'Rename / Move File';
+  document.getElementById('rename-modal-icon').setAttribute('data-lucide', isDir ? 'folder-pen' : 'pencil');
+  document.getElementById('modal-rename').classList.add('open');
+  lucide.createIcons();
+  setTimeout(() => {
+    const inp = document.getElementById('rename-new-path');
+    inp.focus();
+    const dot = itemPath.lastIndexOf('.');
+    const slash = itemPath.lastIndexOf('/');
+    const nameStart = slash + 1;
+    const nameEnd = (dot > slash && dot !== -1) ? dot : itemPath.length;
+    inp.setSelectionRange(nameStart, nameEnd);
+  }, 80);
+}
+
+async function doRename() {
+  const src = _renameTarget;
+  const dest = document.getElementById('rename-new-path').value.trim();
+  if (!dest || dest === src) { closeModal('rename'); return; }
+  closeModal('rename');
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/move`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({src, dest})
+  });
+  const d = await r.json();
+  if (r.ok) {
+    toast(`Moved: ${d.dest}`);
+    if (currentFile === src) {
+      currentFile = d.dest;
+      document.getElementById('editor-fname').textContent = d.dest;
+    }
+    const parts = d.dest.split('/');
+    for (let i = 1; i < parts.length; i++) _expandedDirs.add(parts.slice(0, i).join('/'));
+    loadTree();
+  } else toast(d.detail || 'Move failed', 'err');
+}
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+function triggerUpload() { document.getElementById('upload-input').click(); }
+async function uploadFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/upload`, {method:'POST', body:fd});
+  const d = await r.json();
+  if (r.ok) { toast(`Uploaded ${d.name}`); loadTree(); }
+  else toast(d.detail || 'Upload failed', 'err');
+  input.value = '';
+}
+
+// ── Project actions ────────────────────────────────────────────────────────
+async function action(type) {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/${type}`, {method:'POST'});
+  const d = await r.json();
+  if (r.ok) { toast(`${type.charAt(0).toUpperCase()+type.slice(1)} sent`); pollStatus(); }
+  else toast(d.detail || 'Error', 'err');
+}
+
+let _statusTimer = null;
+function pollStatus() {
+  clearTimeout(_statusTimer);
+  _statusTimer = setTimeout(async () => {
+    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const badge = document.getElementById('status-badge');
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    badge.className = 'stat-badge ' + (d.status==='running'?'running-badge':d.status==='restarting'?'restart-badge':d.status==='error'?'error-badge':'stopped-badge');
+    if (d.status==='running') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)';
+    else if (d.status==='restarting') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4)';
+    else dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#ef4444';
+    txt.textContent = d.status;
+    document.getElementById('pid-txt').textContent = d.pid ? `PID ${d.pid}` : '';
+    document.getElementById('info-status').textContent = d.status;
+  }, 1200);
+}
+
+// ── Startup ────────────────────────────────────────────────────────────────
+async function saveCommand() {
+  const cmd = document.getElementById('cmd-input').value.trim();
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/command`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({command:cmd})
+  });
+  if (r.ok) toast('Command saved');
+  else { const d = await r.json(); toast(d.detail || 'Failed', 'err'); }
+}
+
+// ── Packages ───────────────────────────────────────────────────────────────
+async function installPkg() {
+  const pkg = document.getElementById('pkg-input').value.trim();
+  if (!pkg) return;
+  const out = document.getElementById('pkg-output');
+  out.style.display = ''; out.textContent = `Installing ${pkg}…`;
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/packages/install`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({package:pkg})
+  });
+  const d = await r.json();
+  out.textContent = d.output || (d.ok ? 'Done' : d.error || 'Failed');
+  if (d.ok) { toast(`Installed ${pkg}`); document.getElementById('pkg-input').value = ''; }
+  else toast(d.error || 'Install failed', 'err');
+}
+
+// ── Console WebSocket ──────────────────────────────────────────────────────
+let _wsConnected = false;
+function connectWs() {
+  if (_wsConnected) return;
+  _wsConnected = true;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(PROJECT)}`);
+  const badge = document.getElementById('ws-badge');
+  ws.onopen = () => {
+    badge.style.cssText = 'padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.2)';
+    badge.textContent = '● Live';
+  };
+  ws.onmessage = e => {
+    if (e.data === '\x00CLEAR\x00') {
+      document.getElementById('console-area').innerHTML = '';
+      return;
+    }
+    const area = document.getElementById('console-area');
+    const atBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+    e.data.split('\n').forEach(l => {
+      if (!l) return;
+      const div = document.createElement('div');
+      if (l.startsWith('[SYSTEM]')) {
+        div.className = 'console-line console-sys';
+      } else if (/^─+$/.test(l.trim())) {
+        div.className = 'console-line console-div';
+      } else {
+        div.className = 'console-line';
+      }
+      div.textContent = l;
+      area.appendChild(div);
+    });
+    if (document.getElementById('autoscroll').checked && atBottom)
+      requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  };
+  ws.onclose = () => {
+    _wsConnected = false;
+    badge.style.cssText = 'padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.18)';
+    badge.textContent = '● Reconnecting';
+    setTimeout(connectWs, 3000);
+  };
+}
+async function clearConsole() {
+  await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/clear-log`, {method:'POST'});
+  document.getElementById('console-area').innerHTML = '';
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg, type) {
+  type = type || 'ok';
+  const inn = document.getElementById('toast-inner');
+  const bg = type==='ok'?'#065f46':type==='warn'?'#78350f':'#7f1d1d';
+  const bd = type==='ok'?'rgba(34,197,94,.3)':type==='warn'?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+  inn.setAttribute('style', `padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease;color:#f1f5f9;background:${bg};border:1px solid ${bd}`);
+  inn.textContent = msg;
+  document.getElementById('toast').classList.remove('hidden');
+  clearTimeout(_tt); _tt = setTimeout(() => document.getElementById('toast').classList.add('hidden'), 3000);
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const c = document.documentElement.getAttribute('data-theme') || 'dark';
+  const n = c === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', n);
+  localStorage.setItem('pv3t', n);
+  lucide.createIcons();
+}
+
+// ── Live status via ws/stats ───────────────────────────────────────────────
+(function connectStatusWs(){
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws/stats`);
+  ws.onmessage = e => {
+    let d; try { d = JSON.parse(e.data); } catch { return; }
+    if (!d.projects) return;
+    const p = d.projects.find(x => x.id === PROJECT);
+    if (!p) return;
+    const badge    = document.getElementById('status-badge');
+    const dot      = document.getElementById('status-dot');
+    const txt      = document.getElementById('status-text');
+    const pidTxt   = document.getElementById('pid-txt');
+    const infoSt   = document.getElementById('info-status');
+    if (badge) badge.className = 'stat-badge ' + (p.status==='running'?'running-badge':p.status==='restarting'?'restart-badge':p.status==='error'?'error-badge':'stopped-badge');
+    if (dot) {
+      if (p.status==='running')     dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)';
+      else if (p.status==='restarting') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4)';
+      else                          dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#ef4444';
+    }
+    if (txt)    txt.textContent   = p.status;
+    if (pidTxt) pidTxt.textContent = p.pid ? `PID ${p.pid}` : '';
+    if (infoSt) infoSt.textContent = p.status;
+    const infoPid = document.getElementById('info-pid');
+    const infoRst = document.getElementById('info-restarts');
+    if (infoPid) infoPid.textContent = p.pid || '—';
+    if (infoRst) infoRst.textContent = p.restarts ?? '—';
+    const infoUp = document.getElementById('info-uptime');
+    if (infoUp) infoUp.textContent = _fmtUptime(p.uptime);
+  };
+  ws.onclose = () => setTimeout(connectStatusWs, 3000);
+})();
+
+// ── Init ───────────────────────────────────────────────────────────────────
+if (_isMobile()) {
+  document.getElementById('editor-area').classList.add('mob-hide');
+}
+loadTree();
+lucide.createIcons();
+
+// ── Custom confirm modal ──────────────────────────────────────────────────────
+let _confirmResolve = null;
+function showConfirm(title, msg) {
+  return new Promise(resolve => {
+    document.getElementById('cm-title').textContent = title;
+    document.getElementById('cm-msg').textContent = msg;
+    const m = document.getElementById('confirm-modal');
+    m.style.display = 'flex';
+    _confirmResolve = result => { m.style.display = 'none'; resolve(result); };
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('confirm-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) _confirmResolve(false);
+  });
+});
+</script>
+
+<!-- Custom confirm modal -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:26px 26px 20px;max-width:340px;width:calc(100% - 40px);box-shadow:0 24px 60px rgba(0,0,0,.5);animation:fadein .18s ease">
+    <div style="width:42px;height:42px;border-radius:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <div id="cm-title" style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px"></div>
+    <div id="cm-msg" style="font-size:13px;color:var(--t3);line-height:1.55;margin-bottom:22px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="_confirmResolve(false)" style="padding:8px 18px;border-radius:9px;border:1px solid var(--bdr);background:var(--inp);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--inp)'">Cancel</button>
+      <button onclick="_confirmResolve(true)" style="padding:8px 18px;border-radius:9px;border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Delete</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>PyVegar — Dashboard</title>
+  <script>(function(){var t=localStorage.getItem('pv3t')||'dark';document.documentElement.setAttribute('data-theme',t)})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/tw.css"/>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <style>
+    *{font-family:'Inter',sans-serif;box-sizing:border-box}
+    code,.mono{font-family:'JetBrains Mono',monospace}
+    :root{
+      --bg:#07090f;--bg2:#0a0d14;--card:#0d1117;--card2:#0b0e17;
+      --bdr:#1a2236;--bdr2:#2a3650;--bdrh:#374155;
+      --t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--t4:#334155;--t5:#1e2535;
+      --hbg:rgba(7,9,15,.88);
+      --inp:rgba(255,255,255,.04);--inpb:rgba(255,255,255,.09);
+      --acc:#6366f1;--acc2:#8b5cf6;
+      --ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
+    }
+    html[data-theme=light]{
+      --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;--card2:#f8fafc;
+      --bdr:#e2e8f0;--bdr2:#cbd5e1;--bdrh:#94a3b8;
+      --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
+      --hbg:rgba(248,250,252,.92);
+      --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
+      --acc:#4f46e5;--acc2:#7c3aed;
+      --ok:#16a34a;--warn:#d97706;--err:#dc2626;
+    }
+    body{background:var(--bg);color:var(--t1);min-height:100vh}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899)}
+    .hdr{
+      background:var(--hbg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:20;
+    }
+    .proj-card{
+      background:var(--card);border:1px solid var(--bdr);border-radius:16px;
+      transition:border-color .2s,transform .2s,box-shadow .2s;overflow:hidden;display:flex;flex-direction:column;
+    }
+    .proj-card:hover{border-color:var(--bdr2);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    html[data-theme=light] .proj-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
+    html[data-theme=light] .proj-card{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+    .dot-run{background:#22c55e;box-shadow:0 0 0 2.5px rgba(34,197,94,.25),0 0 10px rgba(34,197,94,.4)}
+    .dot-stop{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
+    .dot-restart{background:#f59e0b;box-shadow:0 0 0 2.5px rgba(245,158,11,.25),0 0 10px rgba(245,158,11,.4)}
+    .badge-run{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22)}
+    .badge-stop{background:rgba(239,68,68,.09);color:#f87171;border:1px solid rgba(239,68,68,.18)}
+    .badge-restart{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+    .badge-error{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+    html[data-theme=light] .badge-run{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .badge-stop{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.16)}
+    html[data-theme=light] .badge-restart{color:#d97706;background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.2)}
+    html[data-theme=light] .badge-error{color:#b91c1c;background:rgba(185,28,28,.1);border-color:rgba(185,28,28,.25)}
+    .act-btn{
+      flex:0 0 38px;height:32px;padding:0;border-radius:8px;font-size:11.5px;font-weight:600;
+      border:1px solid transparent;transition:all .15s;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:3px;
+    }
+    .act-start{background:rgba(34,197,94,.08);color:#4ade80;border-color:rgba(34,197,94,.15)}
+    .act-start:hover{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35)}
+    .act-stop{background:rgba(239,68,68,.08);color:#f87171;border-color:rgba(239,68,68,.15)}
+    .act-stop:hover{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.32)}
+    .act-restart{background:rgba(245,158,11,.08);color:#fbbf24;border-color:rgba(245,158,11,.15)}
+    .act-restart:hover{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.32)}
+    .act-manage{background:rgba(99,102,241,.1);color:#a5b4fc;border-color:rgba(99,102,241,.22);flex:1;height:32px;max-width:160px}
+    .act-manage:hover{background:rgba(99,102,241,.22);border-color:rgba(99,102,241,.45)}
+    .act-del{background:transparent;color:var(--t5);border-color:transparent;flex:0 0 32px;height:32px;padding:0}
+    .act-del:hover{background:rgba(239,68,68,.1);color:#f87171}
+    html[data-theme=light] .act-start{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.22)}
+    html[data-theme=light] .act-start:hover{background:rgba(22,163,74,.2)}
+    html[data-theme=light] .act-stop{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2)}
+    html[data-theme=light] .act-stop:hover{background:rgba(220,38,38,.18)}
+    html[data-theme=light] .act-restart{color:#d97706;background:rgba(217,119,6,.08);border-color:rgba(217,119,6,.2)}
+    html[data-theme=light] .act-restart:hover{background:rgba(217,119,6,.18)}
+    html[data-theme=light] .act-manage{color:#4338ca;background:rgba(67,56,202,.09);border-color:rgba(67,56,202,.22)}
+    html[data-theme=light] .act-manage:hover{background:rgba(67,56,202,.18)}
+    html[data-theme=light] .act-del{color:var(--t4)}
+    html[data-theme=light] .act-del:hover{background:rgba(220,38,38,.1);color:#dc2626}
+    html[data-theme=light] .file-start{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
+    html[data-theme=light] .proj-card a:hover{background:rgba(0,0,0,.025)!important}
+    .inp{
+      background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);
+      border-radius:10px;padding:8px 14px;font-size:13px;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .inp::placeholder{color:var(--t4)}
+    .inp:focus{outline:none;border-color:rgba(99,102,241,.6);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+    .btn-primary{
+      background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;
+      border-radius:10px;padding:8px 18px;font-size:13px;font-weight:600;
+      box-shadow:0 4px 16px rgba(99,102,241,.28);transition:transform .15s,box-shadow .15s;
+      display:flex;align-items:center;gap:6px;
+    }
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(99,102,241,.38)}
+    .btn-ghost{
+      background:var(--inp);color:var(--t2);border:1px solid var(--inpb);
+      cursor:pointer;border-radius:10px;padding:7px 14px;font-size:12px;font-weight:500;
+      transition:all .15s;display:flex;align-items:center;gap:5px;
+    }
+    .btn-ghost:hover{background:var(--card);color:var(--t1)}
+    .icon-btn{
+      width:34px;height:34px;border-radius:9px;background:var(--inp);border:1px solid var(--inpb);
+      display:flex;align-items:center;justify-content:center;color:var(--t3);
+      cursor:pointer;transition:all .15s;text-decoration:none;
+    }
+    .icon-btn:hover{background:var(--card);color:var(--t1)}
+    .stat-chip{
+      display:flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;
+      background:var(--inp);border:1px solid var(--inpb);font-size:12px;
+    }
+    .file-tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:5px}
+    .file-start{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+    .file-normal{background:var(--inp);color:var(--t4);border:1px solid var(--inpb)}
+    .modal-card{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,.6)}
+    html[data-theme=light] .modal-card{border-color:var(--bdr);box-shadow:0 16px 40px rgba(0,0,0,.15)}
+    @keyframes modalin{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+    .slide-in{animation:modalin .2s ease both}
+    #toast{position:fixed;bottom:20px;right:20px;z-index:9999}
+    @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .icon-sun{display:block} .icon-moon{display:none}
+    html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
+    .cmd-block{
+      display:flex;align-items:center;gap:7px;background:var(--bg2);border-radius:8px;
+      padding:6px 10px;border:1px solid var(--bdr);
+    }
+    .tun-ok{color:#4ade80}
+    .tun-err{color:#f87171}
+    html[data-theme=light] .tun-ok{color:#16a34a}
+    html[data-theme=light] .tun-err{color:#dc2626}
+    /* ── Responsive grid ── */
+    #main-wrap{padding:0}
+    .grid-container{max-width:1280px;margin:0 auto;padding:8px 16px 0}
+    #grid{display:flex;flex-wrap:wrap;gap:14px;align-content:start}
+    .proj-card{box-sizing:border-box}
+    /* ── Pagination ── */
+    #pg-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 0;min-height:42px}
+    .pg-btn{background:var(--inp);border:1px solid var(--inpb);color:var(--t2);cursor:pointer;border-radius:7px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .15s;flex-shrink:0}
+    .pg-btn:hover:not(:disabled){background:var(--card);color:var(--t1);border-color:var(--bdr2)}
+    .pg-btn:disabled{opacity:.3;cursor:not-allowed}
+    .pg-active{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}
+    html[data-theme=light] .pg-btn{background:var(--inp);border-color:var(--inpb)}
+  </style>
+</head>
+<body>
+<div class="top-bar"></div>
+
+<div id="toast" class="hidden">
+  <div id="toast-inner" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease"></div>
+</div>
+
+<!-- Header -->
+<header class="hdr px-4 sm:px-6 py-2.5">
+  <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <img src="/static/logo.svg" width="32" height="32" style="border-radius:9px;flex-shrink:0;box-shadow:0 4px 12px rgba(99,102,241,.35)" alt="PyVegar">
+      <span style="font-weight:700;font-size:16px;background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+    </div>
+    <div class="hidden md:flex items-center gap-2">
+      <div class="stat-chip"><span style="color:var(--acc);font-size:10px;font-weight:600">CPU</span><span id="top-cpu" class="mono" style="color:var(--t1);font-size:12px;font-weight:600">—</span></div>
+      <div class="stat-chip"><span style="color:var(--acc2);font-size:10px;font-weight:600">RAM</span><span id="top-ram" class="mono" style="color:var(--t1);font-size:12px;font-weight:600">—</span></div>
+      <div class="stat-chip"><span style="color:#10b981;font-size:10px;font-weight:600">Active</span><span id="top-active" class="mono" style="color:var(--t1);font-size:12px;font-weight:600">—</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--inp);border:1px solid var(--inpb);font-size:11px">
+        <span id="tun-dot" style="width:6px;height:6px;border-radius:50%;flex-shrink:0;{% if tunnel.status == 'running' %}background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5){% else %}background:#ef4444{% endif %}"></span>
+        <span id="tun-txt" class="hidden sm:inline {% if tunnel.status == 'running' %}tun-ok{% else %}tun-err{% endif %}">Tunnel</span>
+      </div>
+      <a href="/settings" class="icon-btn" title="Settings"><i data-lucide="settings" style="width:16px;height:16px"></i></a>
+      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+        <i data-lucide="sun" class="icon-sun" style="width:16px;height:16px"></i>
+        <i data-lucide="moon" class="icon-moon" style="width:16px;height:16px"></i>
+      </button>
+      <a href="/logout" class="icon-btn" title="Logout" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'" onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'"><i data-lucide="log-out" style="width:15px;height:15px"></i></a>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile stats -->
+<div class="md:hidden flex gap-2 px-4 pt-3 pb-1">
+  <div class="stat-chip"><span style="color:var(--acc);font-size:10px">CPU</span><span id="top-cpu-m" class="mono" style="color:var(--t1);font-size:11px;font-weight:600">—</span></div>
+  <div class="stat-chip"><span style="color:var(--acc2);font-size:10px">RAM</span><span id="top-ram-m" class="mono" style="color:var(--t1);font-size:11px;font-weight:600">—</span></div>
+  <div class="stat-chip"><span style="color:#10b981;font-size:10px">Active</span><span id="top-active-m" class="mono" style="color:var(--t1);font-size:11px;font-weight:600">—</span></div>
+</div>
+
+<!-- Toolbar -->
+<div style="max-width:1280px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+    <div style="position:relative;flex:1;max-width:260px;min-width:140px">
+      <i data-lucide="search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--t4);pointer-events:none"></i>
+      <input id="search" type="text" placeholder="Search servers…" class="inp" style="padding-left:32px;width:100%"/>
+    </div>
+    <span id="proj-count" style="font-size:12px;color:var(--t4);white-space:nowrap"></span>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button onclick="restartAll()" class="btn-ghost">
+      <i data-lucide="refresh-cw" style="width:13px;height:13px"></i><span class="hidden sm:inline"> Restart All</span>
+    </button>
+    <button onclick="openNew()" class="btn-primary">
+      <i data-lucide="plus" style="width:15px;height:15px"></i> New Server
+    </button>
+  </div>
+</div>
+
+<!-- Grid -->
+<main id="main-wrap">
+  <div class="grid-container">
+  <div id="grid">
+
+    {% if not projects %}
+    <div style="width:100%;text-align:center;padding:60px 20px 40px">
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.15));border:1px solid rgba(99,102,241,.2);margin-bottom:20px">
+        <i data-lucide="server" style="width:32px;height:32px;color:var(--acc);opacity:.7"></i>
+      </div>
+      <p style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:-.01em">No servers yet</p>
+      <p style="font-size:13px;color:var(--t3);margin-bottom:22px;line-height:1.6">Your projects will appear here.<br>Create your first server to get started.</p>
+      <button onclick="openNew()" style="display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(99,102,241,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+        <i data-lucide="plus" style="width:14px;height:14px"></i> New Server
+      </button>
+    </div>
+    {% endif %}
+
+    {% for p in projects %}
+    <div class="proj-card" data-id="{{ p.id }}" data-name="{{ p.name | replace('_', ' ') }}">
+      <!-- Status accent -->
+      <div data-proj-bar style="height:2px;{% if p.status == 'running' %}background:linear-gradient(90deg,#22c55e,rgba(34,197,94,.15)){% elif p.status == 'restarting' %}background:linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15)){% else %}background:linear-gradient(90deg,var(--bdr),transparent){% endif %}"></div>
+
+      <!-- Language banner (full-width, outside <a>) -->
+      <div data-lang-chip data-lang="{{ p.language }}" data-cmd="{{ p.startup_command if p.startup_command else 'python3 -u ' + p.start_file }}" data-file="{{ p.start_file }}"></div>
+
+      <a href="/server/{{ p.id }}" style="flex:1;display:block;padding:14px 18px;text-decoration:none;color:inherit" onmouseover="this.style.background='rgba(255,255,255,.015)'" onmouseout="this.style.background='transparent'">
+        <!-- Top row -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0">
+            <span data-proj-dot style="width:9px;height:9px;border-radius:50%;flex-shrink:0" class="{% if p.status == 'running' %}dot-run{% elif p.status == 'restarting' %}dot-restart{% else %}dot-stop{% endif %}"></span>
+            <span style="font-weight:700;font-size:15px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name | replace('_', ' ') }}</span>
+          </div>
+          <span data-proj-badge style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em" class="{% if p.status == 'running' %}badge-run{% elif p.status == 'restarting' %}badge-restart{% else %}badge-stop{% endif %}">{{ p.status }}</span>
+        </div>
+
+        <!-- Meta -->
+        <div style="display:flex;gap:14px;font-size:11px;color:var(--t5);margin-bottom:10px">
+          <span>PID <span data-proj-pid class="mono" style="color:var(--t3)">{{ p.pid or '—' }}</span></span>
+          <span>Restarts <span data-proj-restarts style="color:var(--t3)">{{ p.restarts }}</span></span>
+          <span>Files <span style="color:var(--t3)">{{ p.files | length }}</span></span>
+        </div>
+
+        <!-- Files -->
+        {% if p.files %}
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          {% for f in p.files[:5] %}
+          <span class="file-tag {% if f == p.start_file %}file-start{% else %}file-normal{% endif %}">{{ f }}</span>
+          {% endfor %}
+          {% if p.files|length > 5 %}
+          <span style="font-size:10px;color:var(--t5);padding:2px 4px">+{{ p.files|length - 5 }}</span>
+          {% endif %}
+        </div>
+        {% else %}
+        <p style="font-size:11px;color:var(--t5);font-style:italic">No files</p>
+        {% endif %}
+      </a>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:4px;padding:8px 12px 12px">
+        <button onclick="event.stopPropagation();projAct('start','{{ p.id }}','{{ p.name | replace("_"," ") }}')" class="act-btn act-start" title="Start"><i data-lucide="play" style="width:11px;height:11px"></i></button>
+        <button onclick="event.stopPropagation();projAct('stop','{{ p.id }}','{{ p.name | replace("_"," ") }}')" class="act-btn act-stop" title="Stop"><i data-lucide="square" style="width:11px;height:11px"></i></button>
+        <button onclick="event.stopPropagation();projAct('restart','{{ p.id }}','{{ p.name | replace("_"," ") }}')" class="act-btn act-restart" title="Restart"><i data-lucide="refresh-cw" style="width:11px;height:11px"></i></button>
+        <a href="/server/{{ p.id }}" class="act-btn act-manage" style="text-decoration:none;font-size:11.5px;font-weight:600">Manage</a>
+        <button onclick="event.stopPropagation();delProj('{{ p.id }}','{{ p.name | replace("_"," ") }}')" class="act-btn act-del" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div id="pg-bar"></div>
+  </div>
+</main>
+
+<!-- New Server Modal -->
+<div id="new-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center px-4"
+     style="background:rgba(0,0,0,.7);backdrop-filter:blur(6px)"
+     onclick="if(event.target===this)closeNew()">
+  <div class="modal-card w-full max-w-sm p-6 slide-in">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center">
+        <i data-lucide="server" style="width:15px;height:15px;color:#fff"></i>
+      </div>
+      <h3 style="font-weight:700;color:var(--t1);font-size:15px">New Server</h3>
+    </div>
+    <p style="font-size:12px;color:var(--t4);margin-bottom:16px">Lowercase letters, numbers, and hyphens only.</p>
+    <input id="new-name" type="text" placeholder="my-discord-bot"
+      style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;outline:none;transition:all .2s"
+      onfocus="this.style.borderColor='rgba(99,102,241,.7)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.12)'"
+      onblur="this.style.borderColor='var(--inpb)';this.style.boxShadow='none'"
+      onkeydown="if(event.key==='Enter')createProj()"/>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <label style="font-size:11.5px;color:var(--t4);font-weight:500">Language / Runtime</label>
+      <button id="rt-refresh-btn" onclick="refreshRuntimes()" title="Re-scan runtimes"
+        style="background:none;border:none;cursor:pointer;color:var(--t4);padding:2px 4px;border-radius:5px;display:flex;align-items:center;gap:4px;font-size:11px;transition:color .15s"
+        onmouseover="this.style.color='var(--t2)'" onmouseout="this.style.color='var(--t4)'">
+        <i id="rt-refresh-icon" data-lucide="refresh-cw" style="width:11px;height:11px"></i> Refresh
+      </button>
+    </div>
+    <select id="new-lang"
+      style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px;outline:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none;appearance:none"
+      onfocus="this.style.borderColor='rgba(99,102,241,.7)'"
+      onblur="this.style.borderColor='var(--inpb)'"
+      onchange="onLangChange(this.value)">
+      <option value="" disabled selected>Loading…</option>
+    </select>
+    <div id="new-other-block" class="hidden" style="margin-bottom:12px">
+      <input id="new-cmd" type="text"
+        style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;outline:none;transition:all .2s"
+        onfocus="this.style.borderColor='rgba(99,102,241,.7)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.12)'"
+        onblur="this.style.borderColor='var(--inpb)';this.style.boxShadow='none'"
+        placeholder="Startup command (e.g. bash run.sh)"/>
+      <input id="new-file" type="text"
+        style="width:100%;background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'JetBrains Mono',monospace;outline:none;transition:all .2s"
+        onfocus="this.style.borderColor='rgba(99,102,241,.7)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.12)'"
+        onblur="this.style.borderColor='var(--inpb)';this.style.boxShadow='none'"
+        placeholder="Start file (e.g. main.py)"/>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeNew()" class="btn-ghost">Cancel</button>
+      <button onclick="createProj()" class="btn-primary"><i data-lucide="plus" style="width:14px;height:14px"></i> Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Stats WS — live header stats + live card updates
+(function connectStats(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  const ws=new WebSocket(`${proto}://${location.host}/ws/stats`);
+  ws.onmessage=e=>{
+    const d=JSON.parse(e.data);
+    // Header stats
+    const cpu=d.cpu.toFixed(1)+'%',ram=d.ram.toFixed(1)+'%',act=d.active;
+    ['top-cpu','top-cpu-m'].forEach(id=>document.getElementById(id).textContent=cpu);
+    ['top-ram','top-ram-m'].forEach(id=>document.getElementById(id).textContent=ram);
+    ['top-active','top-active-m'].forEach(id=>document.getElementById(id).textContent=act);
+    // Live project cards — update existing + remove deleted
+    if(d.projects){
+      d.projects.forEach(applyCard);
+      const live=new Set(d.projects.map(p=>p.name));
+      document.querySelectorAll('.proj-card').forEach(c=>{
+        if(!live.has(c.dataset.name))removeCard(c.dataset.name);
+      });
+    }
+    // Tunnel chip
+    if(d.tunnel!=null) applyTunnelChip(d.tunnel);
+  };
+  ws.onclose=()=>setTimeout(connectStats,3000);
+})();
+
+// ── Language banner ──────────────────────────────────────────────────────────
+const LANG_MAP={
+  python:{ label:'Python',  abbr:'Py',  slug:'python',    color:'#3776ab', bg:'rgba(55,118,171,.18)',  bd:'rgba(55,118,171,.22)' },
+  nodejs:{ label:'Node.js', abbr:'JS',  slug:'nodedotjs', color:'#5a9e50', bg:'rgba(90,158,80,.18)',   bd:'rgba(90,158,80,.22)'  },
+  go:    { label:'Go',      abbr:'Go',  slug:'go',        color:'#00a8c8', bg:'rgba(0,168,200,.18)',   bd:'rgba(0,168,200,.22)'  },
+  ruby:  { label:'Ruby',    abbr:'Rb',  slug:'ruby',      color:'#cc342d', bg:'rgba(204,52,45,.18)',   bd:'rgba(204,52,45,.22)'  },
+  php:   { label:'PHP',     abbr:'PHP', slug:'php',       color:'#6f6eb5', bg:'rgba(111,110,181,.18)', bd:'rgba(111,110,181,.22)'},
+  deno:  { label:'Deno',    abbr:'Dn',  slug:'deno',      color:'#8b949e', bg:'rgba(139,148,158,.18)', bd:'rgba(139,148,158,.22)'},
+  bun:   { label:'Bun',     abbr:'Bun', slug:'bun',       color:'#c0713d', bg:'rgba(192,113,61,.18)',  bd:'rgba(192,113,61,.22)' },
+};
+function renderLangChip(el,lang,cmd,file){
+  const lc=LANG_MAP[lang];
+  const sub=file||cmd||'';
+  if(lc){
+    el.innerHTML=
+      `<div style="background:linear-gradient(135deg,${lc.bg} 0%,transparent 110%);border-bottom:1px solid ${lc.bd};padding:10px 16px;display:flex;align-items:center;gap:11px;position:relative;overflow:hidden;min-height:50px">`+
+        `<span style="width:34px;height:34px;border-radius:9px;background:${lc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:1;position:relative;overflow:hidden">`+
+          `<span style="font-size:${lc.abbr.length>2?'8':'11'}px;font-weight:900;color:#fff;letter-spacing:-.5px">${lc.abbr}</span>`+
+          `<img src="https://cdn.simpleicons.org/${lc.slug}/ffffff" width="20" height="20" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none" onload="this.style.display='block'" onerror="this.remove()">`+
+        `</span>`+
+        `<div style="min-width:0;flex:1;z-index:1">`+
+          `<div style="font-size:13.5px;font-weight:700;color:${lc.color};line-height:1.2;margin-bottom:2px">${lc.label}</div>`+
+          `<div style="font-size:10px;color:${lc.color};opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace">${sub}</div>`+
+        `</div>`+
+        `<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:56px;font-weight:900;color:${lc.color};opacity:.07;pointer-events:none;line-height:1;user-select:none;letter-spacing:-4px">${lc.abbr}</span>`+
+      `</div>`;
+  } else {
+    el.innerHTML=
+      `<div style="background:rgba(99,102,241,.07);border-bottom:1px solid rgba(99,102,241,.14);padding:10px 16px;display:flex;align-items:center;gap:11px;min-height:50px;overflow:hidden">`+
+        `<span style="width:34px;height:34px;border-radius:9px;background:rgba(99,102,241,.18);border:1.5px solid rgba(99,102,241,.28);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--acc)">`+
+          `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`+
+        `</span>`+
+        `<div style="min-width:0;flex:1">`+
+          `<div style="font-size:13.5px;font-weight:700;color:var(--t3);line-height:1.2;margin-bottom:2px">Custom</div>`+
+          `<div style="font-size:10px;color:var(--t5);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>`+
+        `</div>`+
+      `</div>`;
+  }
+}
+document.querySelectorAll('[data-lang-chip]').forEach(el=>renderLangChip(el,el.dataset.lang,el.dataset.cmd,el.dataset.file));
+
+function applyCard(p){
+  const card=document.querySelector(`.proj-card[data-id="${CSS.escape(p.id)}"]`);
+  if(!card)return;
+  const s=p.status;
+  const bar=card.querySelector('[data-proj-bar]');
+  const dot=card.querySelector('[data-proj-dot]');
+  const badge=card.querySelector('[data-proj-badge]');
+  const pidEl=card.querySelector('[data-proj-pid]');
+  const rsEl=card.querySelector('[data-proj-restarts]');
+  const chipEl=card.querySelector('[data-lang-chip]');
+  if(bar){
+    if(s==='running')bar.style.background='linear-gradient(90deg,#22c55e,rgba(34,197,94,.15))';
+    else if(s==='restarting')bar.style.background='linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15))';
+    else if(s==='error')bar.style.background='linear-gradient(90deg,#ef4444,rgba(239,68,68,.15))';
+    else bar.style.background='linear-gradient(90deg,var(--bdr),transparent)';
+  }
+  if(dot)dot.className=s==='running'?'dot-run':s==='restarting'?'dot-restart':s==='error'?'dot-stop':'dot-stop';
+  if(badge){badge.className=s==='running'?'badge-run':s==='restarting'?'badge-restart':s==='error'?'badge-error':'badge-stop';badge.textContent=s;}
+  if(pidEl)pidEl.textContent=p.pid||'—';
+  if(rsEl)rsEl.textContent=p.restarts;
+  if(chipEl&&p.language!==undefined){
+    const cmd=p.startup_command||(p.start_file?'python3 -u '+p.start_file:'');
+    renderLangChip(chipEl,p.language,cmd,p.start_file||'');
+  }
+}
+
+function applyTunnelChip(status){
+  const dot=document.getElementById('tun-dot');
+  const txt=document.getElementById('tun-txt');
+  if(dot){
+    if(status==='running'){dot.style.background='#22c55e';dot.style.boxShadow='0 0 6px rgba(34,197,94,.5)';}
+    else{dot.style.background='#ef4444';dot.style.boxShadow='none';}
+  }
+  if(txt){
+    txt.className='hidden sm:inline '+(status==='running'?'tun-ok':'tun-err');
+  }
+}
+
+// ── Pagination ───────────────────────────────────────────────────────────────
+let _page=1, _query='';
+
+function _colCount(){
+  const w=document.getElementById('grid').clientWidth;
+  if(w>=1100)return 4;
+  if(w>=780)return 3;
+  if(w>=540)return 2;
+  return 1;
+}
+function _pageSize(){
+  return _colCount()*2; // always show 2 rows
+}
+function _filtered(){
+  return [...document.querySelectorAll('.proj-card')].filter(
+    c=>c.dataset.name.toLowerCase().includes(_query));
+}
+function renderPage(){
+  const all=document.querySelectorAll('.proj-card');
+  const filtered=_filtered();
+  const size=_pageSize();
+  const total=filtered.length;
+  const totalPg=Math.max(1,Math.ceil(total/size));
+  if(_page>totalPg)_page=totalPg;
+  const start=(_page-1)*size;
+  all.forEach(c=>{c.style.display='none';c.style.flex='';});
+  const shown=filtered.slice(start,start+size);
+  const cols=Math.max(1,Math.min(shown.length,_colCount()));
+  // flex-basis so cols cards fill a row; flex-grow:1 lets last-row items stretch
+  const gap=14;
+  const basis=`calc(${(100/cols).toFixed(4)}% - ${((gap*(cols-1))/cols).toFixed(3)}px)`;
+  shown.forEach(c=>{c.style.display='';c.style.flex=`1 1 ${basis}`;});
+  document.getElementById('proj-count').textContent=
+    `${total} server${total!==1?'s':''}${_query?' matched':''}`;
+  _renderPg(totalPg);
+}
+function _renderPg(tp){
+  const bar=document.getElementById('pg-bar');
+  if(tp<=1){bar.innerHTML='';return;}
+  const chev_l=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>`;
+  const chev_r=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+  let h=`<button class="pg-btn" onclick="goPg(${_page-1})" ${_page<=1?'disabled':''}>${chev_l}</button>`;
+  let shown=new Set();
+  for(let i=1;i<=tp;i++){
+    if(i===1||i===tp||Math.abs(i-_page)<=1){
+      shown.add(i);
+      h+=`<button class="pg-btn${i===_page?' pg-active':''}" onclick="goPg(${i})">${i}</button>`;
+    } else if(!shown.has(i)&&(i===_page-2||i===_page+2)){
+      shown.add(i);
+      h+=`<span style="color:var(--t4);padding:0 2px;font-size:13px;line-height:30px">…</span>`;
+    }
+  }
+  h+=`<button class="pg-btn" onclick="goPg(${_page+1})" ${_page>=tp?'disabled':''}>${chev_r}</button>`;
+  bar.innerHTML=h;
+}
+function goPg(p){_page=p;renderPage();}
+document.getElementById('search').addEventListener('input',function(){
+  _query=this.value.toLowerCase();_page=1;renderPage();
+});
+window.addEventListener('resize',renderPage);
+renderPage();
+
+// Toast
+let _tt;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast'),inn=document.getElementById('toast-inner');
+  const bg=type==='ok'?'#065f46':type==='warn'?'#78350f':'#7f1d1d';
+  const bd=type==='ok'?'rgba(34,197,94,.3)':type==='warn'?'rgba(245,158,11,.3)':'rgba(239,68,68,.3)';
+  inn.style.cssText=`padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease;background:${bg};border:1px solid ${bd};color:#f1f5f9`;
+  inn.textContent=msg;
+  el.classList.remove('hidden');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.add('hidden'),3000);
+}
+
+// New server — prefetch runtimes immediately on page load
+let _runtimes=[];
+let _runtimesReady=false;
+(async function prefetchRuntimes(){
+  try{
+    const res=await fetch('/_/runtimes');
+    const d=await res.json();
+    _runtimes=d.runtimes||[];
+  }catch(e){
+    _runtimes=[{name:'Other',value:'other',version:'',start_file:'main.py',command:''}];
+  }
+  _runtimesReady=true;
+})();
+
+function _populateLangSelect(){
+  const sel=document.getElementById('new-lang');
+  sel.innerHTML='';
+  _runtimes.forEach(rt=>{
+    const opt=document.createElement('option');
+    opt.value=rt.value;
+    opt.textContent=rt.version?`${rt.name}  —  ${rt.version}`:rt.name;
+    sel.appendChild(opt);
+  });
+  if(_runtimes.length>0){sel.value=_runtimes[0].value;onLangChange(_runtimes[0].value);}
+}
+
+async function refreshRuntimes(){
+  const btn=document.getElementById('rt-refresh-btn');
+  const icon=document.getElementById('rt-refresh-icon');
+  const sel=document.getElementById('new-lang');
+  btn.disabled=true;
+  icon.style.animation='spin .8s linear infinite';
+  sel.innerHTML='<option disabled selected>Scanning…</option>';
+  try{
+    const res=await fetch('/_/runtimes/refresh',{method:'POST'});
+    const d=await res.json();
+    _runtimes=d.runtimes||[];
+    _runtimesReady=true;
+  }catch(e){
+    _runtimes=[{name:'Other',value:'other',version:'',start_file:'main.py',command:''}];
+  }
+  _populateLangSelect();
+  btn.disabled=false;
+  icon.style.animation='';
+}
+
+async function openNew(){
+  document.getElementById('new-name').value='';
+  document.getElementById('new-other-block').classList.add('hidden');
+  document.getElementById('new-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('new-name').focus(),80);
+  if(!_runtimesReady){
+    // still loading — wait up to 4s then fallback
+    const sel=document.getElementById('new-lang');
+    sel.innerHTML='<option disabled selected>Loading…</option>';
+    for(let i=0;i<40;i++){
+      await new Promise(r=>setTimeout(r,100));
+      if(_runtimesReady)break;
+    }
+    if(!_runtimesReady)
+      _runtimes=[{name:'Other',value:'other',version:'',start_file:'main.py',command:''}];
+  }
+  _populateLangSelect();
+}
+function onLangChange(val){
+  const block=document.getElementById('new-other-block');
+  if(val==='other')block.classList.remove('hidden');
+  else block.classList.add('hidden');
+}
+function closeNew(){document.getElementById('new-modal').classList.add('hidden');}
+async function createProj(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){toast('Enter a name','err');return;}
+  const langVal=document.getElementById('new-lang').value;
+  let startup_command='',start_file='main.py',language=langVal||'';
+  if(langVal==='other'){
+    startup_command=document.getElementById('new-cmd').value.trim();
+    start_file=document.getElementById('new-file').value.trim()||'main.py';
+  } else {
+    const rt=_runtimes.find(r=>r.value===langVal);
+    if(rt){startup_command=rt.command.replace('{start_file}',rt.start_file);start_file=rt.start_file;}
+  }
+  closeNew();
+  const r=await fetch('/_/projects/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,startup_command,start_file,language})});
+  const d=await r.json();
+  if(r.ok){toast(`Created "${d.name}"`);setTimeout(()=>location.href=`/server/${d.id}`,600);}
+  else toast(`${d.detail}`,'err');
+}
+
+// Card actions
+async function projAct(action,id,displayName){
+  const r=await fetch(`/_/projects/${encodeURIComponent(id)}/${action}`,{method:'POST'});
+  const d=await r.json();
+  if(r.ok) toast(`${action} → ${displayName||id}`);
+  else toast(`${d.detail||d.error}`,'err');
+}
+async function restartAll(){
+  await fetch('/_/restart-all',{method:'POST'});
+  toast('Restarting all…','warn');
+}
+async function delProj(id,displayName){
+  const ok=await showConfirm(`Delete "${displayName||id}"?`,'This stops the process and removes all project files. This cannot be undone.');
+  if(!ok)return;
+  const r=await fetch(`/_/projects/${encodeURIComponent(id)}`,{method:'DELETE'});
+  if(r.ok){
+    toast('Deleted');
+    removeCard(id);
+  } else toast('Delete failed','err');
+}
+function removeCard(id){
+  const card=document.querySelector(`.proj-card[data-id="${CSS.escape(id)}"]`);
+  if(!card)return;
+  card.style.transition='opacity .3s ease,transform .3s ease';
+  card.style.opacity='0';
+  card.style.transform='scale(.95)';
+  setTimeout(()=>{card.remove();renderPage();},300);
+}
+
+// ── Custom confirm modal ──────────────────────────────────────────────────────
+let _confirmResolve=null;
+function showConfirm(title,msg){
+  return new Promise(resolve=>{
+    document.getElementById('cm-title').textContent=title;
+    document.getElementById('cm-msg').textContent=msg;
+    const m=document.getElementById('confirm-modal');
+    m.style.display='flex';
+    _confirmResolve=result=>{m.style.display='none';resolve(result);};
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('confirm-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)_confirmResolve(false);});
+});
+
+// Theme
+function toggleTheme(){
+  var c=document.documentElement.getAttribute('data-theme')||'dark',n=c==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('pv3t',n);lucide.createIcons();
+}
+
+lucide.createIcons();
+</script>
+
+<!-- Custom confirm modal -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:26px 26px 20px;max-width:340px;width:calc(100% - 40px);box-shadow:0 24px 60px rgba(0,0,0,.5);animation:fadein .18s ease">
+    <div style="width:42px;height:42px;border-radius:11px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <div id="cm-title" style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px"></div>
+    <div id="cm-msg" style="font-size:13px;color:var(--t3);line-height:1.55;margin-bottom:22px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="_confirmResolve(false)" style="padding:8px 18px;border-radius:9px;border:1px solid var(--bdr);background:var(--inp);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--inp)'">Cancel</button>
+      <button onclick="_confirmResolve(true)" style="padding:8px 18px;border-radius:9px;border:none;background:#ef4444;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Delete</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
