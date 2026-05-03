@@ -11,14 +11,15 @@
     "name": "test"
   },
   "565376d1-ac2c-4b14-8094-acfa762aa2c1": {
-    "status": "stopped",
+    "status": "error",
     "pid": null,
     "start_file": "main.py",
     "startup_command": "python3 -u main.py",
-    "start_time": null,
-    "restarts": 0,
+    "start_time": 1777806156.9951224,
+    "restarts": 2,
     "language": "python",
     "id": "565376d1-ac2c-4b14-8094-acfa762aa2c1",
-    "name": "test"
+    "name": "test",
+    "crash_count": 2
   }
 }

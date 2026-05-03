@@ -610,8 +610,14 @@ async function projAct(action,id,displayName){
   else toast(`${d.detail||d.error}`,'err');
 }
 async function restartAll(){
-  await fetch('/_/restart-all',{method:'POST'});
-  toast('Restarting all…','warn');
+  const btn=document.querySelector('button[onclick="restartAll()"]');
+  if(btn){btn.disabled=true;btn.innerHTML='<i data-lucide="loader-2" style="width:13px;height:13px;animation:spin 1s linear infinite"></i> Restarting…';lucide.createIcons();}
+  try{
+    const r=await fetch('/_/restart-all',{method:'POST'});
+    if(r.ok) toast('All running servers restarted','warn');
+    else toast('Restart all failed','err');
+  }catch(e){toast('Restart all error: '+e,'err');}
+  if(btn){btn.disabled=false;btn.innerHTML='<i data-lucide="refresh-cw" style="width:13px;height:13px"></i><span class="hidden sm:inline"> Restart All</span>';lucide.createIcons();}
 }
 async function delProj(id,displayName){
   const ok=await showConfirm(`Delete "${displayName||id}"?`,'This stops the process and removes all project files. This cannot be undone.');

@@ -329,7 +329,9 @@ async def api_restart(project_id: str):
 
 @app.post("/_/restart-all")
 async def api_restart_all():
-    return manager.restart_all()
+    loop = asyncio.get_event_loop()
+    results = await loop.run_in_executor(None, manager.restart_all)
+    return {"ok": True, "results": results}
 
 
 @app.post("/_/projects/{project_id}/start-file")
