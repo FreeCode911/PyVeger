@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/tw.css"/>
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/spa.js"></script>
   <style>
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     code,.mono{font-family:'JetBrains Mono',monospace}
@@ -436,12 +437,12 @@
 </div>
 
 <script>
-const PROJECT = {{ project.id | tojson }};
-const PROJECT_NAME = {{ project.name | tojson }};
-let currentFile = null;
-let _startFile = {{ project.start_file | tojson }};
-let _expandedDirs = new Set();
-let _renameTarget = null;
+var PROJECT = {{ project.id | tojson }};
+var PROJECT_NAME = {{ project.name | tojson }};
+var currentFile = null;
+var _startFile = {{ project.start_file | tojson }};
+var _expandedDirs = new Set();
+var _renameTarget = null;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
@@ -751,7 +752,7 @@ async function action(type) {
   else toast(d.detail || 'Error', 'err');
 }
 
-let _statusTimer = null;
+var _statusTimer = null;
 function pollStatus() {
   clearTimeout(_statusTimer);
   _statusTimer = setTimeout(async () => {
@@ -797,18 +798,18 @@ async function installPkg() {
 }
 
 // ── Console WebSocket ──────────────────────────────────────────────────────
-let _wsConnected = false;
+var _wsConnected = false, _wsDead = false, _wsInst = null;
 function connectWs() {
-  if (_wsConnected) return;
+  if (_wsConnected || _wsDead) return;
   _wsConnected = true;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(PROJECT)}`);
+  _wsInst = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(PROJECT)}`);
   const badge = document.getElementById('ws-badge');
-  ws.onopen = () => {
+  _wsInst.onopen = () => {
     badge.style.cssText = 'padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.2)';
     badge.textContent = '● Live';
   };
-  ws.onmessage = e => {
+  _wsInst.onmessage = e => {
     if (e.data === '\x00CLEAR\x00') {
       document.getElementById('console-area').innerHTML = '';
       return;
@@ -828,13 +829,17 @@ function connectWs() {
       div.textContent = l;
       area.appendChild(div);
     });
-    if (document.getElementById('autoscroll').checked && atBottom)
+    if (document.getElementById('autoscroll') && document.getElementById('autoscroll').checked && atBottom)
       requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
   };
-  ws.onclose = () => {
+  _wsInst.onclose = () => {
     _wsConnected = false;
-    badge.style.cssText = 'padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.18)';
-    badge.textContent = '● Reconnecting';
+    if (_wsDead) return;
+    const badge2 = document.getElementById('ws-badge');
+    if (badge2) {
+      badge2.style.cssText = 'padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(239,68,68,.08);color:#f87171;border:1px solid rgba(239,68,68,.18)';
+      badge2.textContent = '● Reconnecting';
+    }
     setTimeout(connectWs, 3000);
   };
 }
@@ -844,7 +849,7 @@ async function clearConsole() {
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
-let _tt;
+var _tt;
 function toast(msg, type) {
   type = type || 'ok';
   const inn = document.getElementById('toast-inner');
@@ -866,10 +871,12 @@ function toggleTheme() {
 }
 
 // ── Live status via ws/stats ───────────────────────────────────────────────
-(function connectStatusWs(){
+var _svStatsWs, _svStatsDead = false;
+function _svConnectStats() {
+  if (_svStatsDead) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/stats`);
-  ws.onmessage = e => {
+  _svStatsWs = new WebSocket(`${proto}://${location.host}/ws/stats`);
+  _svStatsWs.onmessage = e => {
     let d; try { d = JSON.parse(e.data); } catch { return; }
     if (!d.projects) return;
     const p = d.projects.find(x => x.id === PROJECT);
@@ -895,8 +902,15 @@ function toggleTheme() {
     const infoUp = document.getElementById('info-uptime');
     if (infoUp) infoUp.textContent = _fmtUptime(p.uptime);
   };
-  ws.onclose = () => setTimeout(connectStatusWs, 3000);
-})();
+  _svStatsWs.onclose = () => { if (!_svStatsDead) setTimeout(_svConnectStats, 3000); };
+}
+if (window.PV3) PV3.onNavigate(() => {
+  _svStatsDead = true; _wsDead = true;
+  clearTimeout(_statusTimer);
+  if (_svStatsWs) _svStatsWs.close();
+  if (_wsInst)    _wsInst.close();
+});
+_svConnectStats();
 
 // ── Init ───────────────────────────────────────────────────────────────────
 if (_isMobile()) {
@@ -906,7 +920,7 @@ loadTree();
 lucide.createIcons();
 
 // ── Custom confirm modal ──────────────────────────────────────────────────────
-let _confirmResolve = null;
+var _confirmResolve = null;
 function showConfirm(title, msg) {
   return new Promise(resolve => {
     document.getElementById('cm-title').textContent = title;
@@ -916,11 +930,12 @@ function showConfirm(title, msg) {
     _confirmResolve = result => { m.style.display = 'none'; resolve(result); };
   });
 }
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('confirm-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) _confirmResolve(false);
-  });
-});
+function _initConfirmModal() {
+  var m = document.getElementById('confirm-modal');
+  if (m) m.addEventListener('click', e => { if (e.target === e.currentTarget && _confirmResolve) _confirmResolve(false); });
+}
+if (document.readyState !== 'loading') _initConfirmModal();
+else document.addEventListener('DOMContentLoaded', _initConfirmModal);
 </script>
 
 <!-- Custom confirm modal -->

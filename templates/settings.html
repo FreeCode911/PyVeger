@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/tw.css"/>
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/spa.js"></script>
   <style>
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     :root{
@@ -480,7 +481,7 @@ function toggleTheme() {
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
-let _tt;
+var _tt;
 function toast(msg, type) {
   type = type || 'ok';
   const inn = document.getElementById('toast-inner');
@@ -550,11 +551,12 @@ async function refreshBadge() {
 setInterval(refreshBadge, 5000);
 
 // ── Live tunnel log via WebSocket ─────────────────────────────────────────────
-const logEl  = document.getElementById('tunnel-log');
-const logDot = document.getElementById('log-dot');
-let _logWs   = null;
-let _logLines = [];
-const MAX_LINES = 500;
+var logEl  = document.getElementById('tunnel-log');
+var logDot = document.getElementById('log-dot');
+var _logWs   = null;
+var _logLines = [];
+var MAX_LINES = 500;
+var _settingsDead = false;
 
 function colorLine(line) {
   if (/error|failed|fatal/i.test(line)) return `<span class="l-err">${esc(line)}</span>`;
@@ -600,7 +602,8 @@ function connectLog() {
   _logWs.onmessage = e => appendLog(e.data);
 
   _logWs.onclose = () => {
-    logDot.classList.remove('live');
+    if (logDot) logDot.classList.remove('live');
+    if (_settingsDead) return;
     setTimeout(connectLog, 3000);
   };
 
@@ -675,10 +678,12 @@ async function saveCredentials(){
 }
 
 // ── Live tunnel badge via ws/stats ────────────────────────────────────────
-(function connectStatusWs(){
+var _stgStatsWs;
+function _stgConnectStats(){
+  if (_settingsDead) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/stats`);
-  ws.onmessage = e => {
+  _stgStatsWs = new WebSocket(`${proto}://${location.host}/ws/stats`);
+  _stgStatsWs.onmessage = e => {
     let d; try { d = JSON.parse(e.data); } catch { return; }
     if (d.tunnel == null) return;
     const st     = d.tunnel;
@@ -695,8 +700,14 @@ async function saveCredentials(){
     }
     txt.textContent = st;
   };
-  ws.onclose = () => setTimeout(connectStatusWs, 3000);
-})();
+  _stgStatsWs.onclose = () => { if (!_settingsDead) setTimeout(_stgConnectStats, 3000); };
+}
+if (window.PV3) PV3.onNavigate(() => {
+  _settingsDead = true;
+  if (_logWs)      _logWs.close();
+  if (_stgStatsWs) _stgStatsWs.close();
+});
+_stgConnectStats();
 
 lucide.createIcons();
 </script>

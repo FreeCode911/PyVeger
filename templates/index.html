@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/tw.css"/>
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/spa.js"></script>
   <style>
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     code,.mono{font-family:'JetBrains Mono',monospace}
@@ -372,32 +373,31 @@
 
 <script>
 // Stats WS — live header stats + live card updates
-(function connectStats(){
-  const proto=location.protocol==='https:'?'wss':'ws';
-  const ws=new WebSocket(`${proto}://${location.host}/ws/stats`);
-  ws.onmessage=e=>{
-    const d=JSON.parse(e.data);
-    // Header stats
-    const cpu=d.cpu.toFixed(1)+'%',ram=d.ram.toFixed(1)+'%',act=d.active;
-    ['top-cpu','top-cpu-m'].forEach(id=>document.getElementById(id).textContent=cpu);
-    ['top-ram','top-ram-m'].forEach(id=>document.getElementById(id).textContent=ram);
-    ['top-active','top-active-m'].forEach(id=>document.getElementById(id).textContent=act);
-    // Live project cards — update existing + remove deleted
+var _statsWs, _statsDead=false;
+function _reconnectStats(){
+  if(_statsDead)return;
+  var proto=location.protocol==='https:'?'wss':'ws';
+  _statsWs=new WebSocket(proto+'://'+location.host+'/ws/stats');
+  _statsWs.onmessage=function(e){
+    var d=JSON.parse(e.data);
+    var cpu=d.cpu.toFixed(1)+'%',ram=d.ram.toFixed(1)+'%',act=d.active;
+    ['top-cpu','top-cpu-m'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=cpu;});
+    ['top-ram','top-ram-m'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ram;});
+    ['top-active','top-active-m'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=act;});
     if(d.projects){
       d.projects.forEach(applyCard);
-      const live=new Set(d.projects.map(p=>p.name));
-      document.querySelectorAll('.proj-card').forEach(c=>{
-        if(!live.has(c.dataset.name))removeCard(c.dataset.name);
-      });
+      var live=new Set(d.projects.map(function(p){return p.id;}));
+      document.querySelectorAll('.proj-card').forEach(function(c){if(!live.has(c.dataset.id))removeCard(c.dataset.id);});
     }
-    // Tunnel chip
-    if(d.tunnel!=null) applyTunnelChip(d.tunnel);
+    if(d.tunnel!=null)applyTunnelChip(d.tunnel);
   };
-  ws.onclose=()=>setTimeout(connectStats,3000);
-})();
+  _statsWs.onclose=function(){if(!_statsDead)setTimeout(_reconnectStats,3000);};
+}
+if(window.PV3)PV3.onNavigate(function(){_statsDead=true;if(_statsWs)_statsWs.close();});
+_reconnectStats();
 
 // ── Language banner ──────────────────────────────────────────────────────────
-const LANG_MAP={
+var LANG_MAP={
   python:{ label:'Python',  abbr:'Py',  slug:'python',    color:'#3776ab', bg:'rgba(55,118,171,.18)',  bd:'rgba(55,118,171,.22)' },
   nodejs:{ label:'Node.js', abbr:'JS',  slug:'nodedotjs', color:'#5a9e50', bg:'rgba(90,158,80,.18)',   bd:'rgba(90,158,80,.22)'  },
   go:    { label:'Go',      abbr:'Go',  slug:'go',        color:'#00a8c8', bg:'rgba(0,168,200,.18)',   bd:'rgba(0,168,200,.22)'  },
@@ -476,7 +476,7 @@ function applyTunnelChip(status){
 }
 
 // ── Pagination ───────────────────────────────────────────────────────────────
-let _page=1, _query='';
+var _page=1, _query='';
 
 function _colCount(){
   const w=document.getElementById('grid').clientWidth;
@@ -538,7 +538,7 @@ window.addEventListener('resize',renderPage);
 renderPage();
 
 // Toast
-let _tt;
+var _tt;
 function toast(msg,type='ok'){
   const el=document.getElementById('toast'),inn=document.getElementById('toast-inner');
   const bg=type==='ok'?'#065f46':type==='warn'?'#78350f':'#7f1d1d';
@@ -550,8 +550,8 @@ function toast(msg,type='ok'){
 }
 
 // New server — prefetch runtimes immediately on page load
-let _runtimes=[];
-let _runtimesReady=false;
+var _runtimes=[];
+var _runtimesReady=false;
 (async function prefetchRuntimes(){
   try{
     const res=await fetch('/_/runtimes');
@@ -563,8 +563,8 @@ let _runtimesReady=false;
   _runtimesReady=true;
 })();
 
-const LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
-const LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
+var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
+var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
 function _populateLangSelect(){
   const hidden=document.getElementById('new-lang');
   const list=document.getElementById('lang-dd-list');
@@ -695,7 +695,7 @@ async function createProj(){
   closeNew();
   const r=await fetch('/_/projects/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,startup_command,start_file,language})});
   const d=await r.json();
-  if(r.ok){toast(`Created "${d.name}"`);setTimeout(()=>location.href=`/server/${d.id}`,600);}
+  if(r.ok){toast(`Created "${d.name}"`);setTimeout(()=>PV3.go(`/server/${d.id}`),600);}
   else toast(`${d.detail}`,'err');
 }
 
@@ -739,7 +739,7 @@ function removeCard(id){
 }
 
 // ── Custom confirm modal ──────────────────────────────────────────────────────
-let _confirmResolve=null;
+var _confirmResolve=null;
 function showConfirm(title,msg){
   return new Promise(resolve=>{
     document.getElementById('cm-title').textContent=title;
@@ -749,9 +749,12 @@ function showConfirm(title,msg){
     _confirmResolve=result=>{m.style.display='none';resolve(result);};
   });
 }
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('confirm-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)_confirmResolve(false);});
-});
+function _initConfirmModal(){
+  var m=document.getElementById('confirm-modal');
+  if(m)m.addEventListener('click',function(e){if(e.target===e.currentTarget&&_confirmResolve)_confirmResolve(false);});
+}
+if(document.readyState!=='loading')_initConfirmModal();
+else document.addEventListener('DOMContentLoaded',_initConfirmModal);
 
 // Theme
 function toggleTheme(){

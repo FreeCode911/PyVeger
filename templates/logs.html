@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/tw.css"/>
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="/static/spa.js"></script>
   <style>
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     :root{
@@ -127,11 +128,11 @@
 </main>
 
 <script>
-const projectId = {{ project_id | tojson }};
-const logContent = document.getElementById('log-content');
-let lineCount = 0;
+var projectId = {{ project_id | tojson }};
+var logContent = document.getElementById('log-content');
+var lineCount = 0;
 
-const logBox = document.getElementById('log-box');
+var logBox = document.getElementById('log-box');
 
 function addLines(text) {
   const atBottom = logBox.scrollHeight - logBox.scrollTop - logBox.clientHeight < 80;
@@ -164,25 +165,29 @@ async function clearLog() {
   if (r.ok) clearDisplay();
 }
 
+var _logWs, _logDead = false;
 function connect() {
+  if (_logDead) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(projectId)}`);
+  _logWs = new WebSocket(`${proto}://${location.host}/ws/logs/${encodeURIComponent(projectId)}`);
   const badge = document.getElementById('conn-badge');
-  ws.onopen = () => {
+  _logWs.onopen = () => {
     badge.className = 'badge badge-live';
     badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.6)"></span> Live';
   };
-  ws.onmessage = e => {
+  _logWs.onmessage = e => {
     if (e.data === '\x00CLEAR\x00') { clearDisplay(); return; }
     addLines(e.data);
   };
-  ws.onclose = () => {
-    badge.className = 'badge badge-error';
-    badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span> Reconnecting…';
+  _logWs.onclose = () => {
+    if (_logDead) return;
+    const b = document.getElementById('conn-badge');
+    if (b) { b.className = 'badge badge-error'; b.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span> Reconnecting…'; }
     setTimeout(connect, 3000);
   };
-  ws.onerror = () => ws.close();
+  _logWs.onerror = () => _logWs.close();
 }
+if (window.PV3) PV3.onNavigate(() => { _logDead = true; if (_logWs) _logWs.close(); });
 connect();
 
 function toggleTheme() {
