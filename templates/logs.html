@@ -31,10 +31,12 @@
     body{background:var(--bg);color:var(--t1);min-height:100vh;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
-    .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55)}
+    .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
     .hdr{
-      background:var(--hbg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:10;
+      background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      border:1px solid rgba(251,54,64,.22);border-radius:50px;
+      box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);
+      pointer-events:all;max-width:1300px;margin:0 auto;
     }
     .icon-btn{
       display:flex;align-items:center;justify-content:center;
@@ -75,9 +77,7 @@
   </style>
 </head>
 <body>
-<div class="top-bar"></div>
-
-<div class="hdr px-4 sm:px-6 py-2.5">
+<div class="hdr-wrap"><div class="hdr" style="padding:8px 20px">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <a href="/" class="breadcrumb-link">
       <img src="/static/logo.svg?v=6" width="24" height="24" style="border-radius:7px;flex-shrink:0" alt="PyVegar">

@@ -34,10 +34,12 @@
     body{background:var(--bg);color:var(--t1);min-height:100vh;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
-    .top-bar{height:3px;background:var(--acc);box-shadow:0 0 14px rgba(251,54,64,.55)}
+    .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
     .hdr{
-      background:var(--hbg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:20;
+      background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      border:1px solid rgba(251,54,64,.22);border-radius:50px;
+      box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);
+      pointer-events:all;max-width:1300px;margin:0 auto;
     }
     .proj-card{
       background:var(--card);border:1px solid var(--bdr);border-radius:16px;
@@ -148,14 +150,12 @@
   </style>
 </head>
 <body>
-<div class="top-bar"></div>
-
 <div id="toast" class="hidden">
   <div id="toast-inner" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastin .2s ease"></div>
 </div>
 
 <!-- Header -->
-<header class="hdr px-4 sm:px-6 py-2.5">
+<div class="hdr-wrap"><header class="hdr" style="padding:8px 20px">
   <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px">
     <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
       <img src="/static/logo.svg?v=6" width="32" height="32" style="border-radius:9px;flex-shrink:0;box-shadow:0 4px 12px rgba(251,54,64,.35)" alt="PyVegar">
@@ -179,7 +179,7 @@
       <a href="/logout" class="icon-btn" title="Logout" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'" onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'"><i data-lucide="log-out" style="width:15px;height:15px"></i></a>
     </div>
   </div>
-</header>
+</header></div>
 
 <!-- Mobile stats -->
 <div class="md:hidden flex gap-2 px-4 pt-3 pb-1">
