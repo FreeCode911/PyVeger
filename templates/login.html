@@ -77,10 +77,17 @@
     <p style="font-size:13px;color:var(--t3)">Sign in to your panel</p>
   </div>
 
-  {% if error %}
+  {% if error == 'locked' %}
+  <div class="fadeup" style="margin-bottom:14px;padding:11px 14px;border-radius:11px;border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:#fbbf24;font-size:13px;display:flex;align-items:center;gap:8px;animation-delay:.1s">
+    <i data-lucide="shield-off" style="width:15px;height:15px;flex-shrink:0"></i>
+    Too many failed attempts. Try again in {{ request.query_params.get('secs','300') | int // 60 + 1 }} min.
+  </div>
+  {% elif error %}
   <div class="fadeup" style="margin-bottom:14px;padding:11px 14px;border-radius:11px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.08);color:#f87171;font-size:13px;display:flex;align-items:center;gap:8px;animation-delay:.1s">
     <i data-lucide="alert-circle" style="width:15px;height:15px;flex-shrink:0"></i>
     Invalid username or password
+    {% set left = request.query_params.get('left','') %}
+    {% if left and left != '0' %} — <b>{{ left }} attempt{{ 's' if left|int != 1 else '' }}</b> left{% endif %}
   </div>
   {% endif %}
 
@@ -99,7 +106,7 @@
   </div>
 
   <p class="fadeup" style="text-align:center;font-size:11px;color:var(--t4);margin-top:18px;animation-delay:.2s">
-    Credentials in <code style="color:var(--t3);background:var(--inp);padding:1px 5px;border-radius:4px;font-size:11px">config.json</code>
+    Change credentials in <b>Settings → Security</b>
   </p>
 </div>
 

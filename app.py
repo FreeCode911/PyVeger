@@ -6,9 +6,13 @@ import asyncio
 import logging
 import secrets
 import time
+import hmac
 import urllib.request as _urlreq
 from contextlib import asynccontextmanager
+from collections import defaultdict
 from pathlib import Path
+
+import bcrypt
 
 import psutil
 from fastapi import FastAPI, UploadFile, File, Request, WebSocket, WebSocketDisconnect, HTTPException
@@ -35,6 +39,66 @@ SESSION_TTL = 60 * 60 * 24 * 7
 SESSION_COOKIE = "pv3_session"
 
 _PUBLIC = {"/login", "/static"}
+
+# ── Password helpers ───────────────────────────────────────────────────────────
+
+def _is_hashed(pw: str) -> bool:
+    return pw.startswith("$2b$") or pw.startswith("$2a$") or pw.startswith("$2y$")
+
+def _hash_password(plain: str) -> str:
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt(rounds=12)).decode()
+
+def _verify_password(plain: str, stored: str) -> bool:
+    if _is_hashed(stored):
+        return bcrypt.checkpw(plain.encode(), stored.encode())
+    # plain-text fallback (migration path)
+    return hmac.compare_digest(plain, stored)
+
+def _migrate_password_if_needed():
+    """Hash plain-text passwords in config.json on first boot."""
+    try:
+        cfg = _load_config()
+        pw = cfg.get("password", "")
+        if pw and not _is_hashed(pw):
+            cfg["password"] = _hash_password(pw)
+            _save_config(cfg)
+            logging.getLogger("app").info("Password migrated to bcrypt hash")
+    except Exception as e:
+        logging.getLogger("app").warning(f"Password migration skipped: {e}")
+
+# ── Login rate limiter ─────────────────────────────────────────────────────────
+
+_MAX_ATTEMPTS   = 5      # failures before lockout
+_LOCKOUT_SEC    = 300    # 5 minutes
+_WINDOW_SEC     = 60     # sliding window for counting failures
+
+_login_attempts: dict[str, list[float]] = defaultdict(list)  # ip → [timestamps]
+_lockouts:       dict[str, float]       = {}                  # ip → unlock_time
+
+def _client_ip(request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    return forwarded.split(",")[0].strip() or request.client.host or "unknown"
+
+def _is_locked(ip: str) -> tuple[bool, int]:
+    unlock = _lockouts.get(ip, 0)
+    if time.time() < unlock:
+        return True, int(unlock - time.time())
+    return False, 0
+
+def _record_failure(ip: str):
+    now = time.time()
+    attempts = _login_attempts[ip]
+    attempts.append(now)
+    # keep only attempts within the window
+    _login_attempts[ip] = [t for t in attempts if now - t < _WINDOW_SEC]
+    if len(_login_attempts[ip]) >= _MAX_ATTEMPTS:
+        _lockouts[ip] = now + _LOCKOUT_SEC
+        _login_attempts[ip] = []
+        logging.getLogger("app").warning(f"Login lockout for {ip} ({_MAX_ATTEMPTS} failures)")
+
+def _clear_failures(ip: str):
+    _login_attempts.pop(ip, None)
+    _lockouts.pop(ip, None)
 
 
 def _load_config() -> dict:
@@ -84,8 +148,34 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "img-src 'self' data: https://cdn.simpleicons.org; "
+    "connect-src 'self' wss: ws:; "
+    "frame-ancestors 'none';"
+)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Content-Security-Policy"] = _CSP
+        # HSTS — only add when served over HTTPS
+        if request.headers.get("x-forwarded-proto", "") == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _migrate_password_if_needed()
     discord_bot.start_bot()
     cfg = _load_config()
     if cfg.get("cloudflare_token"):
@@ -95,6 +185,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="PyVegar", lifespan=lifespan)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuthMiddleware)
 
 static_dir = BASE_DIR / "static"
@@ -112,16 +203,31 @@ async def login_page(request: Request, error: str = ""):
 
 @app.post("/login")
 async def login_submit(request: Request):
+    ip = _client_ip(request)
+    locked, secs = _is_locked(ip)
+    if locked:
+        return RedirectResponse(url=f"/login?error=locked&secs={secs}", status_code=303)
     form = await request.form()
     username = str(form.get("username", "")).strip()
     password = str(form.get("password", ""))
     cfg = _load_config()
-    if username == cfg.get("username", "admin") and password == cfg.get("password", "admin"):
+    valid_user = hmac.compare_digest(username, cfg.get("username", "admin"))
+    valid_pass = _verify_password(password, cfg.get("password", "admin"))
+    if valid_user and valid_pass:
+        _clear_failures(ip)
         token = _new_session()
         resp = RedirectResponse(url="/", status_code=303)
-        resp.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", max_age=SESSION_TTL)
+        # secure=True when behind HTTPS proxy; httponly + samesite=strict
+        https = request.headers.get("x-forwarded-proto", "") == "https"
+        resp.set_cookie(
+            SESSION_COOKIE, token,
+            httponly=True, samesite="strict",
+            secure=https, max_age=SESSION_TTL,
+        )
         return resp
-    return RedirectResponse(url="/login?error=1", status_code=303)
+    _record_failure(ip)
+    remaining = _MAX_ATTEMPTS - len(_login_attempts[ip])
+    return RedirectResponse(url=f"/login?error=1&left={max(0,remaining)}", status_code=303)
 
 
 @app.get("/logout")
@@ -132,6 +238,30 @@ async def logout(request: Request):
     resp = RedirectResponse(url="/login", status_code=302)
     resp.delete_cookie(SESSION_COOKIE)
     return resp
+
+
+# ── Change credentials ────────────────────────────────────────────────────────
+
+@app.post("/_/security/change-password")
+async def api_change_password(request: Request):
+    body = await request.json()
+    current  = body.get("current", "")
+    new_pw   = body.get("new_password", "").strip()
+    username = body.get("username", "").strip()
+    if not current or not new_pw:
+        raise HTTPException(status_code=400, detail="All fields are required")
+    if len(new_pw) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    cfg = _load_config()
+    if not _verify_password(current, cfg.get("password", "")):
+        raise HTTPException(status_code=403, detail="Current password is incorrect")
+    cfg["password"] = _hash_password(new_pw)
+    if username:
+        cfg["username"] = username
+    _save_config(cfg)
+    # invalidate all sessions so everyone must re-login
+    _sessions.clear()
+    return {"ok": True}
 
 
 # ── Pages ──────────────────────────────────────────────────────────────────────

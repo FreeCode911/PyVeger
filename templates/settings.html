@@ -90,6 +90,13 @@
     .icon-sun{display:block} .icon-moon{display:none}
     html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    /* Password strength bar */
+    .pw-seg{flex:1;height:3px;border-radius:2px;background:var(--inpb);transition:background .25s}
+    .pw-seg.w{background:#ef4444}
+    .pw-seg.f{background:#f59e0b}
+    .pw-seg.g{background:#22c55e}
+    /* field-label */
+    .field-label{display:block;font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
     @media(max-width:600px){
       .two-col{grid-template-columns:1fr!important}
       .sec-hdr{flex-direction:column;align-items:flex-start!important}
@@ -142,6 +149,75 @@
 </header></div>
 
 <main style="max-width:880px;margin:0 auto;padding:20px 16px 80px">
+
+  <!-- ══ SECURITY ══════════════════════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="lock" style="width:13px;height:13px"></i> Security</p>
+  <div class="section">
+    <!-- header -->
+    <div class="sec-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:9px;background:rgba(251,54,64,.12);border:1px solid rgba(251,54,64,.2);display:flex;align-items:center;justify-content:center">
+          <i data-lucide="key-round" style="width:16px;height:16px;color:#fb3640"></i>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--t1)">Change Credentials</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:1px">Password is stored as a bcrypt hash</div>
+        </div>
+      </div>
+      <div id="sec-status" style="font-size:11px;font-weight:600;display:none"></div>
+    </div>
+    <!-- form -->
+    <div class="row" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <label class="field-label">Username</label>
+          <input id="sec-username" type="text" class="inp" autocomplete="username" placeholder="admin" style="width:100%"/>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <label class="field-label">Current Password</label>
+          <input id="sec-current" type="password" class="inp" autocomplete="current-password" placeholder="••••••••" style="width:100%"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <label class="field-label">New Password</label>
+          <input id="sec-new" type="password" class="inp" autocomplete="new-password" placeholder="min 8 characters" style="width:100%"/>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <label class="field-label">Confirm New Password</label>
+          <input id="sec-confirm" type="password" class="inp" autocomplete="new-password" placeholder="repeat new password" style="width:100%"/>
+        </div>
+      </div>
+    </div>
+    <!-- password strength bar -->
+    <div style="padding:0 18px 4px;display:flex;gap:3px" id="pw-strength-bar">
+      <div class="pw-seg" id="pws-1"></div><div class="pw-seg" id="pws-2"></div>
+      <div class="pw-seg" id="pws-3"></div><div class="pw-seg" id="pws-4"></div>
+    </div>
+    <div id="pw-strength-label" style="padding:0 18px 10px;font-size:11px;color:var(--t4)"></div>
+    <!-- save button -->
+    <div class="row" style="border-bottom:none;padding-top:4px">
+      <button id="btn-save-creds" onclick="saveCredentials()" class="btn-primary" style="font-size:12px;padding:8px 20px;width:auto">
+        <i data-lucide="save" style="width:13px;height:13px"></i> Save Credentials
+      </button>
+    </div>
+  </div>
+
+  <!-- security info pills -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;padding:0 4px">
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:#4ade80">
+      <i data-lucide="check-circle" style="width:11px;height:11px"></i> Bcrypt password hashing
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:#4ade80">
+      <i data-lucide="check-circle" style="width:11px;height:11px"></i> HttpOnly + SameSite=Strict cookies
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:#4ade80">
+      <i data-lucide="check-circle" style="width:11px;height:11px"></i> Login rate-limiting (5 attempts / 5 min lockout)
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:20px;padding:4px 12px;font-size:11px;color:#4ade80">
+      <i data-lucide="check-circle" style="width:11px;height:11px"></i> Security headers (CSP, HSTS, X-Frame-Options)
+    </div>
+  </div>
 
   <!-- ══ CLOUDFLARE RUN-TOKEN TUNNEL ════════════════════════════════════════ -->
   <p class="sec-title"><i data-lucide="shield" style="width:13px;height:13px"></i> Cloudflare Tunnel</p>
@@ -532,6 +608,71 @@ function connectLog() {
 }
 
 connectLog();
+
+// ── Security: password strength + save credentials ────────────────────────
+(function(){
+  const newPw = document.getElementById('sec-new');
+  const segs  = [1,2,3,4].map(i => document.getElementById('pws-'+i));
+  const label = document.getElementById('pw-strength-label');
+  const levels = ['','Weak','Fair','Good','Strong'];
+  const colors = ['','w','f','g','g'];
+
+  function scorePassword(pw){
+    if (!pw) return 0;
+    let s = 0;
+    if (pw.length >= 8)  s++;
+    if (pw.length >= 12) s++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(4, Math.ceil(s * 4/5));
+  }
+
+  if (newPw) newPw.addEventListener('input', function(){
+    const score = scorePassword(this.value);
+    segs.forEach((seg, i) => {
+      seg.className = 'pw-seg' + (i < score ? ' ' + colors[score] : '');
+    });
+    label.textContent = this.value ? levels[score] : '';
+  });
+})();
+
+async function saveCredentials(){
+  const username = document.getElementById('sec-username').value.trim();
+  const current  = document.getElementById('sec-current').value;
+  const newPw    = document.getElementById('sec-new').value;
+  const confirm  = document.getElementById('sec-confirm').value;
+  const status   = document.getElementById('sec-status');
+  const btn      = document.getElementById('btn-save-creds');
+
+  if (!current) { showToast('Enter your current password','err'); return; }
+  if (!newPw)   { showToast('Enter a new password','err'); return; }
+  if (newPw.length < 8) { showToast('New password must be at least 8 characters','err'); return; }
+  if (newPw !== confirm) { showToast('Passwords do not match','err'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<svg style="width:13px;height:13px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving…';
+
+  try {
+    const r = await fetch('/_/security/change-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, current, new_password: newPw })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      showToast('Credentials updated — logging you out…','ok');
+      setTimeout(() => { window.location.href = '/logout'; }, 1800);
+    } else {
+      showToast(d.detail || 'Error saving credentials','err');
+      btn.disabled = false;
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Credentials';
+    }
+  } catch(e) {
+    showToast('Network error','err');
+    btn.disabled = false;
+    btn.innerHTML = 'Save Credentials';
+  }
+}
 
 // ── Live tunnel badge via ws/stats ────────────────────────────────────────
 (function connectStatusWs(){
