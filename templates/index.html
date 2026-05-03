@@ -565,6 +565,18 @@ var _runtimesReady=false;
 
 var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',php:'#6f6eb5',deno:'#8b949e',bun:'#c0713d',other:'#fb3640'};
 var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',other:'?'};
+function _getLangLogo(langVal){
+  const logos={
+    python:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor"><path d="M16 2c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 1c7.2 0 13 5.8 13 13s-5.8 13-13 13-13-5.8-13-13 5.8-13 13-13z"/><path d="M10.5 9c-1 0-1.5.8-1.5 1.5v3c0 .7.5 1.5 1.5 1.5h4.5v1H9v2h5.5c1.1 0 2-.9 2-2v-4.5c0-1.1-.9-2-2-2h-4zm11 0c-1.1 0-2 .9-2 2v4.5c0 1.1.9 2 2 2h4.5v-1H21c-.7 0-1.5-.8-1.5-1.5v-3c0-.7.8-1.5 1.5-1.5h4.5v-1h-5z"/></svg>',
+    nodejs:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 3c-7.2 0-13 5.8-13 13s5.8 13 13 13 13-5.8 13-13-5.8-13-13-13zm0 1c6.6 0 12 5.4 12 12s-5.4 12-12 12-12-5.4-12-12 5.4-12 12-12z"/><path d="M16 10l4 2v6l-4 2-4-2v-6l4-2zm0 2l-2 1v4l2 1 2-1v-4l-2-1z"/></svg>',
+    go:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 1c7.2 0 13 5.8 13 13s-5.8 13-13 13-13-5.8-13-13 5.8-13 13-13z"/><text x="16" y="21" font-size="14" font-weight="bold" text-anchor="middle" fill="currentColor">Go</text></svg>',
+    ruby:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 3c-7.2 0-13 5.8-13 13s5.8 13 13 13 13-5.8 13-13-5.8-13-13-13zm0 1c6.6 0 12 5.4 12 12s-5.4 12-12 12-12-5.4-12-12 5.4-12 12-12z"/><circle cx="16" cy="16" r="5" fill="currentColor"/></svg>',
+    php:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 1c7.2 0 13 5.8 13 13s-5.8 13-13 13-13-5.8-13-13 5.8-13 13-13z"/><text x="16" y="21" font-size="14" font-weight="bold" text-anchor="middle" fill="currentColor">PHP</text></svg>',
+    deno:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 1c7.2 0 13 5.8 13 13s-5.8 13-13 13-13-5.8-13-13 5.8-13 13-13z"/><text x="16" y="21" font-size="12" font-weight="bold" text-anchor="middle" fill="currentColor">DN</text></svg>',
+    bun:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 2c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 1c7.2 0 13 5.8 13 13s-5.8 13-13 13-13-5.8-13-13 5.8-13 13-13z"/><text x="16" y="21" font-size="14" font-weight="bold" text-anchor="middle" fill="currentColor">B</text></svg>'
+  };
+  return logos[langVal]||'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="6" fill="currentColor"/></svg>';
+}
 function _populateLangSelect(){
   const hidden=document.getElementById('new-lang');
   const list=document.getElementById('lang-dd-list');
@@ -573,24 +585,25 @@ function _populateLangSelect(){
   _runtimes.forEach((rt,i)=>{
     const color=LANG_COLORS[rt.value]||'#fb3640';
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    const logo=_getLangLogo(rt.value);
     const opt=document.createElement('div');
     opt.className='lang-dd-opt'+(i===0?' selected':'');
     opt.dataset.value=rt.value;
     opt.innerHTML=
-      `<span class="lang-dd-opt-icon" style="background:${color}">${abbr}</span>`+
+      `<span class="lang-dd-opt-icon" style="width:20px;height:20px;color:${color};flex-shrink:0">${logo}</span>`+
       `<span class="lang-dd-opt-name">${rt.name}</span>`+
       (rt.version?`<span class="lang-dd-opt-ver">${rt.version}</span>`:'');
-    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,abbr);
+    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,logo);
     list.appendChild(opt);
   });
   if(_runtimes.length>0){
     const rt=_runtimes[0];
     const color=LANG_COLORS[rt.value]||'#fb3640';
-    const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
+    const logo=_getLangLogo(rt.value);
     hidden.value=rt.value;
     label.innerHTML=
       `<span style="display:inline-flex;align-items:center;gap:8px">`+
-        `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+        `<span style="width:20px;height:20px;color:${color};flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">${logo}</span>`+
         `<span style="color:var(--t1);font-weight:500">${rt.name}</span>`+
         (rt.version?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${rt.version}</span>`:'')+
       `</span>`;
@@ -598,12 +611,12 @@ function _populateLangSelect(){
     onLangChange(rt.value);
   }
 }
-function selectLangOpt(val,name,ver,color,abbr){
+function selectLangOpt(val,name,ver,color,logo){
   document.getElementById('new-lang').value=val;
   const label=document.getElementById('lang-dd-label');
   label.innerHTML=
     `<span style="display:inline-flex;align-items:center;gap:8px">`+
-      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0">${abbr}</span>`+
+      `<span style="width:20px;height:20px;color:${color};flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">${logo}</span>`+
       `<span style="color:var(--t1);font-weight:500">${name}</span>`+
       (ver?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${ver}</span>`:'')+
     `</span>`;
