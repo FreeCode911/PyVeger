@@ -13,12 +13,12 @@
     *{font-family:'Inter',sans-serif;box-sizing:border-box}
     code,.mono{font-family:'JetBrains Mono',monospace}
     :root{
-      --bg:#07090f;--bg2:#0a0d14;--card:#0d1117;--card2:#0b0e17;
-      --bdr:#1a2236;--bdr2:#2a3650;
+      --bg:#000f08;--bg2:#011209;--card:#011a0d;--card2:#010f07;
+      --bdr:#0d2b18;--bdr2:#1a4026;
       --t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--t4:#475569;--t5:#334155;
-      --hbg:rgba(7,9,15,.88);--trm:#020406;
+      --hbg:rgba(0,15,8,.88);--trm:#020406;
       --inp:rgba(255,255,255,.06);--inpb:rgba(255,255,255,.12);
-      --acc:#6366f1;--acc2:#8b5cf6;
+      --acc:#fb3640;--acc2:#c42028;
     }
     html[data-theme=light]{
       --bg:#f1f5f9;--bg2:#f8fafc;--card:#ffffff;--card2:#f4f6fb;
@@ -26,13 +26,13 @@
       --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;--t5:#cbd5e1;
       --hbg:rgba(248,250,252,.92);--trm:#1e293b;
       --inp:rgba(0,0,0,.04);--inpb:rgba(0,0,0,.12);
-      --acc:#4f46e5;--acc2:#7c3aed;
+      --acc:#e01020;--acc2:#b01018;
     }
     body{background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;display:flex;flex-direction:column}
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
     ::-webkit-scrollbar-track{background:transparent}
-    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899);flex-shrink:0}
+    .top-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),#ff8a8f);flex-shrink:0}
     .hdr{background:var(--hbg);backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);flex-shrink:0}
     .tab-bar{border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0}
     .tab{
@@ -46,9 +46,9 @@
     .icon-btn:hover{background:var(--card2);color:var(--t1);border-color:var(--bdr2)}
     .inp{background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);border-radius:9px;padding:8px 12px;font-size:13px;transition:all .2s;width:100%}
     .inp::placeholder{color:var(--t3)}
-    .inp:focus{outline:none;border-color:rgba(99,102,241,.65);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
-    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(99,102,241,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
-    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.38)}
+    .inp:focus{outline:none;border-color:rgba(251,54,64,.65);box-shadow:0 0 0 3px rgba(251,54,64,.1)}
+    .btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:none;cursor:pointer;border-radius:9px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.28);transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(251,54,64,.38)}
     .btn-ok{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22);cursor:pointer;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
     .btn-ok:hover{background:rgba(34,197,94,.2)}
     html[data-theme=light] .btn-ok{color:#16a34a;background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.2)}
@@ -90,8 +90,8 @@
       transition:background .12s;min-width:0;user-select:none;position:relative;
     }
     .tree-row:hover{background:var(--inp)}
-    .tree-row.active{background:rgba(99,102,241,.14)}
-    html[data-theme=light] .tree-row.active{background:rgba(79,70,229,.08)}
+    .tree-row.active{background:rgba(251,54,64,.14)}
+    html[data-theme=light] .tree-row.active{background:rgba(189,16,24,.08)}
     .tree-name{font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     .tree-row.active .tree-name{color:var(--acc);font-weight:600}
     .dir-row .tree-name{color:var(--t1);font-weight:500}
@@ -106,7 +106,7 @@
     }
     .row-act:hover{background:var(--inpb)}
     .row-act.del:hover{background:rgba(239,68,68,.18);color:#f87171}
-    .row-act.ren:hover{background:rgba(99,102,241,.18);color:#818cf8}
+    .row-act.ren:hover{background:rgba(251,54,64,.18);color:#ff6b70}
     .row-act.mv:hover{background:rgba(251,191,36,.15);color:#fbbf24}
     .row-act.nf:hover{background:rgba(34,197,94,.15);color:#4ade80}
 
@@ -198,7 +198,7 @@
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <a href="/" style="display:flex;align-items:center;gap:7px;text-decoration:none">
       <img src="/static/logo.svg" width="28" height="28" style="border-radius:7px;flex-shrink:0" alt="PyVegar">
-      <span style="font-weight:700;font-size:14px;background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
+      <span style="font-weight:700;font-size:14px;background:linear-gradient(135deg,#ff6b70,#ffb3b5);-webkit-background-clip:text;-webkit-text-fill-color:transparent">PyVegar</span>
     </a>
     <i data-lucide="chevron-right" style="width:13px;height:13px;color:var(--t4)"></i>
     <span style="font-size:13px;font-weight:700;color:var(--t1)">{{ project.name | replace('_', ' ') }}</span>
@@ -373,7 +373,7 @@
 <div id="modal-new-file" class="modal-bg" onclick="if(event.target===this)closeModal('new-file')">
   <div class="modal-card">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <div style="width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(251,54,64,.15);border:1px solid rgba(251,54,64,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <i data-lucide="file-plus" style="width:15px;height:15px;color:var(--acc)"></i>
       </div>
       <h3 class="modal-title">New File</h3>
@@ -411,7 +411,7 @@
 <div id="modal-rename" class="modal-bg" onclick="if(event.target===this)closeModal('rename')">
   <div class="modal-card">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <div style="width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(251,54,64,.15);border:1px solid rgba(251,54,64,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <i id="rename-modal-icon" data-lucide="pencil" style="width:15px;height:15px;color:var(--acc)"></i>
       </div>
       <h3 id="rename-modal-title" class="modal-title">Rename / Move</h3>
