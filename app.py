@@ -343,6 +343,7 @@ async def api_get_project(project_id: str):
 
 _RUNTIMES_CACHE: list | None = None
 _RUNTIMES_CACHE_FILE = BASE_DIR / "runtimes_cache.json"
+_LOCAL_BIN_DIR = BASE_DIR / "bin"
 
 _RUNTIME_DEFS = [
     {"name": "Python",  "value": "python",  "bin": "python3", "start_file": "main.py",   "command": "python3 -u {start_file}"},
@@ -368,27 +369,40 @@ def _save_runtimes_to_disk(data: list) -> None:
     except Exception:
         pass
 
+def _resolve_bin(bin_name: str) -> str | None:
+    local = _LOCAL_BIN_DIR / bin_name
+    if local.exists() and os.access(local, os.X_OK):
+        return str(local)
+    return shutil.which(bin_name)
+
 async def _probe_runtime(rt: dict) -> dict | None:
-    if not shutil.which(rt["bin"]):
+    bin_path = _resolve_bin(rt["bin"])
+    if not bin_path:
         return None
     try:
         r = await asyncio.wait_for(
-            asyncio.to_thread(subprocess.run, [rt["bin"], "--version"],
+            asyncio.to_thread(subprocess.run, [bin_path, "--version"],
                               capture_output=True, text=True),
             timeout=2.0
         )
         version = (r.stdout.strip() or r.stderr.strip()).split("\n")[0]
     except Exception:
         version = ""
+    local_bin = _LOCAL_BIN_DIR / rt["bin"]
+    source = "standalone" if local_bin.exists() and os.access(local_bin, os.X_OK) else "system"
+    cmd = rt["command"]
+    if source == "standalone":
+        cmd = cmd.replace(rt["bin"], str(local_bin), 1)
     return {"name": rt["name"], "value": rt["value"], "version": version,
-            "start_file": rt["start_file"], "command": rt["command"]}
+            "start_file": rt["start_file"], "command": cmd, "source": source,
+            "bin_path": bin_path}
 
 async def _build_runtimes_cache() -> list:
     global _RUNTIMES_CACHE
     results = await asyncio.gather(*[_probe_runtime(rt) for rt in _RUNTIME_DEFS])
     _RUNTIMES_CACHE = [r for r in results if r is not None]
     _RUNTIMES_CACHE.append({"name": "Other", "value": "other", "version": "",
-                             "start_file": "main.py", "command": ""})
+                             "start_file": "main.py", "command": "", "source": "other"})
     _save_runtimes_to_disk(_RUNTIMES_CACHE)
     return _RUNTIMES_CACHE
 
@@ -408,6 +422,115 @@ async def api_runtimes_refresh():
     global _RUNTIMES_CACHE
     _RUNTIMES_CACHE = None
     return {"runtimes": await _build_runtimes_cache()}
+
+# ── Node.js Standalone Binary ──────────────────────────────────────────────────
+
+_NODE_INSTALL_LOCK = asyncio.Lock() if False else None  # initialized at startup
+_NODE_VERSIONS_URL = "https://nodejs.org/dist/index.json"
+_NODE_INSTALL_PROGRESS: dict = {"status": "idle", "message": ""}
+
+def _get_node_status() -> dict:
+    local_node = _LOCAL_BIN_DIR / "node"
+    if local_node.exists() and os.access(local_node, os.X_OK):
+        try:
+            r = subprocess.run([str(local_node), "--version"], capture_output=True, text=True, timeout=3)
+            version = r.stdout.strip() or r.stderr.strip()
+            return {"installed": True, "source": "standalone", "version": version, "path": str(local_node)}
+        except Exception:
+            pass
+    system_node = shutil.which("node")
+    if system_node:
+        try:
+            r = subprocess.run([system_node, "--version"], capture_output=True, text=True, timeout=3)
+            version = r.stdout.strip() or r.stderr.strip()
+            return {"installed": True, "source": "system", "version": version, "path": system_node}
+        except Exception:
+            pass
+    return {"installed": False, "source": None, "version": None, "path": None}
+
+@app.get("/_/runtimes/nodejs/status")
+async def api_nodejs_status():
+    return {**_get_node_status(), "install_progress": _NODE_INSTALL_PROGRESS}
+
+async def _do_install_node(version_str: str):
+    global _NODE_INSTALL_PROGRESS
+    import tarfile, platform
+    arch = platform.machine()
+    arch_map = {"x86_64": "x64", "aarch64": "arm64", "armv7l": "armv7l"}
+    node_arch = arch_map.get(arch, "x64")
+    base_url = f"https://nodejs.org/dist/{version_str}"
+    tarball_name = f"node-{version_str}-linux-{node_arch}.tar.gz"
+    url = f"{base_url}/{tarball_name}"
+    _LOCAL_BIN_DIR.mkdir(exist_ok=True)
+    tmp_tar = BASE_DIR / tarball_name
+    try:
+        _NODE_INSTALL_PROGRESS = {"status": "downloading", "message": f"Downloading {tarball_name}…"}
+        def _download():
+            import urllib.request
+            urllib.request.urlretrieve(url, str(tmp_tar))
+        await asyncio.to_thread(_download)
+        _NODE_INSTALL_PROGRESS = {"status": "extracting", "message": "Extracting archive…"}
+        def _extract():
+            with tarfile.open(str(tmp_tar), "r:gz") as tf:
+                for member in tf.getmembers():
+                    if member.name.endswith("/bin/node") and not member.issym():
+                        member.name = "node"
+                        tf.extract(member, path=str(_LOCAL_BIN_DIR))
+                        break
+        await asyncio.to_thread(_extract)
+        node_bin = _LOCAL_BIN_DIR / "node"
+        if node_bin.exists():
+            node_bin.chmod(0o755)
+            r = subprocess.run([str(node_bin), "--version"], capture_output=True, text=True, timeout=5)
+            ver = r.stdout.strip()
+            _NODE_INSTALL_PROGRESS = {"status": "done", "message": f"Installed {ver} (standalone)"}
+            global _RUNTIMES_CACHE
+            _RUNTIMES_CACHE = None
+        else:
+            _NODE_INSTALL_PROGRESS = {"status": "error", "message": "Binary not found after extraction"}
+    except Exception as e:
+        _NODE_INSTALL_PROGRESS = {"status": "error", "message": str(e)}
+    finally:
+        if tmp_tar.exists():
+            tmp_tar.unlink(missing_ok=True)
+
+@app.get("/_/runtimes/nodejs/versions")
+async def api_nodejs_versions():
+    try:
+        def _fetch():
+            import urllib.request, json as _json
+            with urllib.request.urlopen(_NODE_VERSIONS_URL, timeout=6) as r:
+                return _json.loads(r.read())
+        data = await asyncio.to_thread(_fetch)
+        lts = [v for v in data if v.get("lts")]
+        current = [v for v in data if not v.get("lts")]
+        picks = lts[:6] + current[:2]
+        return {"versions": [{"version": v["version"], "lts": v.get("lts", False)} for v in picks]}
+    except Exception as e:
+        return {"versions": [], "error": str(e)}
+
+@app.post("/_/runtimes/nodejs/install")
+async def api_nodejs_install(request: Request):
+    global _NODE_INSTALL_PROGRESS
+    if _NODE_INSTALL_PROGRESS.get("status") in ("downloading", "extracting"):
+        raise HTTPException(status_code=409, detail="Installation already in progress")
+    body = await request.json()
+    version = body.get("version", "").strip()
+    if not version or not version.startswith("v"):
+        raise HTTPException(status_code=400, detail="Invalid version — must start with 'v'")
+    _NODE_INSTALL_PROGRESS = {"status": "starting", "message": "Starting…"}
+    asyncio.create_task(_do_install_node(version))
+    return {"ok": True, "message": f"Installing Node.js {version}…"}
+
+@app.delete("/_/runtimes/nodejs/uninstall")
+async def api_nodejs_uninstall():
+    global _RUNTIMES_CACHE
+    local_node = _LOCAL_BIN_DIR / "node"
+    if local_node.exists():
+        local_node.unlink()
+        _RUNTIMES_CACHE = None
+        return {"ok": True, "message": "Standalone Node.js removed"}
+    return {"ok": False, "message": "No standalone binary found"}
 
 
 @app.post("/_/projects/create")

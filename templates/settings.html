@@ -426,6 +426,66 @@
   }).catch(()=>{});
   </script>
 
+  <!-- ══ NODE.JS STANDALONE BINARY ══════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="box" style="width:13px;height:13px"></i> Node.js Runtime</p>
+  <div class="section">
+    <div class="sec-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center">
+          <i data-lucide="box" style="width:16px;height:16px;color:#4ade80"></i>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--t1)">Standalone Binary</div>
+          <div style="font-size:11px;color:var(--t4)">Download and manage a self-contained Node.js binary</div>
+        </div>
+      </div>
+      <span id="node-status-badge" class="badge-stop" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500">
+        <span id="node-status-dot" style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span>
+        <span id="node-status-text">Loading…</span>
+      </span>
+    </div>
+
+    <!-- Current status row -->
+    <div class="row" id="node-info-row">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--t2)" id="node-version-label">Checking…</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace" id="node-path-label"></div>
+        </div>
+        <button id="btn-node-remove" onclick="nodeRemove()" class="btn-err" style="display:none;font-size:11px;padding:5px 12px">
+          <i data-lucide="trash-2" style="width:11px;height:11px"></i> Remove Standalone
+        </button>
+      </div>
+    </div>
+
+    <!-- Version picker + install -->
+    <div class="row">
+      <label class="lbl">Install Standalone Version</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="node-version-select" class="inp" style="flex:1;min-width:160px;font-family:'Inter',sans-serif;cursor:pointer">
+          <option value="">Loading versions…</option>
+        </select>
+        <button id="btn-node-install" onclick="nodeInstall()" class="btn-ok" style="flex-shrink:0">
+          <i data-lucide="download" style="width:12px;height:12px"></i> Install
+        </button>
+      </div>
+      <p class="hint">Downloads directly from nodejs.org as a standalone binary — no system permissions needed. The binary will be used automatically for all Node.js projects.</p>
+    </div>
+
+    <!-- Progress bar / log -->
+    <div id="node-progress-wrap" style="display:none;padding:0 18px 14px">
+      <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <svg id="node-progress-spinner" style="width:12px;height:12px;animation:spin 1s linear infinite;color:var(--acc);flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <span id="node-progress-msg" style="font-size:12px;color:var(--t2)">Starting…</span>
+        </div>
+        <div style="height:3px;background:var(--inpb);border-radius:2px;overflow:hidden">
+          <div id="node-progress-bar" style="height:100%;width:30%;background:var(--acc);border-radius:2px;transition:width .4s;animation:nodeBar 1.2s ease-in-out infinite alternate"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ OTHER SETTINGS ══════════════════════════════════════════════════════ -->
   <p class="sec-title"><i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> Other Settings</p>
   <div class="section">
@@ -443,11 +503,15 @@
 
     <!-- Save button for Discord settings -->
     <div class="row" style="display:flex;justify-content:flex-end">
-      <button type="button" onclick="saveSettings()" class="btn-primary"><i data-lucide="save" style="width:14px;height:14px"></i> Save Settings</button>
+      <button type="button" onclick="saveSettings.call(this)" class="btn-primary"><i data-lucide="save" style="width:14px;height:14px"></i> Save Settings</button>
     </div>
   </div>
 
 </main>
+
+<style>
+@keyframes nodeBar {from{width:15%}to{width:85%}}
+</style>
 
 <script>
 // ── Theme ─────────────────────────────────────────────────────────────────────
@@ -473,26 +537,30 @@ function toast(msg, type) {
 
 // ── Save all settings via fetch (no page reload) ──────────────────────────────
 async function saveSettings() {
+  const btn = event && event.currentTarget ? event.currentTarget : null;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<svg style="width:13px;height:13px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving…'; }
   const payload = {
-    cloudflare_token: document.getElementById('cf-token').value,
-    discord_token:    document.getElementById('dc-token').value,
-    allowed_users:    document.getElementById('allowed').value,
-    username:         document.getElementById('p-user').value,
-    password:         document.getElementById('p-pass').value,
+    cloudflare_token: document.getElementById('cf-token')?.value || '',
+    discord_token:    document.getElementById('dc-token')?.value || '',
+    allowed_users:    document.getElementById('allowed')?.value || '',
   };
-  const r = await fetch('/_/settings', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  });
-  if (r.ok) {
-    toast('Settings saved');
-    document.getElementById('p-pass').value = '';
-    setTimeout(refreshBadge, 1200);
-  } else {
-    const d = await r.json().catch(() => ({}));
-    toast(d.detail || 'Save failed', 'err');
+  try {
+    const r = await fetch('/_/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (r.ok) {
+      toast('Settings saved ✓');
+      setTimeout(refreshBadge, 1200);
+    } else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Save failed', 'err');
+    }
+  } catch(e) {
+    toast('Network error', 'err');
   }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="save" style="width:13px;height:13px"></i> Save Settings'; lucide.createIcons(); }
 }
 
 // ── Tunnel start / stop ───────────────────────────────────────────────────────
@@ -625,10 +693,10 @@ async function saveCredentials(){
   const status   = document.getElementById('sec-status');
   const btn      = document.getElementById('btn-save-creds');
 
-  if (!current) { showToast('Enter your current password','err'); return; }
-  if (!newPw)   { showToast('Enter a new password','err'); return; }
-  if (newPw.length < 8) { showToast('New password must be at least 8 characters','err'); return; }
-  if (newPw !== confirm) { showToast('Passwords do not match','err'); return; }
+  if (!current) { toast('Enter your current password','err'); return; }
+  if (!newPw)   { toast('Enter a new password','err'); return; }
+  if (newPw.length < 8) { toast('New password must be at least 8 characters','err'); return; }
+  if (newPw !== confirm) { toast('Passwords do not match','err'); return; }
 
   btn.disabled = true;
   btn.innerHTML = '<svg style="width:13px;height:13px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving…';
@@ -653,6 +721,124 @@ async function saveCredentials(){
     btn.innerHTML = 'Save Credentials';
   }
 }
+
+// ── Node.js Standalone Binary ──────────────────────────────────────────────
+var _nodeStatusInterval = null;
+
+function _setNodeBadge(installed, source, version, path) {
+  const badge = document.getElementById('node-status-badge');
+  const dot   = document.getElementById('node-status-dot');
+  const txt   = document.getElementById('node-status-text');
+  const lbl   = document.getElementById('node-version-label');
+  const plbl  = document.getElementById('node-path-label');
+  const rmBtn = document.getElementById('btn-node-remove');
+  if (installed) {
+    badge.className = 'badge-run';
+    dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
+    txt.textContent = source === 'standalone' ? 'Standalone' : 'System';
+    lbl.textContent = version + (source === 'standalone' ? ' — standalone binary' : ' — system binary');
+    lbl.style.color = source === 'standalone' ? '#4ade80' : 'var(--t2)';
+    plbl.textContent = path || '';
+    if (source === 'standalone') { rmBtn.style.display = 'inline-flex'; lucide.createIcons(); }
+    else rmBtn.style.display = 'none';
+  } else {
+    badge.className = 'badge-stop';
+    dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
+    txt.textContent = 'Not installed';
+    lbl.textContent = 'Node.js not found';
+    lbl.style.color = 'var(--t3)';
+    plbl.textContent = '';
+    rmBtn.style.display = 'none';
+  }
+}
+
+async function loadNodeStatus() {
+  try {
+    const r = await fetch('/_/runtimes/nodejs/status');
+    const d = await r.json();
+    _setNodeBadge(d.installed, d.source, d.version, d.path);
+    const prog = d.install_progress || {};
+    const wrap = document.getElementById('node-progress-wrap');
+    const msg  = document.getElementById('node-progress-msg');
+    const spinner = document.getElementById('node-progress-spinner');
+    const installBtn = document.getElementById('btn-node-install');
+    if (prog.status === 'downloading' || prog.status === 'extracting' || prog.status === 'starting') {
+      wrap.style.display = 'block';
+      msg.textContent = prog.message || 'Working…';
+      spinner.style.display = 'block';
+      installBtn.disabled = true;
+    } else if (prog.status === 'done') {
+      wrap.style.display = 'block';
+      spinner.style.display = 'none';
+      msg.textContent = prog.message || 'Done';
+      msg.style.color = '#4ade80';
+      installBtn.disabled = false;
+      setTimeout(() => { wrap.style.display = 'none'; msg.style.color = 'var(--t2)'; }, 4000);
+    } else if (prog.status === 'error') {
+      wrap.style.display = 'block';
+      spinner.style.display = 'none';
+      msg.textContent = 'Error: ' + (prog.message || 'Unknown error');
+      msg.style.color = '#f87171';
+      installBtn.disabled = false;
+      setTimeout(() => { wrap.style.display = 'none'; msg.style.color = 'var(--t2)'; }, 6000);
+    }
+  } catch(e) {}
+}
+
+async function loadNodeVersions() {
+  const sel = document.getElementById('node-version-select');
+  try {
+    const r = await fetch('/_/runtimes/nodejs/versions');
+    const d = await r.json();
+    if (d.versions && d.versions.length) {
+      sel.innerHTML = d.versions.map(v =>
+        `<option value="${v.version}">${v.version}${v.lts ? ' LTS' : ''}</option>`
+      ).join('');
+    } else {
+      sel.innerHTML = '<option value="">Failed to load — enter manually</option>';
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Failed to load — enter manually</option>';
+  }
+}
+
+async function nodeInstall() {
+  const sel = document.getElementById('node-version-select');
+  const version = sel.value.trim();
+  if (!version) { toast('Select a version first', 'err'); return; }
+  const wrap = document.getElementById('node-progress-wrap');
+  const msg  = document.getElementById('node-progress-msg');
+  const btn  = document.getElementById('btn-node-install');
+  wrap.style.display = 'block';
+  msg.textContent = 'Starting installation…';
+  msg.style.color = 'var(--t2)';
+  document.getElementById('node-progress-spinner').style.display = 'block';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/_/runtimes/nodejs/install', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ version })
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.detail || 'Install failed', 'err'); wrap.style.display = 'none'; btn.disabled = false; return; }
+    toast('Downloading Node.js ' + version + '…', 'ok');
+    _nodeStatusInterval = setInterval(loadNodeStatus, 1500);
+    setTimeout(() => { if (_nodeStatusInterval) { clearInterval(_nodeStatusInterval); _nodeStatusInterval = null; } }, 90000);
+  } catch(e) {
+    toast('Network error', 'err'); wrap.style.display = 'none'; btn.disabled = false;
+  }
+}
+
+async function nodeRemove() {
+  if (!confirm('Remove the standalone Node.js binary? Projects will fall back to the system node.')) return;
+  const r = await fetch('/_/runtimes/nodejs/uninstall', { method: 'DELETE' });
+  const d = await r.json();
+  if (d.ok) { toast('Standalone Node.js removed'); loadNodeStatus(); }
+  else toast(d.message || 'Failed', 'err');
+}
+
+loadNodeStatus();
+loadNodeVersions();
 
 // ── Live tunnel badge via ws/stats ────────────────────────────────────────
 var _stgStatsWs;
