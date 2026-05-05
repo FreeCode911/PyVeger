@@ -426,63 +426,53 @@
   }).catch(()=>{});
   </script>
 
-  <!-- ══ NODE.JS STANDALONE BINARY ══════════════════════════════════════════ -->
-  <p class="sec-title"><i data-lucide="box" style="width:13px;height:13px"></i> Node.js Runtime</p>
+  <!-- ══ INSTALL RUNTIME ════════════════════════════════════════════════════ -->
+  <p class="sec-title"><i data-lucide="package-plus" style="width:13px;height:13px"></i> Install Runtime</p>
   <div class="section">
+
+    <!-- Node.js card header -->
     <div class="sec-hdr">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center">
-          <i data-lucide="box" style="width:16px;height:16px;color:#4ade80"></i>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:38px;height:38px;border-radius:11px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 256 256" fill="none"><path d="M128 23.6L22 82.4v91.2l106 58.8 106-58.8V82.4L128 23.6z" fill="#339933"/><path d="M128 23.6v210.4l106-58.8V82.4L128 23.6z" fill="#236A23" opacity=".7"/><text x="128" y="155" font-family="monospace" font-weight="bold" font-size="90" text-anchor="middle" fill="#fff">N</text></svg>
         </div>
         <div>
-          <div style="font-weight:600;font-size:13px;color:var(--t1)">Standalone Binary</div>
-          <div style="font-size:11px;color:var(--t4)">Download and manage a self-contained Node.js binary</div>
+          <div style="font-weight:700;font-size:14px;color:var(--t1)">Node.js</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">JavaScript runtime · Tries NVM first, then standalone v26.0.0</div>
         </div>
       </div>
-      <span id="node-status-badge" class="badge-stop" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500">
-        <span id="node-status-dot" style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span>
-        <span id="node-status-text">Loading…</span>
-      </span>
-    </div>
-
-    <!-- Current status row -->
-    <div class="row" id="node-info-row">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--t2)" id="node-version-label">Checking…</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace" id="node-path-label"></div>
-        </div>
-        <button id="btn-node-remove" onclick="nodeRemove()" class="btn-err" style="display:none;font-size:11px;padding:5px 12px">
-          <i data-lucide="trash-2" style="width:11px;height:11px"></i> Remove Standalone
-        </button>
-      </div>
-    </div>
-
-    <!-- Version picker + install -->
-    <div class="row">
-      <label class="lbl">Install Standalone Version</label>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <select id="node-version-select" class="inp" style="flex:1;min-width:160px;font-family:'Inter',sans-serif;cursor:pointer">
-          <option value="">Loading versions…</option>
-        </select>
-        <button id="btn-node-install" onclick="nodeInstall()" class="btn-ok" style="flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span id="node-rt-badge" class="badge-stop" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500">
+          <span id="node-rt-dot" style="width:6px;height:6px;border-radius:50%;background:#ef4444"></span>
+          <span id="node-rt-txt">Checking…</span>
+        </span>
+        <button id="btn-node-install" onclick="installNodejs()" class="btn-ok" style="font-size:12px">
           <i data-lucide="download" style="width:12px;height:12px"></i> Install
         </button>
+        <button id="btn-node-remove" onclick="removeNodejs()" class="btn-err" style="display:none;font-size:12px">
+          <i data-lucide="trash-2" style="width:12px;height:12px"></i> Remove
+        </button>
       </div>
-      <p class="hint">Downloads directly from nodejs.org as a standalone binary — no system permissions needed. The binary will be used automatically for all Node.js projects.</p>
     </div>
 
-    <!-- Progress bar / log -->
-    <div id="node-progress-wrap" style="display:none;padding:0 18px 14px">
-      <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <svg id="node-progress-spinner" style="width:12px;height:12px;animation:spin 1s linear infinite;color:var(--acc);flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          <span id="node-progress-msg" style="font-size:12px;color:var(--t2)">Starting…</span>
-        </div>
-        <div style="height:3px;background:var(--inpb);border-radius:2px;overflow:hidden">
-          <div id="node-progress-bar" style="height:100%;width:30%;background:var(--acc);border-radius:2px;transition:width .4s;animation:nodeBar 1.2s ease-in-out infinite alternate"></div>
-        </div>
+    <!-- Status info row -->
+    <div class="row">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div id="node-rt-version" style="font-size:12px;font-weight:600;color:var(--t3)">Checking for Node.js…</div>
+        <div id="node-rt-path" style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--t4)"></div>
       </div>
+    </div>
+
+    <!-- Live install log -->
+    <div id="rt-log-wrap" style="display:none">
+      <div class="log-hdr">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="log-dot" id="rt-log-dot"></span>
+          <span style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.05em;text-transform:uppercase">Install Log</span>
+        </div>
+        <span id="rt-log-status" style="font-size:11px;color:var(--t3)"></span>
+      </div>
+      <div id="rt-log" class="log-viewer" style="height:320px">Waiting…</div>
     </div>
   </div>
 
@@ -722,123 +712,148 @@ async function saveCredentials(){
   }
 }
 
-// ── Node.js Standalone Binary ──────────────────────────────────────────────
-var _nodeStatusInterval = null;
+// ── Install Runtime: Node.js ───────────────────────────────────────────────
+var _rtLogWs = null;
+var _rtLogLines = [];
+var _rtStatusPoll = null;
 
-function _setNodeBadge(installed, source, version, path) {
-  const badge = document.getElementById('node-status-badge');
-  const dot   = document.getElementById('node-status-dot');
-  const txt   = document.getElementById('node-status-text');
-  const lbl   = document.getElementById('node-version-label');
-  const plbl  = document.getElementById('node-path-label');
+function _setNodeRtBadge(installed, source, version, path) {
+  const badge = document.getElementById('node-rt-badge');
+  const dot   = document.getElementById('node-rt-dot');
+  const txt   = document.getElementById('node-rt-txt');
+  const ver   = document.getElementById('node-rt-version');
+  const pth   = document.getElementById('node-rt-path');
   const rmBtn = document.getElementById('btn-node-remove');
+  const instBtn = document.getElementById('btn-node-install');
   if (installed) {
     badge.className = 'badge-run';
     dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
-    txt.textContent = source === 'standalone' ? 'Standalone' : 'System';
-    lbl.textContent = version + (source === 'standalone' ? ' — standalone binary' : ' — system binary');
-    lbl.style.color = source === 'standalone' ? '#4ade80' : 'var(--t2)';
-    plbl.textContent = path || '';
-    if (source === 'standalone') { rmBtn.style.display = 'inline-flex'; lucide.createIcons(); }
-    else rmBtn.style.display = 'none';
+    const srcLabel = {standalone:'Standalone', nvm:'NVM', system:'System'}[source] || source;
+    txt.textContent = srcLabel;
+    ver.textContent = (version || '') + ' — ' + srcLabel + ' binary';
+    ver.style.color = source === 'system' ? 'var(--t3)' : '#4ade80';
+    pth.textContent = path || '';
+    const managed = source === 'standalone' || source === 'nvm';
+    rmBtn.style.display = managed ? 'inline-flex' : 'none';
+    instBtn.textContent = managed ? ' Reinstall' : ' Install';
   } else {
     badge.className = 'badge-stop';
     dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
     txt.textContent = 'Not installed';
-    lbl.textContent = 'Node.js not found';
-    lbl.style.color = 'var(--t3)';
-    plbl.textContent = '';
+    ver.textContent = 'Node.js not found on this system';
+    ver.style.color = 'var(--t3)';
+    pth.textContent = '';
     rmBtn.style.display = 'none';
   }
+  lucide.createIcons();
 }
 
-async function loadNodeStatus() {
+async function loadNodeRtStatus() {
   try {
     const r = await fetch('/_/runtimes/nodejs/status');
     const d = await r.json();
-    _setNodeBadge(d.installed, d.source, d.version, d.path);
-    const prog = d.install_progress || {};
-    const wrap = document.getElementById('node-progress-wrap');
-    const msg  = document.getElementById('node-progress-msg');
-    const spinner = document.getElementById('node-progress-spinner');
-    const installBtn = document.getElementById('btn-node-install');
-    if (prog.status === 'downloading' || prog.status === 'extracting' || prog.status === 'starting') {
-      wrap.style.display = 'block';
-      msg.textContent = prog.message || 'Working…';
-      spinner.style.display = 'block';
-      installBtn.disabled = true;
-    } else if (prog.status === 'done') {
-      wrap.style.display = 'block';
-      spinner.style.display = 'none';
-      msg.textContent = prog.message || 'Done';
-      msg.style.color = '#4ade80';
-      installBtn.disabled = false;
-      setTimeout(() => { wrap.style.display = 'none'; msg.style.color = 'var(--t2)'; }, 4000);
-    } else if (prog.status === 'error') {
-      wrap.style.display = 'block';
-      spinner.style.display = 'none';
-      msg.textContent = 'Error: ' + (prog.message || 'Unknown error');
-      msg.style.color = '#f87171';
-      installBtn.disabled = false;
-      setTimeout(() => { wrap.style.display = 'none'; msg.style.color = 'var(--t2)'; }, 6000);
+    _setNodeRtBadge(d.installed, d.source, d.version, d.path);
+    const st = d.install_status || {};
+    const logStatus = document.getElementById('rt-log-status');
+    if (st.status === 'running') {
+      if (logStatus) logStatus.textContent = st.message || 'Installing…';
+    } else if (st.status === 'done') {
+      if (logStatus) { logStatus.textContent = '✓ ' + st.message; logStatus.style.color = '#4ade80'; }
+      document.getElementById('btn-node-install').disabled = false;
+      if (_rtStatusPoll) { clearInterval(_rtStatusPoll); _rtStatusPoll = null; }
+    } else if (st.status === 'error') {
+      if (logStatus) { logStatus.textContent = '✗ Failed'; logStatus.style.color = '#f87171'; }
+      document.getElementById('btn-node-install').disabled = false;
+      if (_rtStatusPoll) { clearInterval(_rtStatusPoll); _rtStatusPoll = null; }
     }
   } catch(e) {}
 }
 
-async function loadNodeVersions() {
-  const sel = document.getElementById('node-version-select');
+function _rtColorLine(line) {
+  const e = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (/✓|SUCCESS|OK__|installed/i.test(line)) return `<span style="color:#4ade80">${e(line)}</span>`;
+  if (/✗|error|failed|fail/i.test(line))      return `<span style="color:#f87171">${e(line)}</span>`;
+  if (/STEP|>>>|Downloading|Extracting|Verify/i.test(line)) return `<span style="color:#60a5fa">${e(line)}</span>`;
+  if (/warn/i.test(line))                      return `<span style="color:#fbbf24">${e(line)}</span>`;
+  return `<span style="color:#94a3b8">${String(line).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`;
+}
+
+function _rtConnectLog() {
+  if (_rtLogWs) { try { _rtLogWs.close(); } catch(e) {} _rtLogWs = null; }
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  _rtLogWs = new WebSocket(`${proto}://${location.host}/ws/logs/_runtime_install`);
+  const logEl  = document.getElementById('rt-log');
+  const logDot = document.getElementById('rt-log-dot');
+  _rtLogWs.onopen = () => {
+    logDot.classList.add('live');
+    _rtLogLines = [];
+    logEl.textContent = '';
+  };
+  _rtLogWs.onmessage = e => {
+    if (e.data === '\x00CLEAR\x00') { _rtLogLines = []; logEl.innerHTML = ''; return; }
+    const newLines = e.data.split('\n');
+    _rtLogLines.push(...newLines.filter(l => l.trim()));
+    if (_rtLogLines.length > 800) _rtLogLines = _rtLogLines.slice(-800);
+    const atBottom = logEl.scrollTop + logEl.clientHeight >= logEl.scrollHeight - 24;
+    logEl.innerHTML = _rtLogLines.map(_rtColorLine).join('\n');
+    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+  };
+  _rtLogWs.onclose = () => {
+    if (logDot) logDot.classList.remove('live');
+  };
+  _rtLogWs.onerror = () => { try { _rtLogWs.close(); } catch(e) {} };
+}
+
+async function installNodejs() {
+  const btn = document.getElementById('btn-node-install');
+  btn.disabled = true;
+  btn.innerHTML = '<svg style="width:12px;height:12px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Installing…';
+
+  const wrap = document.getElementById('rt-log-wrap');
+  const logEl = document.getElementById('rt-log');
+  const logStatus = document.getElementById('rt-log-status');
+  wrap.style.display = 'block';
+  logEl.textContent = 'Starting installation…';
+  if (logStatus) { logStatus.textContent = 'Starting…'; logStatus.style.color = 'var(--t3)'; }
+
   try {
-    const r = await fetch('/_/runtimes/nodejs/versions');
+    const r = await fetch('/_/runtimes/install/nodejs', { method: 'POST' });
     const d = await r.json();
-    if (d.versions && d.versions.length) {
-      sel.innerHTML = d.versions.map(v =>
-        `<option value="${v.version}">${v.version}${v.lts ? ' LTS' : ''}</option>`
-      ).join('');
-    } else {
-      sel.innerHTML = '<option value="">Failed to load — enter manually</option>';
+    if (!r.ok) {
+      toast(d.detail || 'Failed to start install', 'err');
+      btn.disabled = false; btn.innerHTML = '<i data-lucide="download" style="width:12px;height:12px"></i> Install';
+      lucide.createIcons(); return;
     }
   } catch(e) {
-    sel.innerHTML = '<option value="">Failed to load — enter manually</option>';
+    toast('Network error', 'err');
+    btn.disabled = false; btn.innerHTML = '<i data-lucide="download" style="width:12px;height:12px"></i> Install';
+    lucide.createIcons(); return;
   }
+
+  // Connect live log
+  _rtConnectLog();
+  // Poll status
+  if (_rtStatusPoll) clearInterval(_rtStatusPoll);
+  _rtStatusPoll = setInterval(loadNodeRtStatus, 1500);
+  // Safety timeout 5 min
+  setTimeout(() => {
+    if (_rtStatusPoll) { clearInterval(_rtStatusPoll); _rtStatusPoll = null; }
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="download" style="width:12px;height:12px"></i> Install';
+    lucide.createIcons();
+    loadNodeRtStatus();
+  }, 300000);
 }
 
-async function nodeInstall() {
-  const sel = document.getElementById('node-version-select');
-  const version = sel.value.trim();
-  if (!version) { toast('Select a version first', 'err'); return; }
-  const wrap = document.getElementById('node-progress-wrap');
-  const msg  = document.getElementById('node-progress-msg');
-  const btn  = document.getElementById('btn-node-install');
-  wrap.style.display = 'block';
-  msg.textContent = 'Starting installation…';
-  msg.style.color = 'var(--t2)';
-  document.getElementById('node-progress-spinner').style.display = 'block';
-  btn.disabled = true;
-  try {
-    const r = await fetch('/_/runtimes/nodejs/install', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ version })
-    });
-    const d = await r.json();
-    if (!r.ok) { toast(d.detail || 'Install failed', 'err'); wrap.style.display = 'none'; btn.disabled = false; return; }
-    toast('Downloading Node.js ' + version + '…', 'ok');
-    _nodeStatusInterval = setInterval(loadNodeStatus, 1500);
-    setTimeout(() => { if (_nodeStatusInterval) { clearInterval(_nodeStatusInterval); _nodeStatusInterval = null; } }, 90000);
-  } catch(e) {
-    toast('Network error', 'err'); wrap.style.display = 'none'; btn.disabled = false;
-  }
-}
-
-async function nodeRemove() {
-  if (!confirm('Remove the standalone Node.js binary? Projects will fall back to the system node.')) return;
+async function removeNodejs() {
+  if (!confirm('Remove the managed Node.js binary? Projects will fall back to the system node.')) return;
   const r = await fetch('/_/runtimes/nodejs/uninstall', { method: 'DELETE' });
   const d = await r.json();
-  if (d.ok) { toast('Standalone Node.js removed'); loadNodeStatus(); }
+  if (d.ok) { toast('Node.js removed — ' + d.message); loadNodeRtStatus(); }
   else toast(d.message || 'Failed', 'err');
 }
 
-loadNodeStatus();
-loadNodeVersions();
+loadNodeRtStatus();
 
 // ── Live tunnel badge via ws/stats ────────────────────────────────────────
 var _stgStatsWs;
@@ -869,6 +884,8 @@ if (window.PV3) PV3.onNavigate(() => {
   _settingsDead = true;
   if (_logWs)      _logWs.close();
   if (_stgStatsWs) _stgStatsWs.close();
+  if (_rtLogWs)    { try { _rtLogWs.close(); } catch(e) {} _rtLogWs = null; }
+  if (_rtStatusPoll) { clearInterval(_rtStatusPoll); _rtStatusPoll = null; }
 });
 _stgConnectStats();
 

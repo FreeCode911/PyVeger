@@ -423,114 +423,196 @@ async def api_runtimes_refresh():
     _RUNTIMES_CACHE = None
     return {"runtimes": await _build_runtimes_cache()}
 
-# ── Node.js Standalone Binary ──────────────────────────────────────────────────
+# ── Runtime Installer ─────────────────────────────────────────────────────────
 
-_NODE_INSTALL_LOCK = asyncio.Lock() if False else None  # initialized at startup
-_NODE_VERSIONS_URL = "https://nodejs.org/dist/index.json"
-_NODE_INSTALL_PROGRESS: dict = {"status": "idle", "message": ""}
+_RUNTIME_INSTALL_LOG  = LOGS_DIR / "_runtime_install.log"
+_RUNTIME_INSTALL_STATUS: dict = {"status": "idle", "message": ""}
+
+def _find_nvm_node() -> str | None:
+    nvm_nodes = sorted(Path.home().glob(".nvm/versions/node/*/bin/node"), reverse=True)
+    for p in nvm_nodes:
+        if os.access(p, os.X_OK):
+            return str(p)
+    return None
 
 def _get_node_status() -> dict:
     local_node = _LOCAL_BIN_DIR / "node"
     if local_node.exists() and os.access(local_node, os.X_OK):
         try:
             r = subprocess.run([str(local_node), "--version"], capture_output=True, text=True, timeout=3)
-            version = r.stdout.strip() or r.stderr.strip()
-            return {"installed": True, "source": "standalone", "version": version, "path": str(local_node)}
+            ver = r.stdout.strip() or r.stderr.strip()
+            return {"installed": True, "source": "standalone", "version": ver, "path": str(local_node)}
         except Exception:
             pass
-    system_node = shutil.which("node")
-    if system_node:
+    nvm_node = _find_nvm_node()
+    if nvm_node:
         try:
-            r = subprocess.run([system_node, "--version"], capture_output=True, text=True, timeout=3)
-            version = r.stdout.strip() or r.stderr.strip()
-            return {"installed": True, "source": "system", "version": version, "path": system_node}
+            r = subprocess.run([nvm_node, "--version"], capture_output=True, text=True, timeout=3)
+            ver = r.stdout.strip() or r.stderr.strip()
+            return {"installed": True, "source": "nvm", "version": ver, "path": nvm_node}
+        except Exception:
+            pass
+    sys_node = shutil.which("node")
+    if sys_node:
+        try:
+            r = subprocess.run([sys_node, "--version"], capture_output=True, text=True, timeout=3)
+            ver = r.stdout.strip() or r.stderr.strip()
+            return {"installed": True, "source": "system", "version": ver, "path": sys_node}
         except Exception:
             pass
     return {"installed": False, "source": None, "version": None, "path": None}
 
+def _ilog(msg: str):
+    """Append a line to the install log."""
+    with open(_RUNTIME_INSTALL_LOG, "a") as f:
+        f.write(msg + "\n")
+
+async def _do_install_nodejs():
+    global _RUNTIME_INSTALL_STATUS, _RUNTIMES_CACHE
+    import datetime
+    LOGS_DIR.mkdir(exist_ok=True)
+    _LOCAL_BIN_DIR.mkdir(exist_ok=True)
+    _RUNTIME_INSTALL_LOG.write_text("")
+    sep = "─" * 60
+    _ilog(f"PyVegar Runtime Installer  ·  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    _ilog("")
+    _RUNTIME_INSTALL_STATUS = {"status": "running", "stage": "nvm", "message": "Trying NVM…"}
+
+    # ── Step 1: NVM ──────────────────────────────────────────────────────────
+    _ilog(sep)
+    _ilog("  STEP 1/2 — Attempting NVM installation")
+    _ilog(sep)
+    _ilog("")
+
+    nvm_script = r"""
+export NVM_DIR="$HOME/.nvm"
+echo ">>> Downloading NVM v0.40.4..."
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash 2>&1
+echo ""
+echo ">>> Sourcing NVM..."
+. "$HOME/.nvm/nvm.sh" 2>&1
+echo ">>> Installing Node.js 24..."
+nvm install 24 2>&1
+echo ""
+echo ">>> Verifying..."
+node -v 2>&1
+npm -v 2>&1
+echo ""
+echo "__NVM_OK__"
+"""
+
+    nvm_ok = False
+    try:
+        def _run_nvm():
+            proc = subprocess.Popen(
+                ["bash", "-c", nvm_script],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            for line in proc.stdout:
+                _ilog(line.decode("utf-8", errors="replace").rstrip())
+            proc.wait(timeout=180)
+            return proc.returncode
+        rc = await asyncio.to_thread(_run_nvm)
+        log_text = _RUNTIME_INSTALL_LOG.read_text()
+        if "__NVM_OK__" in log_text and rc == 0:
+            nvm_ok = True
+    except Exception as e:
+        _ilog(f"\n[error] NVM step failed: {e}")
+
+    if nvm_ok:
+        _ilog(f"\n{sep}")
+        _ilog("  ✓ Node.js successfully installed via NVM!")
+        _ilog(sep)
+        _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "nvm", "message": "Installed via NVM"}
+        _RUNTIMES_CACHE = None
+        return
+
+    # ── Step 2: Standalone fallback ──────────────────────────────────────────
+    _ilog("")
+    _ilog(f"{sep}")
+    _ilog("  STEP 2/2 — NVM failed, trying standalone binary (v26.0.0)")
+    _ilog(sep)
+    _ilog("")
+    _RUNTIME_INSTALL_STATUS = {"status": "running", "stage": "standalone", "message": "Downloading standalone…"}
+
+    bin_dir   = str(_LOCAL_BIN_DIR)
+    node_url  = "https://nodejs.org/dist/v26.0.0/node-v26.0.0-linux-x64.tar.xz"
+    node_name = "node-v26.0.0-linux-x64"
+    tmp_path  = "/tmp/pv3_node.tar.xz"
+
+    standalone_script = f"""
+set -e
+echo ">>> Downloading Node.js v26.0.0 standalone..."
+curl -fL --progress-bar "{node_url}" -o "{tmp_path}" 2>&1
+echo ""
+echo ">>> Extracting node binary..."
+tar -xJf "{tmp_path}" --strip-components=2 -C "{bin_dir}" "{node_name}/bin/node" 2>&1
+chmod +x "{bin_dir}/node"
+rm -f "{tmp_path}"
+echo ">>> Verifying..."
+"{bin_dir}/node" -v 2>&1
+echo "__STANDALONE_OK__"
+"""
+    standalone_ok = False
+    try:
+        def _run_standalone():
+            proc = subprocess.Popen(
+                ["bash", "-c", standalone_script],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            for line in proc.stdout:
+                _ilog(line.decode("utf-8", errors="replace").rstrip())
+            proc.wait(timeout=300)
+            return proc.returncode
+        rc2 = await asyncio.to_thread(_run_standalone)
+        if "__STANDALONE_OK__" in _RUNTIME_INSTALL_LOG.read_text() and rc2 == 0:
+            standalone_ok = True
+    except Exception as e:
+        _ilog(f"\n[error] Standalone step failed: {e}")
+
+    _ilog(f"\n{sep}")
+    if standalone_ok:
+        node_bin = _LOCAL_BIN_DIR / "node"
+        node_bin.chmod(0o755)
+        _ilog("  ✓ Node.js v26.0.0 standalone binary installed!")
+        _ilog(sep)
+        _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "standalone", "message": "Installed v26.0.0 (standalone)"}
+        _RUNTIMES_CACHE = None
+    else:
+        _ilog("  ✗ Installation failed — check log above for details.")
+        _ilog(sep)
+        _RUNTIME_INSTALL_STATUS = {"status": "error", "message": "Both NVM and standalone install failed"}
+
 @app.get("/_/runtimes/nodejs/status")
 async def api_nodejs_status():
-    return {**_get_node_status(), "install_progress": _NODE_INSTALL_PROGRESS}
+    return {**_get_node_status(), "install_status": _RUNTIME_INSTALL_STATUS}
 
-async def _do_install_node(version_str: str):
-    global _NODE_INSTALL_PROGRESS
-    import tarfile, platform
-    arch = platform.machine()
-    arch_map = {"x86_64": "x64", "aarch64": "arm64", "armv7l": "armv7l"}
-    node_arch = arch_map.get(arch, "x64")
-    base_url = f"https://nodejs.org/dist/{version_str}"
-    tarball_name = f"node-{version_str}-linux-{node_arch}.tar.gz"
-    url = f"{base_url}/{tarball_name}"
-    _LOCAL_BIN_DIR.mkdir(exist_ok=True)
-    tmp_tar = BASE_DIR / tarball_name
-    try:
-        _NODE_INSTALL_PROGRESS = {"status": "downloading", "message": f"Downloading {tarball_name}…"}
-        def _download():
-            import urllib.request
-            urllib.request.urlretrieve(url, str(tmp_tar))
-        await asyncio.to_thread(_download)
-        _NODE_INSTALL_PROGRESS = {"status": "extracting", "message": "Extracting archive…"}
-        def _extract():
-            with tarfile.open(str(tmp_tar), "r:gz") as tf:
-                for member in tf.getmembers():
-                    if member.name.endswith("/bin/node") and not member.issym():
-                        member.name = "node"
-                        tf.extract(member, path=str(_LOCAL_BIN_DIR))
-                        break
-        await asyncio.to_thread(_extract)
-        node_bin = _LOCAL_BIN_DIR / "node"
-        if node_bin.exists():
-            node_bin.chmod(0o755)
-            r = subprocess.run([str(node_bin), "--version"], capture_output=True, text=True, timeout=5)
-            ver = r.stdout.strip()
-            _NODE_INSTALL_PROGRESS = {"status": "done", "message": f"Installed {ver} (standalone)"}
-            global _RUNTIMES_CACHE
-            _RUNTIMES_CACHE = None
-        else:
-            _NODE_INSTALL_PROGRESS = {"status": "error", "message": "Binary not found after extraction"}
-    except Exception as e:
-        _NODE_INSTALL_PROGRESS = {"status": "error", "message": str(e)}
-    finally:
-        if tmp_tar.exists():
-            tmp_tar.unlink(missing_ok=True)
-
-@app.get("/_/runtimes/nodejs/versions")
-async def api_nodejs_versions():
-    try:
-        def _fetch():
-            import urllib.request, json as _json
-            with urllib.request.urlopen(_NODE_VERSIONS_URL, timeout=6) as r:
-                return _json.loads(r.read())
-        data = await asyncio.to_thread(_fetch)
-        lts = [v for v in data if v.get("lts")]
-        current = [v for v in data if not v.get("lts")]
-        picks = lts[:6] + current[:2]
-        return {"versions": [{"version": v["version"], "lts": v.get("lts", False)} for v in picks]}
-    except Exception as e:
-        return {"versions": [], "error": str(e)}
-
-@app.post("/_/runtimes/nodejs/install")
-async def api_nodejs_install(request: Request):
-    global _NODE_INSTALL_PROGRESS
-    if _NODE_INSTALL_PROGRESS.get("status") in ("downloading", "extracting"):
+@app.post("/_/runtimes/install/nodejs")
+async def api_install_nodejs():
+    if _RUNTIME_INSTALL_STATUS.get("status") == "running":
         raise HTTPException(status_code=409, detail="Installation already in progress")
-    body = await request.json()
-    version = body.get("version", "").strip()
-    if not version or not version.startswith("v"):
-        raise HTTPException(status_code=400, detail="Invalid version — must start with 'v'")
-    _NODE_INSTALL_PROGRESS = {"status": "starting", "message": "Starting…"}
-    asyncio.create_task(_do_install_node(version))
-    return {"ok": True, "message": f"Installing Node.js {version}…"}
+    asyncio.create_task(_do_install_nodejs())
+    return {"ok": True}
 
 @app.delete("/_/runtimes/nodejs/uninstall")
 async def api_nodejs_uninstall():
     global _RUNTIMES_CACHE
+    removed = []
     local_node = _LOCAL_BIN_DIR / "node"
     if local_node.exists():
         local_node.unlink()
+        removed.append("standalone")
+    nvm_node = _find_nvm_node()
+    if nvm_node:
+        try:
+            Path(nvm_node).unlink()
+            removed.append("nvm")
+        except Exception:
+            pass
+    if removed:
         _RUNTIMES_CACHE = None
-        return {"ok": True, "message": "Standalone Node.js removed"}
-    return {"ok": False, "message": "No standalone binary found"}
+        return {"ok": True, "message": f"Removed: {', '.join(removed)}"}
+    return {"ok": False, "message": "No managed Node.js binary found"}
 
 
 @app.post("/_/projects/create")
