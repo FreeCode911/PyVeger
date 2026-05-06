@@ -8,6 +8,8 @@ import secrets
 import time
 import hmac
 import urllib.request as _urlreq
+from dotenv import load_dotenv
+load_dotenv()
 from contextlib import asynccontextmanager
 from collections import defaultdict
 from pathlib import Path
