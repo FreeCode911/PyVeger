@@ -385,9 +385,16 @@ def _save_runtimes_to_disk(data: list) -> None:
         pass
 
 def _resolve_bin(bin_name: str) -> str | None:
+    # 1. Locally installed standalone binary (e.g. bin/node)
     local = _LOCAL_BIN_DIR / bin_name
     if local.exists() and os.access(local, os.X_OK):
         return str(local)
+    # 2. NVM-managed binary (not on PATH in non-interactive shells)
+    if bin_name == "node":
+        nvm = _find_nvm_node()
+        if nvm:
+            return nvm
+    # 3. System PATH
     return shutil.which(bin_name)
 
 async def _probe_runtime(rt: dict) -> dict | None:
@@ -404,10 +411,17 @@ async def _probe_runtime(rt: dict) -> dict | None:
     except Exception:
         version = ""
     local_bin = _LOCAL_BIN_DIR / rt["bin"]
-    source = "standalone" if local_bin.exists() and os.access(local_bin, os.X_OK) else "system"
+    if local_bin.exists() and os.access(local_bin, os.X_OK):
+        source = "standalone"
+    elif bin_path and ".nvm" in bin_path:
+        source = "nvm"
+    else:
+        source = "system"
     cmd = rt["command"]
-    if source == "standalone":
-        cmd = cmd.replace(rt["bin"], str(local_bin), 1)
+    # Use the full absolute path in the startup command so projects aren't
+    # dependent on the binary being on PATH at runtime
+    if source in ("standalone", "nvm"):
+        cmd = cmd.replace(rt["bin"], bin_path, 1)
     return {"name": rt["name"], "value": rt["value"], "version": version,
             "start_file": rt["start_file"], "command": cmd, "source": source,
             "bin_path": bin_path}
@@ -423,14 +437,18 @@ async def _build_runtimes_cache() -> list:
 
 @app.get("/_/runtimes")
 async def api_runtimes():
+    from fastapi.responses import JSONResponse
     global _RUNTIMES_CACHE
-    if _RUNTIMES_CACHE is not None:
-        return {"runtimes": _RUNTIMES_CACHE}
-    disk = _load_runtimes_from_disk()
-    if disk is not None:
-        _RUNTIMES_CACHE = disk
-        return {"runtimes": _RUNTIMES_CACHE}
-    return {"runtimes": await _build_runtimes_cache()}
+    if _RUNTIMES_CACHE is None:
+        disk = _load_runtimes_from_disk()
+        if disk is not None:
+            _RUNTIMES_CACHE = disk
+        else:
+            _RUNTIMES_CACHE = await _build_runtimes_cache()
+    return JSONResponse(
+        content={"runtimes": _RUNTIMES_CACHE},
+        headers={"Cache-Control": "no-store"}
+    )
 
 @app.post("/_/runtimes/refresh")
 async def api_runtimes_refresh():

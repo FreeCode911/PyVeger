@@ -564,7 +564,7 @@ var _runtimes=[];
 var _runtimesReady=false;
 (async function prefetchRuntimes(){
   try{
-    const res=await fetch('/_/runtimes');
+    const res=await fetch('/_/runtimes?_='+Date.now());
     const d=await res.json();
     _runtimes=d.runtimes||[];
   }catch(e){
@@ -694,7 +694,7 @@ async function openNew(){
   setTimeout(()=>document.getElementById('new-name').focus(),80);
   // Always re-fetch runtimes so anything installed since page load appears immediately
   try{
-    const res=await fetch('/_/runtimes');
+    const res=await fetch('/_/runtimes?_='+Date.now());
     const d=await res.json();
     _runtimes=d.runtimes||[];
     _runtimesReady=true;
