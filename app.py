@@ -1037,15 +1037,44 @@ async def api_apply_update(request: Request):
     token = request.cookies.get(SESSION_COOKIE)
     if not _valid_session(token):
         raise HTTPException(status_code=401)
+
+    # These files hold live user data — never let git overwrite them
+    RUNTIME_DATA = ["config.json", "database.json", "runtimes_cache.json"]
+
+    def _run(cmd, **kw):
+        return subprocess.run(cmd, cwd=BASE_DIR, capture_output=True, text=True,
+                              timeout=30, **kw)
+    output_lines = []
     try:
-        result = subprocess.run(
-            ["git", "pull", "origin", "main"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=30
-        )
-        return {"ok": result.returncode == 0,
-                "output": (result.stdout + result.stderr).strip()}
+        # 1. Back up runtime data files
+        backups: dict[str, bytes] = {}
+        for fname in RUNTIME_DATA:
+            fp = BASE_DIR / fname
+            if fp.exists():
+                backups[fname] = fp.read_bytes()
+
+        # 2. Reset tracked files so git pull has no conflicts
+        reset = _run(["git", "checkout", "--", "."])
+        if reset.returncode != 0:
+            output_lines.append(f"[warn] git checkout: {reset.stderr.strip()}")
+
+        # 3. Pull from GitHub
+        pull = _run(["git", "pull", "origin", "main"])
+        output_lines.append((pull.stdout + pull.stderr).strip())
+
+        # 4. Restore runtime data files — user data always wins
+        for fname, data in backups.items():
+            (BASE_DIR / fname).write_bytes(data)
+
+        if backups:
+            output_lines.append(
+                f"\n[info] Preserved runtime data: {', '.join(backups)}"
+            )
+
+        ok = pull.returncode == 0
+        return {"ok": ok, "output": "\n".join(output_lines).strip()}
     except Exception as e:
-        return {"ok": False, "output": str(e)}
+        return {"ok": False, "output": "\n".join(output_lines) + f"\n[error] {e}"}
 
 
 if __name__ == "__main__":
