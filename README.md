@@ -29,6 +29,7 @@
 - 🌐 **Cloudflare Quick Tunnel** — No account needed, one-click temporary public URL via trycloudflare.com
 - 🔒 **Cloudflare Account Tunnels** — Create named tunnels via CF API, persistent URLs on your own domain; start/stop/delete from the panel
 - 🤖 **Discord Bot** — Full slash command suite: start, stop, restart, logs, files, edit files, system stats
+- 🟩 **Install Runtime** — Install Node.js directly from Settings: tries NVM first, falls back to standalone binary; live install log stream
 - 🎨 **Imperial Red + Night Theme** — Pure `#FB3640` accent and `#080808` background throughout
 - 🖼️ **Favicon** — PyVegar logo shown in browser tab on all pages
 - 📱 **Fully Responsive** — Works on desktop and mobile with adaptive layouts
@@ -37,10 +38,15 @@
 
 ## 🖼️ Screenshots
 
+### Login
+![Login](screenshots/login.jpg)
+
+### Dashboard · Server Manager · Settings
 | Dashboard | Server Manager | Settings |
 |-----------|---------------|----------|
 | ![Dashboard](screenshots/dashboard.png) | ![Server](screenshots/server.png) | ![Settings](screenshots/settings.png) |
 
+### File Manager · Live Logs · Mobile
 | File Manager | Live Logs | Mobile Dashboard | Mobile Files |
 |-------------|-----------|-----------------|--------------|
 | ![Files](screenshots/files.png) | ![Logs](screenshots/logs.png) | ![Mobile](screenshots/mobile.png) | ![Mobile Files](screenshots/mobile_files.png) |
@@ -88,7 +94,8 @@ PyVegar/
 ├── templates/          # Jinja2 HTML (login, index, server, logs, settings)
 ├── static/             # Static assets (tw.css, logo.svg, spa.js)
 ├── scripts/            # Project files — each project in its own UUID subfolder
-└── logs/               # Per-project log files (UUID-named)
+├── logs/               # Per-project log files (UUID-named)
+└── bin/                # Locally installed runtime binaries (e.g. node)
 ```
 
 ---
@@ -174,6 +181,20 @@ HTTP status colours: `2xx` green · `3xx` blue · `4xx` yellow · `5xx` red
 
 ---
 
+## 🟩 Install Runtime
+
+Settings → Install Runtime lets you install language runtimes without any system permissions.
+
+### Node.js
+1. Go to **Settings → Install Runtime**
+2. Click **Install** next to Node.js
+3. The panel tries **NVM** first (`nvm install 24`); if that fails it downloads the standalone binary from nodejs.org (`node-v26.0.0-linux-x64.tar.xz`)
+4. A live install log streams in real time with colour-coded output
+5. The badge updates to **NVM** or **Standalone** once installed
+6. Click **Remove** to clean up the managed binary at any time
+
+---
+
 ## 🤖 Discord Bot
 
 1. Create a bot at [discord.com/developers/applications](https://discord.com/developers/applications)
@@ -226,13 +247,22 @@ Dashboard → New Server → name it → Manage → upload/create files → Star
 
 # Install a package into a project
 Server page → Packages tab → type package name → Install
+
+# Install Node.js runtime
+Settings → Install Runtime → Node.js → Install
 ```
 
 ---
 
 ## 📋 Changelog
 
-### V3.2 — Current
+### V3.3 — Current
+
+- **Install Runtime section** — Settings → Install Runtime: install Node.js with one click; tries NVM (`nvm install 24`) first, falls back to standalone binary (`node-v26.0.0-linux-x64.tar.xz` from nodejs.org); live colour-coded install log streamed via WebSocket
+- **Save Settings fix** — resolved JS error that prevented the Settings save button from working when credential fields were absent from the DOM
+- **Runtime detector update** — `_get_node_status` now checks standalone binary → NVM versions → system PATH in order; badge correctly reports source (`Standalone`, `NVM`, `System`)
+
+### V3.2
 
 - **SPA navigation** — Full single-page app router (`static/spa.js`): animated Imperial Red progress bar, 125 ms fade transitions, click interception, browser back/forward via `popstate`
 - **Ghost-free WebSockets** — `PV3.onNavigate` cleanup registry fires before every page swap, closing all WS connections and clearing timers to prevent duplicate reconnect loops

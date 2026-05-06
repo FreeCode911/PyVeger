@@ -1,7 +1,11 @@
 {
   "cloudflare_token": "",
   "discord_token": "",
-  "allowed_users": [],
+  "allowed_users": [
+    "1"
+  ],
   "username": "admin",
-  "password": "$2b$12$SdrSxVzUTqb6GPArQrFMluEXX/dB/2XKKbBlQiXGCHwfmv4WcEY2C"
+  "password": "$2b$12$SdrSxVzUTqb6GPArQrFMluEXX/dB/2XKKbBlQiXGCHwfmv4WcEY2C",
+  "cf_account_id": "",
+  "cf_api_token": ""
 }
