@@ -175,6 +175,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+_bg_tasks: set[asyncio.Task] = set()
+
+def _bg(coro) -> asyncio.Task:
+    t = asyncio.create_task(coro)
+    _bg_tasks.add(t)
+    t.add_done_callback(_bg_tasks.discard)
+    return t
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _migrate_password_if_needed()
@@ -182,8 +190,13 @@ async def lifespan(app: FastAPI):
     cfg = _load_config()
     if cfg.get("cloudflare_token"):
         tunnel.start_tunnel()
-    asyncio.create_task(_build_runtimes_cache())
+    _bg(_build_runtimes_cache())
     yield
+    # Cancel all background tasks so Uvicorn shuts down instantly
+    for t in list(_bg_tasks):
+        t.cancel()
+    if _bg_tasks:
+        await asyncio.gather(*list(_bg_tasks), return_exceptions=True)
 
 
 app = FastAPI(title="PyVegar", lifespan=lifespan)
@@ -526,7 +539,7 @@ echo "__NVM_OK__"
         _ilog("  ✓ Node.js successfully installed via NVM!")
         _ilog(sep)
         _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "nvm", "message": "Installed via NVM"}
-        asyncio.create_task(_build_runtimes_cache())
+        _bg(_build_runtimes_cache())
         return
 
     # ── Step 2: Standalone fallback ──────────────────────────────────────────
@@ -579,7 +592,7 @@ echo "__STANDALONE_OK__"
         _ilog("  ✓ Node.js v26.0.0 standalone binary installed!")
         _ilog(sep)
         _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "standalone", "message": "Installed v26.0.0 (standalone)"}
-        asyncio.create_task(_build_runtimes_cache())
+        _bg(_build_runtimes_cache())
     else:
         _ilog("  ✗ Installation failed — check log above for details.")
         _ilog(sep)
@@ -593,7 +606,7 @@ async def api_nodejs_status():
 async def api_install_nodejs():
     if _RUNTIME_INSTALL_STATUS.get("status") == "running":
         raise HTTPException(status_code=409, detail="Installation already in progress")
-    asyncio.create_task(_do_install_nodejs())
+    _bg(_do_install_nodejs())
     return {"ok": True}
 
 @app.delete("/_/runtimes/nodejs/uninstall")
@@ -1043,7 +1056,7 @@ async def api_restart_panel(request: Request):
     async def _do():
         await asyncio.sleep(0.6)
         os.kill(os.getpid(), _sig.SIGTERM)
-    asyncio.create_task(_do())
+    _bg(_do())
     return {"ok": True}
 
 @app.post("/_/update/apply")
