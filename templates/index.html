@@ -47,7 +47,7 @@
       background:var(--card);border:1px solid var(--bdr);border-radius:16px;
       transition:border-color .2s,transform .2s,box-shadow .2s;overflow:hidden;display:flex;flex-direction:column;
     }
-    .proj-card:hover{border-color:var(--bdr2);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .proj-card:hover{border-color:rgba(251,54,64,.35);transform:translateY(-4px);box-shadow:0 16px 42px rgba(0,0,0,.28),0 0 0 1px rgba(251,54,64,.12)}
     html[data-theme=light] .proj-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1)}
     html[data-theme=light] .proj-card{box-shadow:0 1px 3px rgba(0,0,0,.07)}
     .dot-run{background:#22c55e;box-shadow:0 0 0 2.5px rgba(34,197,94,.25),0 0 10px rgba(34,197,94,.4)}
@@ -416,9 +416,14 @@ var LANG_MAP={
   deno:  { label:'Deno',    abbr:'Dn',  slug:'deno',      color:'#8b949e', bg:'rgba(139,148,158,.18)', bd:'rgba(139,148,158,.22)'},
   bun:   { label:'Bun',     abbr:'Bun', slug:'bun',       color:'#c0713d', bg:'rgba(192,113,61,.18)',  bd:'rgba(192,113,61,.22)' },
 };
-function _renderLogoImg(slug){
-  if(LANG_LOGOS[slug]===undefined)return '';
-  return `<img src="/static/logos/${slug}.svg" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`;
+function _logoFileForLang(langVal){
+  var key=(langVal||'').toLowerCase().trim();
+  return LANG_LOGOS[key]||'';
+}
+function _renderLogoImg(langVal){
+  var logo=_logoFileForLang(langVal);
+  if(!logo)return '';
+  return `<img src="/static/logos/${logo}.svg" width="20" height="20" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`;
 }
 var _logoPreFetchDone=Promise.resolve();
 function renderLangChip(el,lang,cmd,file){
@@ -429,7 +434,7 @@ function renderLangChip(el,lang,cmd,file){
       `<div style="background:linear-gradient(135deg,${lc.bg} 0%,transparent 110%);border-bottom:1px solid ${lc.bd};padding:10px 16px;display:flex;align-items:center;gap:11px;position:relative;overflow:hidden;min-height:50px">`+
         `<span style="width:34px;height:34px;border-radius:9px;background:${lc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:1;position:relative;overflow:hidden">`+
           `<span style="font-size:${lc.abbr.length>2?'8':'11'}px;font-weight:900;color:#fff;letter-spacing:-.5px">${lc.abbr}</span>`+
-          _renderLogoImg(lc.slug)+
+          _renderLogoImg(lang)+
         `</span>`+
         `<div style="min-width:0;flex:1;z-index:1">`+
           `<div style="font-size:13.5px;font-weight:700;color:${lc.color};line-height:1.2;margin-bottom:2px">${lc.label}</div>`+
@@ -582,10 +587,10 @@ var LANG_COLORS={python:'#3776ab',nodejs:'#5a9e50',go:'#00a8c8',ruby:'#cc342d',p
 var LANG_ABBR={python:'Py',nodejs:'JS',go:'Go',ruby:'Rb',php:'PHP',deno:'Dn',bun:'Bun',javascript:'JS',typescript:'TS',java:'Ja',csharp:'C#',cpp:'C++',c:'C',kotlin:'Kt',swift:'Sw',rust:'Rs',perl:'Pl',haskell:'Hs',julia:'Ju',scala:'Sc',lua:'Lua',bash:'Sh',r:'R',groovy:'Gr',dart:'Dt',elixir:'Ex',erlang:'Er',fsharp:'FS',clojure:'Cl',ocaml:'Ml',racket:'Rk',scheme:'Sc',other:'?'};
 var LANG_LOGOS={python:'python',nodejs:'nodedotjs',go:'go',ruby:'ruby',php:'php',deno:'deno',bun:'bun',javascript:'javascript',typescript:'typescript',java:'java',csharp:'csharp',cpp:'cpp',c:'c',kotlin:'kotlin',swift:'swift',rust:'rust',perl:'perl',haskell:'haskell',julia:'julia',scala:'scala',lua:'lua',bash:'bash',shell:'bash',r:'r',groovy:'groovy',dart:'dart',elixir:'elixir',erlang:'erlang',fsharp:'fsharp',clojure:'clojure',ocaml:'ocaml',racket:'racket',scheme:'scheme'};
 function _getLogoSlug(langVal){
-  return LANG_LOGOS[langVal]||langVal.replace(/\s+/g,'').toLowerCase();
+  return _logoFileForLang(langVal);
 }
 function _buildLangOptIcon(color,abbr,slug){
-  var hasLogo=LANG_LOGOS[slug.replace(/\.svg$/,'')]!==undefined;
+  var hasLogo=!!slug;
   return `<span class="lang-dd-opt-icon" style="position:relative;background:${color};overflow:hidden">`+
     `<span style="font-size:8px;font-weight:900;color:#fff;letter-spacing:-.5px">${abbr}</span>`+
     (hasLogo?`<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`:'')+
@@ -616,7 +621,7 @@ function _populateLangSelect(){
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
     const slug=_getLogoSlug(rt.value);
     hidden.value=rt.value;
-    var hasLogo=LANG_LOGOS[slug]!==undefined;
+    var hasLogo=!!slug;
     label.innerHTML=
       `<span style="display:inline-flex;align-items:center;gap:8px">`+
         `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
@@ -633,7 +638,7 @@ function _populateLangSelect(){
 function selectLangOpt(val,name,ver,color,abbr,slug){
   document.getElementById('new-lang').value=val;
   const label=document.getElementById('lang-dd-label');
-  var hasLogo=LANG_LOGOS[slug]!==undefined;
+  var hasLogo=!!slug;
   label.innerHTML=
     `<span style="display:inline-flex;align-items:center;gap:8px">`+
       `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+

@@ -524,12 +524,15 @@ curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bas
 echo ""
 echo ">>> Sourcing NVM..."
 . "$HOME/.nvm/nvm.sh" 2>&1
-echo ">>> Installing Node.js 24..."
-nvm install 24 2>&1
+echo ">>> Installing Node.js 24.15.0..."
+nvm install 24.15.0 2>&1
 echo ""
 echo ">>> Verifying..."
 node -v 2>&1
 npm -v 2>&1
+npx -v 2>&1
+corepack --version 2>&1 || true
+corepack enable 2>&1 || true
 echo ""
 echo "__NVM_OK__"
 """
@@ -556,6 +559,17 @@ echo "__NVM_OK__"
         _ilog(f"\n{sep}")
         _ilog("  ✓ Node.js successfully installed via NVM!")
         _ilog(sep)
+        nvm_bin = Path.home() / ".nvm" / "versions" / "node" / "v24.15.0" / "bin"
+        for bn in ["node", "npm", "npx", "corepack"]:
+            src = nvm_bin / bn
+            dst = _LOCAL_BIN_DIR / bn
+            if src.exists():
+                try:
+                    if dst.exists() or dst.is_symlink():
+                        dst.unlink()
+                    dst.symlink_to(src)
+                except Exception:
+                    pass
         _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "nvm", "message": "Installed via NVM"}
         _bg(_build_runtimes_cache())
         return
@@ -1070,11 +1084,12 @@ async def api_restart_panel(request: Request):
     token = request.cookies.get(SESSION_COOKIE)
     if not _valid_session(token):
         raise HTTPException(status_code=401)
-    import signal as _sig
-    async def _do():
-        await asyncio.sleep(0.6)
-        os.kill(os.getpid(), _sig.SIGTERM)
-    _bg(_do())
+
+    def _reexec():
+        time.sleep(0.6)
+        os.execv(sys.executable, [sys.executable, *sys.argv])
+
+    threading.Thread(target=_reexec, daemon=True).start()
     return {"ok": True}
 
 @app.post("/_/update/apply")
