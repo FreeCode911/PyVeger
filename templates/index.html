@@ -33,6 +33,11 @@
       --ok:#16a34a;--warn:#d97706;--err:#dc2626;
     }
     body{background:var(--bg);color:var(--t1);min-height:100vh;}
+
+    :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+    }
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
@@ -208,12 +213,12 @@
         <span id="tun-dot" style="width:6px;height:6px;border-radius:50%;flex-shrink:0;{% if tunnel.status == 'running' %}background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5){% else %}background:#ef4444{% endif %}"></span>
         <span id="tun-txt" class="hidden sm:inline {% if tunnel.status == 'running' %}tun-ok{% else %}tun-err{% endif %}">Tunnel</span>
       </div>
-      <a href="/settings" class="icon-btn" title="Settings"><i data-lucide="settings" style="width:16px;height:16px"></i></a>
-      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+      <a href="/settings" class="icon-btn" title="Settings" aria-label="Settings"><i data-lucide="settings" style="width:16px;height:16px"></i></a>
+      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         <i data-lucide="sun" class="icon-sun" style="width:16px;height:16px"></i>
         <i data-lucide="moon" class="icon-moon" style="width:16px;height:16px"></i>
       </button>
-      <a href="/logout" class="icon-btn" title="Logout" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'" onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'"><i data-lucide="log-out" style="width:15px;height:15px"></i></a>
+      <a href="/logout" class="icon-btn" title="Logout" aria-label="Logout" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'" onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'"><i data-lucide="log-out" style="width:15px;height:15px"></i></a>
     </div>
   </div>
 </header></div>

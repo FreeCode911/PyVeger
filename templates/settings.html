@@ -30,6 +30,8 @@
       --trm:rgba(0,0,0,.04);
     }
     body{background:var(--bg);color:var(--t1);min-height:100vh;}
+    :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+    @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
@@ -135,12 +137,12 @@
       <span style="font-size:13px;font-weight:600;color:var(--t2)">Settings</span>
     </div>
     <div style="display:flex;gap:7px">
-      <a href="/" class="icon-btn" title="Dashboard"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i></a>
-      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme">
+      <a href="/" class="icon-btn" title="Dashboard" aria-label="Dashboard"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i></a>
+      <button onclick="toggleTheme()" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         <i data-lucide="sun" class="icon-sun" style="width:16px;height:16px"></i>
         <i data-lucide="moon" class="icon-moon" style="width:16px;height:16px"></i>
       </button>
-      <a href="/logout" class="icon-btn" title="Logout"
+      <a href="/logout" class="icon-btn" title="Logout" aria-label="Logout"
          onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.color='#f87171'"
          onmouseout="this.style.background='var(--inp)';this.style.color='var(--t3)'">
         <i data-lucide="log-out" style="width:15px;height:15px"></i>
