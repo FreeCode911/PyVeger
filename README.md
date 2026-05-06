@@ -39,17 +39,24 @@
 ## 🖼️ Screenshots
 
 ### Login
-![Login](screenshots/login.jpg)
+![Login](screenshots/login.png)
 
-### Dashboard · Server Manager · Settings
-| Dashboard | Server Manager | Settings |
-|-----------|---------------|----------|
-| ![Dashboard](screenshots/dashboard.png) | ![Server](screenshots/server.png) | ![Settings](screenshots/settings.png) |
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
 
-### File Manager · Live Logs · Mobile
-| File Manager | Live Logs | Mobile Dashboard | Mobile Files |
-|-------------|-----------|-----------------|--------------|
-| ![Files](screenshots/files.png) | ![Logs](screenshots/logs.png) | ![Mobile](screenshots/mobile.png) | ![Mobile Files](screenshots/mobile_files.png) |
+### Server Manager (Files tab)
+![Server](screenshots/server.png)
+
+### Settings (full page — includes Install Runtime section)
+![Settings](screenshots/settings_full.png)
+
+### Live Logs
+![Logs](screenshots/logs.png)
+
+### Mobile
+| Mobile Dashboard | Mobile Server |
+|-----------------|--------------|
+| ![Mobile](screenshots/mobile.png) | ![Mobile Files](screenshots/mobile_files.png) |
 
 ---
 

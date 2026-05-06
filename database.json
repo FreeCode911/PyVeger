@@ -21,5 +21,16 @@
     "id": "565376d1-ac2c-4b14-8094-acfa762aa2c1",
     "name": "test",
     "crash_count": 2
+  },
+  "1fbd0901-dcfb-433b-b3fe-412ab5378c14": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "startup_command": "python3 -u main.py",
+    "start_time": null,
+    "restarts": 0,
+    "language": "python",
+    "id": "1fbd0901-dcfb-433b-b3fe-412ab5378c14",
+    "name": "Testing"
   }
 }
