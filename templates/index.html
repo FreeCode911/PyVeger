@@ -692,14 +692,13 @@ async function openNew(){
   document.getElementById('new-other-block').classList.add('hidden');
   document.getElementById('new-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('new-name').focus(),80);
-  if(!_runtimesReady){
-    // still loading — wait up to 4s then fallback
-    const lbl=document.getElementById('lang-dd-label');
-    if(lbl){lbl.textContent='Loading…';lbl.style.color='var(--t3)';}
-    for(let i=0;i<40;i++){
-      await new Promise(r=>setTimeout(r,100));
-      if(_runtimesReady)break;
-    }
+  // Always re-fetch runtimes so anything installed since page load appears immediately
+  try{
+    const res=await fetch('/_/runtimes');
+    const d=await res.json();
+    _runtimes=d.runtimes||[];
+    _runtimesReady=true;
+  }catch(e){
     if(!_runtimesReady)
       _runtimes=[{name:'Other',value:'other',version:'',start_file:'main.py',command:''}];
   }
