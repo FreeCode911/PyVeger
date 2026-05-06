@@ -1,9 +1,18 @@
 {
-  "version": "3.2",
+  "version": "3.3",
   "releases": [
     {
-      "version": "3.2",
+      "version": "3.3",
       "label": "Current",
+      "changes": [
+        { "title": "Install Runtime", "desc": "Settings → Install Runtime: one-click Node.js install via NVM (nvm install 24) with standalone binary fallback (node-v26.0.0-linux-x64); live colour-coded WebSocket install log" },
+        { "title": "Save Settings fix", "desc": "Resolved JS crash that prevented the Settings save button from working when credential input fields were absent from the DOM" },
+        { "title": "Runtime detector update", "desc": "Checks standalone binary → NVM → system PATH in priority order; badge shows NVM / Standalone / System source" }
+      ]
+    },
+    {
+      "version": "3.2",
+      "label": "",
       "changes": [
         { "title": "SPA navigation", "desc": "Full single-page app router — no page reloads, animated progress bar, fade transitions between all pages" },
         { "title": "Ghost-free WebSockets", "desc": "PV3.onNavigate cleanup registry kills all WS connections and timers on navigate-away, preventing duplicate reconnect loops" },

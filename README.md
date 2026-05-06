@@ -3,36 +3,35 @@
   <h1>PyVegar V3</h1>
 </div>
 
-[![Version](https://img.shields.io/badge/version-3.2-fb3640?style=flat-square)](version.json)
+[![Version](https://img.shields.io/badge/version-3.3-fb3640?style=flat-square)](version.json)
 [![License](https://img.shields.io/badge/license-Personal-informational)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11-blue?style=flat-square)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=flat-square)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?style=flat-square)](https://fastapi.tiangolo.com)
 [![Stars](https://img.shields.io/github/stars/FreeCode911/PyVeger?style=flat-square)](https://github.com/FreeCode911/PyVeger/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/FreeCode911/PyVeger?style=flat-square)](https://github.com/FreeCode911/PyVeger/commits/main)
 
-> **PyVegar V3** is a sleek, self-hosted web management panel for running and monitoring Python bots, scripts, and services. Manage multiple projects, edit files in-browser, stream live logs, expose via Cloudflare tunnels, and control everything from Discord — all from a beautiful dark/light UI that works on desktop and mobile.
+> **PyVegar V3** is a sleek, self-hosted web management panel for running and monitoring bots, scripts, and services in any language. Manage multiple projects, edit files in-browser, stream live logs, install runtimes, expose via Cloudflare tunnels, and control everything from Discord — all from a beautiful dark/light UI that works on desktop and mobile.
 
 ---
 
 ## ✨ Features
 
 - ⚡ **SPA Navigation** — Single-page app router with animated progress bar and fade transitions; no full page reloads
-- 🔐 **End-to-End Security** — bcrypt password hashing, login rate-limiting, security headers (CSP, HSTS, X-Frame-Options), hardened session cookie
-- 🐍 **Multi-Project Management** — Create, start, stop, restart, and delete Python projects; UUID-based project IDs
-- 📁 **Full File Manager** — Recursive folder tree, create files/folders inside subfolders, rename, move, delete, upload
+- 🔐 **End-to-End Security** — bcrypt password hashing, login rate-limiting, full security headers (CSP, HSTS, X-Frame-Options), hardened session cookie
+- 🖥️ **Multi-Project Management** — Create, start, stop, restart, and delete projects in any language; UUID-based IDs, custom startup command or start file
+- 📁 **Full File Manager** — Recursive folder tree, create files/folders anywhere, rename, move, delete, upload
 - 📝 **In-Browser Editor** — Syntax-aware textarea with Tab indentation and Ctrl+S save
 - 📊 **Live Stats** — Real-time CPU/RAM via WebSocket (1 s interval)
-- 🟢 **Real-Time Status Badge** — Project status updates live — running, restarting, error, stopped
-- ⏱️ **Live Uptime Tile** — Server info card shows formatted uptime updated every second
+- 🟢 **Real-Time Status Badge** — Project status (running, restarting, error, stopped) updates live every second
+- ⏱️ **Live Uptime** — Formatted uptime counter updated every second on the server card
 - 📋 **Live Console** — WebSocket log streaming with clear button and auto-scroll
-- 📦 **Package Manager** — Install/uninstall pip packages directly from the panel
-- 🌐 **Cloudflare Quick Tunnel** — No account needed, one-click temporary public URL via trycloudflare.com
-- 🔒 **Cloudflare Account Tunnels** — Create named tunnels via CF API, persistent URLs on your own domain; start/stop/delete from the panel
-- 🤖 **Discord Bot** — Full slash command suite: start, stop, restart, logs, files, edit files, system stats
-- 🟩 **Install Runtime** — Install Node.js directly from Settings: tries NVM first, falls back to standalone binary; live install log stream
-- 🎨 **Imperial Red + Night Theme** — Pure `#FB3640` accent and `#080808` background throughout
-- 🖼️ **Favicon** — PyVegar logo shown in browser tab on all pages
-- 📱 **Fully Responsive** — Works on desktop and mobile with adaptive layouts
+- 📦 **Package Manager** — Install/uninstall pip packages directly from each project's page
+- 🟩 **Install Runtime** — Install Node.js from Settings with one click: tries NVM first, falls back to standalone binary; live colour-coded install log
+- 🌐 **Cloudflare Run-Token Tunnel** — Paste your tunnel run token and start/stop directly from Settings
+- 🤖 **Discord Bot** — Full slash command suite: list, start, stop, restart, logs, file editing, system stats
+- 🎨 **Imperial Red + Night Theme** — Pure `#FB3640` accent and `#080808` background; dark/light mode toggle
+- 🖼️ **Favicon** — PyVegar logo shown in the browser tab on every page
+- 📱 **Fully Responsive** — Desktop and mobile layouts on all pages
 
 ---
 
@@ -63,13 +62,15 @@
 ## 🚦 Quickstart
 
 ```bash
-git clone https://github.com/FreeCode911/PyVeger.git
-cd PyVeger
+git clone https://github.com/FreeCode911/PyVegar.git
+cd PyVegar
 pip install -r requirements.txt
 python app.py
 ```
 
-Then open [http://localhost:8000](http://localhost:8000) — default login is `admin` / `admin`.
+Then open [http://localhost:5000](http://localhost:5000) — default login is `admin` / `admin`.
+
+> The port can be overridden with the `PORT` environment variable: `PORT=8080 python app.py`
 
 ---
 
@@ -88,21 +89,21 @@ Then open [http://localhost:8000](http://localhost:8000) — default login is `a
 
 ```
 PyVegar/
-├── app.py              # FastAPI app — routes, auth middleware, WebSockets
-├── manager.py          # Project lifecycle, file/folder ops, process control
-├── log_config.py       # Coloured log formatter + PyVegar startup banner
-├── tunnel.py           # Cloudflare quick tunnel + account tunnel API
-├── discord_bot.py      # Discord bot slash commands
-├── config.json         # Credentials (bcrypt-hashed), tokens, CF tunnel data
-├── database.json       # Project metadata (status, PID, start file, restarts)
-├── version.json        # Version history shown in Settings → About
-├── runtimes_cache.json # Detected runtimes (auto-generated on first boot)
+├── app.py              # FastAPI app — all routes, auth, WebSockets, runtime installer
+├── manager.py          # Project lifecycle: create/start/stop/restart, file ops, packages
+├── log_config.py       # Colour-coded log formatter + ASCII startup banner
+├── tunnel.py           # Cloudflare run-token tunnel start/stop
+├── discord_bot.py      # Discord slash command bot
+├── config.json         # Credentials (bcrypt), CF token, allowed Discord users
+├── database.json       # Project metadata: status, PID, start file, restart count
+├── version.json        # Version history displayed in Settings → About
+├── runtimes_cache.json # Detected language runtimes (auto-generated on first boot)
 ├── requirements.txt    # Python dependencies
-├── templates/          # Jinja2 HTML (login, index, server, logs, settings)
+├── templates/          # Jinja2 HTML templates (login, index, server, logs, settings)
 ├── static/             # Static assets (tw.css, logo.svg, spa.js)
-├── scripts/            # Project files — each project in its own UUID subfolder
-├── logs/               # Per-project log files (UUID-named)
-└── bin/                # Locally installed runtime binaries (e.g. node)
+├── scripts/            # Per-project working directories (UUID-named subfolders)
+├── logs/               # Per-project log files + runtime install log
+└── bin/                # Locally installed runtime binaries (e.g. node standalone)
 ```
 
 ---
@@ -111,33 +112,33 @@ PyVegar/
 
 | Layer | Tech |
 |-------|------|
-| Backend | Python 3.11, [FastAPI](https://fastapi.tiangolo.com/) |
-| Frontend | HTML5, CSS variables, [Lucide Icons](https://lucide.dev/), vanilla SPA router |
-| Realtime | FastAPI WebSockets — logs + stats, 1 s push interval |
-| Security | bcrypt, slowapi rate-limiting, SecurityHeaders middleware |
-| Tunneling | Cloudflare cloudflared + Cloudflare API |
-| Bot | [discord.py](https://discordpy.readthedocs.io/) |
+| Backend | Python 3.11+, [FastAPI](https://fastapi.tiangolo.com/) + Uvicorn |
+| Frontend | HTML5, CSS custom properties, [Lucide Icons](https://lucide.dev/), vanilla SPA router |
+| Realtime | FastAPI WebSockets — live logs + CPU/RAM stats at 1 s interval |
+| Security | bcrypt, custom rate-limiting, SecurityHeaders middleware |
+| Tunneling | Cloudflare run-token tunnel via `cloudflared` |
+| Bot | [discord.py](https://discordpy.readthedocs.io/) slash commands |
 | Process | psutil, subprocess |
 
 ---
 
 ## 🔐 Security
 
-PyVegar V3.2 ships with multiple security layers enabled by default:
+PyVegar V3.3 includes multiple security layers enabled by default:
 
 | Layer | Detail |
 |-------|--------|
-| Password hashing | bcrypt (`$2b$12$`) — migrated automatically on first boot |
+| Password hashing | bcrypt (`$2b$12$`) — auto-migrated from plaintext on first boot |
 | Login rate-limiting | 5 failed attempts → 5-minute lockout per IP |
 | Security headers | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy |
 | Session cookie | `samesite=strict`, `httponly`, `secure` |
-| Password change | Settings → Security — current password required, strength meter shown |
+| Password change | Settings → Security — current password required, live strength meter |
 
 ---
 
 ## 🎨 Server Log Format
 
-PyVegar V3 uses a structured, colour-coded log format with an ASCII banner on every startup:
+PyVegar uses a structured, colour-coded log format with an ASCII banner on every startup:
 
 ```
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -147,12 +148,12 @@ PyVegar V3 uses a structured, colour-coded log format with an ASCII banner on ev
     ██╔═══╝   ╚██╔╝    ╚██╔╝  ██╔══╝  ██║   ██║██╔══██║██╔══██╗
     ██║        ██║      ██║   ███████╗╚██████╔╝██║  ██║██║  ██║
     ╚═╝        ╚═╝      ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
-    Server Management Panel  ·  Python · FastAPI · SQLite
+    Server Management Panel  ·  Python · FastAPI
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   10:33:49  ● INFO   uvicorn  ▶ Started   PID 42053
   10:33:49  ● INFO   uvicorn  ✔ Ready     application startup complete
-  10:33:49  ● INFO   uvicorn  ◉ Listening  http://0.0.0.0:8000
+  10:33:49  ● INFO   uvicorn  ◉ Listening  http://0.0.0.0:5000
   10:33:50  ● INFO   http     GET     /login                 →  200
   10:33:52  ● INFO   http     POST    /login                 →  303
   10:33:53  ▲ WARN   tunnel   Tunnel exited after 0.1s — invalid token
@@ -168,46 +169,35 @@ HTTP status colours: `2xx` green · `3xx` blue · `4xx` yellow · `5xx` red
 
 ---
 
-## 🌐 Cloudflare Tunnels
+## 🌐 Cloudflare Tunnel
 
-### Quick Tunnel (no account)
-1. Go to **Settings → Quick Tunnel**
-2. Enter your local port and click **Start**
-3. A temporary `*.trycloudflare.com` URL is generated — changes on every restart
-
-### Account Tunnels (persistent URL on your domain)
-1. Go to **Settings → Cloudflare Account Tunnels**
-2. Enter your **Account ID** (CF Dashboard → right sidebar) and an **API Token** with:
-   - `Cloudflare Tunnel:Edit`
-   - `DNS:Edit`
-   - `Zone:Read`
-3. Click **Save & Connect** — your domains load automatically
-4. Click **New Tunnel**, pick a subdomain + domain + port
-5. The panel creates the tunnel, configures ingress, and adds the DNS CNAME record
-6. Click **Start** — your service is live at `https://subdomain.yourdomain.com`
+1. Go to **Cloudflare Zero Trust Dashboard → Networks → Tunnels**
+2. Create or open a tunnel, click **Configure → Install & Run**, and copy the **run token**
+3. Paste it in **Settings → Cloudflare Tunnel → Tunnel Run Token** and click **Save Token**
+4. Click **Start** — your panel (or any project) is live on your tunnel domain
 
 ---
 
 ## 🟩 Install Runtime
 
-Settings → Install Runtime lets you install language runtimes without any system permissions.
+Settings → Install Runtime lets you install language runtimes without system permissions.
 
 ### Node.js
 1. Go to **Settings → Install Runtime**
 2. Click **Install** next to Node.js
-3. The panel tries **NVM** first (`nvm install 24`); if that fails it downloads the standalone binary from nodejs.org (`node-v26.0.0-linux-x64.tar.xz`)
-4. A live install log streams in real time with colour-coded output
-5. The badge updates to **NVM** or **Standalone** once installed
-6. Click **Remove** to clean up the managed binary at any time
+3. The panel tries **NVM** first (`nvm install 24`); if NVM fails, it downloads the standalone binary `node-v26.0.0-linux-x64.tar.xz` directly from nodejs.org
+4. A live install log streams in real time with colour-coded output (blue = steps, green = success, red = errors)
+5. The status badge updates to **NVM**, **Standalone**, or **System** once a node binary is detected
+6. Click **Remove** to clean up any managed binary at any time
 
 ---
 
 ## 🤖 Discord Bot
 
 1. Create a bot at [discord.com/developers/applications](https://discord.com/developers/applications)
-2. Copy the bot token and paste it in **Settings → Discord Bot**
-3. Add allowed Discord user IDs or usernames (comma-separated)
-4. Invite the bot to your server
+2. Copy the bot token and paste it in **Settings → Other Settings → Discord Token**
+3. Add allowed Discord usernames (comma-separated) in **Allowed Users**
+4. Invite the bot to your server with the `bot` + `applications.commands` scopes
 
 Available slash commands:
 
@@ -227,11 +217,51 @@ Available slash commands:
 
 ---
 
+## 📡 API Routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Dashboard |
+| GET / POST | `/login` | Authentication |
+| GET | `/logout` | End session |
+| GET | `/server/{id}` | Server manager (files, console, startup, packages) |
+| GET | `/logs/{id}` | Full-screen live log viewer |
+| GET | `/settings` | Settings page |
+| GET | `/_/status` | System stats JSON |
+| GET | `/_/projects` | List all projects |
+| POST | `/_/projects/create` | Create a project |
+| DELETE | `/_/projects/{id}` | Delete a project |
+| POST | `/_/projects/{id}/start\|stop\|restart` | Lifecycle control |
+| POST | `/_/restart-all` | Restart all running projects |
+| GET | `/_/projects/{id}/tree` | Recursive file tree |
+| GET / POST | `/_/projects/{id}/files/{path}` | Read / write a file |
+| POST | `/_/projects/{id}/folders` | Create a folder |
+| POST | `/_/projects/{id}/move` | Move / rename a file or folder |
+| POST | `/_/projects/{id}/upload` | Upload files |
+| DELETE | `/_/projects/{id}/items/{path}` | Delete a file or folder |
+| POST | `/_/projects/{id}/packages/install` | Install a pip package |
+| DELETE | `/_/projects/{id}/packages/{pkg}` | Uninstall a pip package |
+| GET | `/_/runtimes` | Detected language runtimes |
+| POST | `/_/runtimes/refresh` | Refresh runtime cache |
+| GET | `/_/runtimes/nodejs/status` | Node.js install status |
+| POST | `/_/runtimes/install/nodejs` | Start Node.js installation |
+| DELETE | `/_/runtimes/nodejs/uninstall` | Remove managed Node.js binary |
+| POST | `/_/tunnel/start\|stop` | Cloudflare tunnel control |
+| POST | `/_/security/change-password` | Change admin password |
+| POST | `/_/settings` | Save settings |
+| GET | `/_/version` | Version history JSON |
+| GET | `/_/update/check` | Check for GitHub updates |
+| POST | `/_/update/apply` | Run `git pull` to update |
+| WS | `/ws/stats` | Live CPU/RAM + all project statuses |
+| WS | `/ws/logs/{id}` | Live log stream for a project (or `_runtime_install`) |
+
+---
+
 ## 📱 Mobile Support
 
 PyVegar V3 is fully responsive:
 - **Dashboard** — card grid adapts to single column on small screens
-- **File Manager** — master-detail view: tap a file to open the editor full-screen
+- **Server Manager** — tabs stack; file explorer goes full-width
 - **Settings** — all forms stack to single column
 - **Logs** — full-screen terminal view on any device
 
@@ -240,23 +270,27 @@ PyVegar V3 is fully responsive:
 ## 📚 Usage Examples
 
 ```bash
-# Start the panel
+# Start the panel (default port 5000)
 python app.py
 
-# Access locally
-http://localhost:8000
+# Start on a custom port
+PORT=8080 python app.py
 
-# Make public via quick tunnel
-Settings → Quick Tunnel → Start
+# Access locally
+http://localhost:5000
+
+# Expose publicly
+Settings → Cloudflare Tunnel → paste run token → Start
 
 # Create a project
 Dashboard → New Server → name it → Manage → upload/create files → Start
 
-# Install a package into a project
-Server page → Packages tab → type package name → Install
-
-# Install Node.js runtime
+# Run a Node.js project
 Settings → Install Runtime → Node.js → Install
+Server page → Startup → set startup command to: node index.js
+
+# Install a pip package into a project
+Server page → Packages tab → type package name → Install
 ```
 
 ---
@@ -265,33 +299,33 @@ Settings → Install Runtime → Node.js → Install
 
 ### V3.3 — Current
 
-- **Install Runtime section** — Settings → Install Runtime: install Node.js with one click; tries NVM (`nvm install 24`) first, falls back to standalone binary (`node-v26.0.0-linux-x64.tar.xz` from nodejs.org); live colour-coded install log streamed via WebSocket
-- **Save Settings fix** — resolved JS error that prevented the Settings save button from working when credential fields were absent from the DOM
-- **Runtime detector update** — `_get_node_status` now checks standalone binary → NVM versions → system PATH in order; badge correctly reports source (`Standalone`, `NVM`, `System`)
+- **Install Runtime** — Settings → Install Runtime: one-click Node.js install; tries NVM (`nvm install 24`) first, falls back to standalone binary (`node-v26.0.0-linux-x64.tar.xz`); live colour-coded WebSocket log; badge shows `NVM` / `Standalone` / `System`
+- **Save Settings fix** — resolved JS crash that prevented the Settings save button from working when credential input fields were absent from the page
+- **Runtime detector** — checks standalone binary → NVM → system PATH in priority order; `Remove` button cleans up any managed binary
 
 ### V3.2
 
 - **SPA navigation** — Full single-page app router (`static/spa.js`): animated Imperial Red progress bar, 125 ms fade transitions, click interception, browser back/forward via `popstate`
 - **Ghost-free WebSockets** — `PV3.onNavigate` cleanup registry fires before every page swap, closing all WS connections and clearing timers to prevent duplicate reconnect loops
-- **End-to-end security** — bcrypt password hashing (auto-migrated on boot), login rate-limiting (5 attempts → 5-min lockout per IP), `SecurityHeadersMiddleware` (CSP, HSTS, X-Frame, X-Content-Type, Referrer-Policy), session cookie hardened to `samesite=strict`
-- **Security panel** — Settings → Security: change password with live strength bar, security status pills, lockout warning + remaining-attempts counter on login page
+- **End-to-end security** — bcrypt password hashing (auto-migrated on boot), login rate-limiting (5 attempts → 5-min lockout per IP), `SecurityHeadersMiddleware`, session cookie hardened to `samesite=strict`
+- **Security panel** — Settings → Security: change password with live strength bar, security status pills, lockout warning on login page
 
 ### V3.1
 
-- **New panel logo** — Solid-filled PV monogram (professional panel style), transparent variant (`logo-transparent.svg`), and SVG favicon on every page
-- **Floating taskbar** — Curved pill-shaped navbar with backdrop blur, Imperial Red border glow, and drop shadow; consistent height and style on all pages
-- **Imperial Red + Night theme** — Pure `#FB3640` accent and `#080808` background throughout; zero green tints or colour mixing
-- **GitHub update check** — Settings → About shows current commit hash with a **Check** button (GitHub API) and **Update Now** button (runs `git pull`)
-- **Mobile taskbar** — Pill reverts to flat full-width bar on small screens for a clean mobile layout
-- **Restart All fix** — Fixed async blocking issue and JS error that prevented Restart All from working
+- **New panel logo** — Solid-filled PV monogram, transparent variant, and SVG favicon on every page
+- **Floating taskbar** — Curved pill navbar with backdrop blur and Imperial Red border glow across all pages
+- **Imperial Red + Night theme** — Pure `#FB3640` accent and `#080808` background throughout
+- **GitHub update check** — Settings → About: current commit hash, **Check** button (GitHub API), **Update Now** button (`git pull`)
+- **Mobile taskbar** — Pill reverts to flat full-width bar on small screens
+- **Restart All fix** — Fixed async blocking issue and JS error preventing Restart All from working
 
 ### V3.0
 
-- **Modern server logs** — colour-coded output (`log_config.py`): level badges (`●` `▲` `✖`), parsed HTTP lines, WebSocket events, PyVegar ASCII banner on startup
-- **Real-time status badge** — WebSocket stats payload includes project `id`; status badge updates every 1 s
-- **Live uptime tile** — server info card shows formatted uptime (`2h 14m`, `45s`) refreshed every second
+- **Structured log format** — colour-coded output (`log_config.py`): level badges (`●` `▲` `✖`), parsed HTTP lines, WebSocket events, ASCII banner on startup
+- **Real-time status badge** — WebSocket stats payload includes project `id`; status updates every 1 s
+- **Live uptime tile** — formatted uptime (`2h 14m`, `45s`) refreshed every second
 - **UUID project IDs** — projects keyed and folder-named by UUID for full portability
-- **Auto-restart** — processes that crash are automatically restarted with configurable delay
+- **Auto-restart** — processes that crash are automatically restarted
 
 ---
 
