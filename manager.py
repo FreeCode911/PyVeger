@@ -434,9 +434,6 @@ def _pip_cmd() -> list[str]:
 
 
 def _npm_cmd() -> list[str]:
-    nvm_npm = Path.home() / ".nvm" / "versions" / "node" / "v24.15.0" / "bin" / "npm"
-    if nvm_npm.exists() and os.access(nvm_npm, os.X_OK):
-        return [str(nvm_npm)]
     return ["npm"]
 
 
