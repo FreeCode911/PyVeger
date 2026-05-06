@@ -1032,6 +1032,18 @@ async def api_check_update(request: Request):
         return {"error": str(e), "local": local_sha[:7], "up_to_date": None}
 
 
+@app.post("/_/restart")
+async def api_restart_panel(request: Request):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not _valid_session(token):
+        raise HTTPException(status_code=401)
+    import signal as _sig
+    async def _do():
+        await asyncio.sleep(0.6)
+        os.kill(os.getpid(), _sig.SIGTERM)
+    asyncio.create_task(_do())
+    return {"ok": True}
+
 @app.post("/_/update/apply")
 async def api_apply_update(request: Request):
     token = request.cookies.get(SESSION_COOKIE)
