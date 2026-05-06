@@ -526,7 +526,7 @@ echo "__NVM_OK__"
         _ilog("  ✓ Node.js successfully installed via NVM!")
         _ilog(sep)
         _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "nvm", "message": "Installed via NVM"}
-        _RUNTIMES_CACHE = None
+        asyncio.create_task(_build_runtimes_cache())
         return
 
     # ── Step 2: Standalone fallback ──────────────────────────────────────────
@@ -579,7 +579,7 @@ echo "__STANDALONE_OK__"
         _ilog("  ✓ Node.js v26.0.0 standalone binary installed!")
         _ilog(sep)
         _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "standalone", "message": "Installed v26.0.0 (standalone)"}
-        _RUNTIMES_CACHE = None
+        asyncio.create_task(_build_runtimes_cache())
     else:
         _ilog("  ✗ Installation failed — check log above for details.")
         _ilog(sep)

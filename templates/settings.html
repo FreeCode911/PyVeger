@@ -796,6 +796,11 @@ async function loadNodeRtStatus() {
       if (logStatus) { logStatus.textContent = '✓ ' + st.message; logStatus.style.color = '#4ade80'; }
       document.getElementById('btn-node-install').disabled = false;
       if (_rtStatusPoll) { clearInterval(_rtStatusPoll); _rtStatusPoll = null; }
+      // Auto-refresh the runtime cache so Create Server picks it up without manual refresh
+      try {
+        await fetch('/_/runtimes/refresh', { method: 'POST' });
+        if (logStatus) logStatus.textContent = '✓ ' + st.message + ' · Runtime list updated';
+      } catch(_) {}
     } else if (st.status === 'error') {
       if (logStatus) { logStatus.textContent = '✗ Failed'; logStatus.style.color = '#f87171'; }
       document.getElementById('btn-node-install').disabled = false;
