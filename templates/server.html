@@ -278,14 +278,15 @@
           <button onclick="backToFiles()" class="mobile-back"><i data-lucide="chevron-left" style="width:13px;height:13px"></i> Files</button>
           <i id="editor-icon" data-lucide="file" style="width:14px;height:14px;color:var(--t3);flex-shrink:0"></i>
           <span id="editor-fname" class="fname">—</span>
+          <span id="editor-save-state" style="font-size:11px;color:var(--t3);padding:2px 8px;border-radius:999px;border:1px solid var(--bdr);background:var(--inp)">Saved</span>
           <button id="set-start-btn" onclick="setStartFile()" class="btn-ghost" style="padding:4px 10px;font-size:11px">
             <i data-lucide="play" style="width:11px;height:11px"></i> Set Start
           </button>
-          <button onclick="saveFile()" class="btn-ok" style="padding:4px 10px;font-size:11px">
+          <button id="save-btn" onclick="saveFile()" class="btn-ok" style="padding:4px 10px;font-size:11px">
             <i data-lucide="save" style="width:11px;height:11px"></i> Save
           </button>
         </div>
-        <textarea id="raw-editor" spellcheck="false" onkeydown="handleEditorKey(event)"></textarea>
+        <textarea id="raw-editor" spellcheck="false" onkeydown="handleEditorKey(event)" oninput="_setEditorDirty(true)"></textarea>
       </div>
     </div>
   </div>
@@ -442,6 +443,7 @@ var PROJECT_NAME = {{ project.name | tojson }};
 var currentFile = null;
 var _startFile = {{ project.start_file | tojson }};
 var _expandedDirs = new Set();
+var _editorDirty = false;
 var _renameTarget = null;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -576,12 +578,22 @@ function backToFiles() {
 }
 
 // ── File Operations ────────────────────────────────────────────────────────
+function _setEditorDirty(isDirty) {
+  _editorDirty = !!isDirty;
+  const st = document.getElementById('editor-save-state');
+  if (st) {
+    st.textContent = _editorDirty ? 'Unsaved' : 'Saved';
+    st.style.color = _editorDirty ? '#fbbf24' : 'var(--t3)';
+  }
+}
+
 async function openFile(fp) {
   currentFile = fp;
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${fp}`);
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fp)}`);
   if (!r.ok) { toast('Could not open file', 'err'); return; }
   const d = await r.json();
   document.getElementById('raw-editor').value = d.content;
+  _setEditorDirty(false);
   document.getElementById('editor-fname').textContent = fp;
   document.getElementById('editor-icon').setAttribute('data-lucide', fileIcon(fp.split('/').pop()));
   document.getElementById('editor-placeholder').style.display = 'none';
@@ -597,10 +609,10 @@ async function openFile(fp) {
 async function saveFile() {
   if (!currentFile) return;
   const content = document.getElementById('raw-editor').value;
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${currentFile}`, {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({content})
   });
-  if (r.ok) toast('Saved');
+  if (r.ok) { toast('Saved'); _setEditorDirty(false); }
   else { const d = await r.json(); toast(d.detail || 'Save failed', 'err'); }
 }
 

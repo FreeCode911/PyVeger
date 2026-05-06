@@ -433,6 +433,21 @@ def _pip_cmd() -> list[str]:
     return [sys.executable, "-m", "pip"]
 
 
+def _npm_cmd() -> list[str]:
+    nvm_npm = Path.home() / ".nvm" / "versions" / "node" / "v24.15.0" / "bin" / "npm"
+    if nvm_npm.exists() and os.access(nvm_npm, os.X_OK):
+        return [str(nvm_npm)]
+    return ["npm"]
+
+
+def _pkg_manager_for_project(project_id: str) -> tuple[str, list[str], list[str], int]:
+    proj = get_project(project_id) or {}
+    lang = (proj.get("language") or "").strip().lower()
+    if lang in {"nodejs", "javascript", "typescript"}:
+        return "npm", _npm_cmd(), ["install"], 180
+    return "pip", _pip_cmd(), ["install", "--break-system-packages"], 120
+
+
 def install_package(project_id: str, package: str) -> dict:
     pid_val = _safe_id(project_id)
     if not pid_val or not _project_dir(pid_val).exists():
@@ -441,12 +456,16 @@ def install_package(project_id: str, package: str) -> dict:
     if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n", "\r"]):
         return {"ok": False, "error": "Invalid package name", "output": ""}
     try:
+        manager_name, base_cmd, install_args, timeout_s = _pkg_manager_for_project(pid_val)
         result = subprocess.run(
-            _pip_cmd() + ["install", "--break-system-packages", package],
-            capture_output=True, text=True, timeout=120,
+            base_cmd + install_args + [package],
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            cwd=_project_dir(pid_val),
         )
         output = result.stdout + result.stderr
-        return {"ok": result.returncode == 0, "output": output, "returncode": result.returncode}
+        return {"ok": result.returncode == 0, "output": output, "returncode": result.returncode, "manager": manager_name}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "Installation timed out", "output": ""}
     except Exception as e:
@@ -461,12 +480,22 @@ def uninstall_package(project_id: str, package: str) -> dict:
     if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n"]):
         return {"ok": False, "error": "Invalid package name", "output": ""}
     try:
+        manager_name, base_cmd, _, _ = _pkg_manager_for_project(pid_val)
+        if manager_name == "npm":
+            cmd = base_cmd + ["uninstall", package]
+            timeout_s = 120
+        else:
+            cmd = base_cmd + ["uninstall", "--break-system-packages", "-y", package]
+            timeout_s = 60
         result = subprocess.run(
-            _pip_cmd() + ["uninstall", "--break-system-packages", "-y", package],
-            capture_output=True, text=True, timeout=60,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            cwd=_project_dir(pid_val),
         )
         output = result.stdout + result.stderr
-        return {"ok": result.returncode == 0, "output": output}
+        return {"ok": result.returncode == 0, "output": output, "manager": manager_name}
     except Exception as e:
         return {"ok": False, "error": str(e), "output": ""}
 
