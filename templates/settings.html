@@ -338,41 +338,43 @@
   </div>
 
   <script>
-  // ── Load version.json and latest commit message ────────────────────────────
+  // ── Load version + local SHA + latest remote commit (all via backend) ───────
   async function loadAbout(){
+    // Version badge
     try{
       const r=await fetch('/_/version');
       const d=await r.json();
-      // version badge
       const vnum=document.getElementById('about-version-num');
       if(vnum) vnum.textContent='v'+d.version;
-      
-      // fetch latest commit message from GitHub
-      const cl=document.getElementById('about-changelog');
+    }catch(e){console.warn('version load failed',e);}
+
+    // Local SHA + remote commit info — routed through backend to avoid CORS
+    const cl=document.getElementById('about-changelog');
+    const shaEl=document.getElementById('local-sha');
+    try{
+      const r=await fetch('/_/update/check');
+      const d=await r.json();
+      if(shaEl && d.local) shaEl.textContent=d.local;
       if(cl){
-        try{
-          const req=new Request('https://api.github.com/repos/FreeCode911/PyVeger/commits/main',{
-            headers:{'User-Agent':'PyVegar-Panel/3'}
-          });
-          const gr=await fetch(req);
-          const gd=await gr.json();
-          const msg=gd.commit?.message?.split('\n')[0]||'Latest commit';
-          const sha=gd.sha?.substring(0,7)||'';
-          const html=`<div class="row" style="display:flex;flex-direction:column;gap:10px">
-            <div style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase">Latest commit</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div style="background:var(--inp);border:1px solid var(--inpb);border-radius:8px;padding:10px 12px">
-                <div style="font-size:12px;color:var(--t2);line-height:1.4">${msg}</div>
-                <div style="font-size:10px;color:var(--t4);margin-top:6px;font-family:monospace">${sha}</div>
-              </div>
+        if(d.error || !d.remote){
+          cl.innerHTML=`<div class="row" style="font-size:12px;color:var(--t3)">Could not reach GitHub — check your connection.</div>`;
+        } else {
+          const upToDate=d.up_to_date;
+          cl.innerHTML=`<div class="row" style="display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:11px;font-weight:700;color:var(--t4);letter-spacing:.06em;text-transform:uppercase">Latest commit on GitHub</div>
+            <div style="background:var(--inp);border:1px solid var(--inpb);border-radius:8px;padding:10px 12px">
+              <div style="font-size:12px;color:var(--t2);line-height:1.4">${d.message||''}</div>
+              <div style="font-size:10px;color:var(--t4);margin-top:6px;font-family:monospace">${d.remote||''}</div>
             </div>
+            ${upToDate
+              ? `<div style="font-size:12px;color:#4ade80;display:flex;align-items:center;gap:5px"><span>✓</span> Your local copy is up to date</div>`
+              : `<div style="font-size:12px;color:#fbbf24">Update available — click <b>Check</b> above for details</div>`}
           </div>`;
-          cl.innerHTML=html;
-        }catch(e){
-          cl.innerHTML=`<div class="row" style="font-size:12px;color:var(--t3)">Unable to load latest commit info</div>`;
         }
       }
-    }catch(e){console.warn('version.json load failed',e);}
+    }catch(e){
+      if(cl) cl.innerHTML=`<div class="row" style="font-size:12px;color:var(--t3)">Could not reach GitHub — check your connection.</div>`;
+    }
   }
 
   // ── Update check ─────────────────────────────────────────────────────────
@@ -421,9 +423,6 @@
 
   // Init
   loadAbout();
-  fetch('/_/update/check').then(r=>r.json()).then(d=>{
-    if(d.local) document.getElementById('local-sha').textContent=d.local;
-  }).catch(()=>{});
   </script>
 
   <!-- ══ INSTALL RUNTIME ════════════════════════════════════════════════════ -->
