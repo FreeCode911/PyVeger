@@ -1,6 +1,6 @@
 <div align="center">
   <img src="static/logo.svg" width="96" height="96" alt="PyVegar Logo"/>
-  <h1>PyVegar V3</h1>
+  <h1>PyVegar</h1>
 </div>
 
 [![Version](https://img.shields.io/badge/version-3.3-fb3640?style=flat-square)](version.json)
@@ -10,7 +10,7 @@
 [![Stars](https://img.shields.io/github/stars/FreeCode911/PyVeger?style=flat-square)](https://github.com/FreeCode911/PyVeger/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/FreeCode911/PyVeger?style=flat-square)](https://github.com/FreeCode911/PyVeger/commits/main)
 
-> **PyVegar V3** is a sleek, self-hosted web management panel for running and monitoring bots, scripts, and services in any language. Manage multiple projects, edit files in-browser, stream live logs, install runtimes, expose via Cloudflare tunnels, and control everything from Discord — all from a beautiful dark/light UI that works on desktop and mobile.
+> **PyVegar** is a sleek, self-hosted web management panel for running and monitoring bots, scripts, and services in any language. Manage multiple projects, edit files in-browser, stream live logs, install runtimes, expose via Cloudflare tunnels, and control everything from Discord — all from a beautiful dark/light UI that works on desktop and mobile.
 
 ---
 
@@ -124,7 +124,7 @@ PyVegar/
 
 ## 🔐 Security
 
-PyVegar V3.3 includes multiple security layers enabled by default:
+PyVegar includes multiple security layers enabled by default:
 
 | Layer | Detail |
 |-------|--------|
@@ -259,7 +259,7 @@ Available slash commands:
 
 ## 📱 Mobile Support
 
-PyVegar V3 is fully responsive:
+PyVegar is fully responsive:
 - **Dashboard** — card grid adapts to single column on small screens
 - **Server Manager** — tabs stack; file explorer goes full-width
 - **Settings** — all forms stack to single column

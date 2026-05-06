@@ -1,10 +1,10 @@
-# PyVegar V3
+# PyVegar
 
 A self-hosted Python web management panel built with FastAPI and Jinja2.
 
 ## Overview
 
-PyVegar V3 lets you run and monitor multiple Python (and other language) projects from a clean dark/light web UI. Features:
+PyVegar lets you run and monitor multiple Python (and other language) projects from a clean dark/light web UI. Features:
 
 - **Multi-project management** — create, start, stop, restart projects; UUID-based IDs
 - **File manager** — recursive folder tree, create/rename/move/delete/upload files, in-browser editor
