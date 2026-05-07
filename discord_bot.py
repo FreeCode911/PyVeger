@@ -65,6 +65,23 @@ def _project_label(project: dict) -> str:
     return project.get("name") or project.get("id", "unknown")
 
 
+def _presence_messages() -> list[tuple[str, str]]:
+    import manager
+    import tunnel as tun
+
+    projects = manager.list_projects()
+    total = len(projects)
+    running = sum(1 for p in projects if p["status"] == "running")
+    tunnel_status = tun.get_status().get("status", "stopped")
+
+    return [
+        ("watching", f"{running}/{total} servers running"),
+        ("playing", "/help for commands"),
+        ("watching", f"Tunnel {tunnel_status}"),
+        ("playing", "PyVegar panel"),
+    ]
+
+
 def _run_bot(token: str):
     global _bot_running
     try:
@@ -80,6 +97,7 @@ def _run_bot(token: str):
     intents = discord.Intents.default()
     client = discord.Client(intents=intents)
     tree = app_commands.CommandTree(client)
+    _presence_task = None
 
     # ── Permission check ──────────────────────────────────────────────────────
 
@@ -625,17 +643,38 @@ def _run_bot(token: str):
 
     # ── Events ────────────────────────────────────────────────────────────────
 
+    async def _rotate_presence():
+        idx = 0
+        while not client.is_closed():
+            try:
+                mode, text = _presence_messages()[idx % 4]
+                if mode == "watching":
+                    activity = discord.Activity(type=discord.ActivityType.watching, name=text)
+                else:
+                    activity = discord.Game(name=text)
+                await client.change_presence(status=discord.Status.online, activity=activity)
+                idx += 1
+            except Exception as e:
+                logger.debug(f"Presence update skipped: {e}")
+            await asyncio.sleep(45)
+
     @client.event
     async def on_ready():
+        nonlocal _presence_task
         global _bot_running
         await tree.sync()
         logger.info(f"Discord bot logged in as {client.user} — slash commands synced")
         _bot_running = True
+        if _presence_task is None or _presence_task.done():
+            _presence_task = asyncio.create_task(_rotate_presence())
 
     @client.event
     async def on_disconnect():
+        nonlocal _presence_task
         global _bot_running
         _bot_running = False
+        if _presence_task and not _presence_task.done():
+            _presence_task.cancel()
 
     import asyncio
     loop = asyncio.new_event_loop()
