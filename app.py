@@ -1,10 +1,12 @@
 import os
 import json
 import shutil
+import sys
 import subprocess
 import asyncio
 import logging
 import secrets
+import threading
 import time
 import hmac
 import urllib.request as _urlreq
@@ -190,6 +192,9 @@ async def lifespan(app: FastAPI):
     cfg = _load_config()
     if cfg.get("cloudflare_token"):
         tunnel.start_tunnel()
+    autostarted = await asyncio.to_thread(manager.autostart_desired_projects)
+    if autostarted:
+        logger.info(f"Auto-started {len(autostarted)} project(s) after panel restart")
     _bg(_build_runtimes_cache())
     yield
     # Cancel all background tasks so Uvicorn shuts down instantly
@@ -363,7 +368,7 @@ _LOCAL_BIN_DIR = BASE_DIR / "bin"
 _RUNTIME_DEFS = [
     {"name": "Python",  "value": "python",  "bin": "python3", "start_file": "main.py",   "command": "python3 -u {start_file}"},
     {"name": "Node.js", "value": "nodejs",  "bin": "node",    "start_file": "index.js",  "command": "node {start_file}"},
-    {"name": "Go",      "value": "go",       "bin": "go",      "start_file": "main.go",   "command": "go run {start_file}"},
+    {"name": "Go",      "value": "go",       "bin": "go",      "start_file": "main.go",   "command": "go run {start_file}", "version_args": ["version"]},
     {"name": "Ruby",    "value": "ruby",     "bin": "ruby",    "start_file": "main.rb",   "command": "ruby {start_file}"},
     {"name": "PHP",     "value": "php",      "bin": "php",     "start_file": "index.php", "command": "php {start_file}"},
     {"name": "Deno",    "value": "deno",     "bin": "deno",    "start_file": "main.ts",   "command": "deno run --allow-all {start_file}"},
@@ -403,7 +408,7 @@ async def _probe_runtime(rt: dict) -> dict | None:
         return None
     try:
         r = await asyncio.wait_for(
-            asyncio.to_thread(subprocess.run, [bin_path, "--version"],
+            asyncio.to_thread(subprocess.run, [bin_path, *rt.get("version_args", ["--version"])],
                               capture_output=True, text=True),
             timeout=2.0
         )
@@ -460,6 +465,39 @@ async def api_runtimes_refresh():
 
 _RUNTIME_INSTALL_LOG  = LOGS_DIR / "_runtime_install.log"
 _RUNTIME_INSTALL_STATUS: dict = {"status": "idle", "message": ""}
+_NODE_NVM_VERSION = "24.15.0"
+_NODE_STANDALONE_VERSION = "26.0.0"
+
+def _remove_path(path: Path) -> bool:
+    try:
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+            return True
+        if path.is_dir():
+            shutil.rmtree(path)
+            return True
+    except FileNotFoundError:
+        return False
+    except Exception:
+        return False
+    return False
+
+def _cleanup_managed_nodejs() -> list[str]:
+    removed: list[str] = []
+
+    for name in ("node", "npm", "npx", "corepack"):
+        if _remove_path(_LOCAL_BIN_DIR / name):
+            removed.append(f"bin/{name}")
+
+    for name in ("npm", "corepack"):
+        if _remove_path(BASE_DIR / "lib" / "node_modules" / name):
+            removed.append(f"lib/node_modules/{name}")
+
+    nvm_version_dir = Path.home() / ".nvm" / "versions" / "node" / f"v{_NODE_NVM_VERSION}"
+    if _remove_path(nvm_version_dir):
+        removed.append(f"nvm v{_NODE_NVM_VERSION}")
+
+    return removed
 
 def _find_nvm_node() -> str | None:
     nvm_nodes = sorted(Path.home().glob(".nvm/versions/node/*/bin/node"), reverse=True)
@@ -510,6 +548,10 @@ async def _do_install_nodejs():
     _ilog(f"PyVegar Runtime Installer  ·  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     _ilog("")
     _RUNTIME_INSTALL_STATUS = {"status": "running", "stage": "nvm", "message": "Trying NVM…"}
+    cleaned = _cleanup_managed_nodejs()
+    if cleaned:
+        _ilog(">>> Removed stale managed Node.js files: " + ", ".join(cleaned))
+        _ilog("")
 
     # ── Step 1: NVM ──────────────────────────────────────────────────────────
     _ilog(sep)
@@ -517,15 +559,15 @@ async def _do_install_nodejs():
     _ilog(sep)
     _ilog("")
 
-    nvm_script = r"""
+    nvm_script = f"""
 export NVM_DIR="$HOME/.nvm"
 echo ">>> Downloading NVM v0.40.4..."
 curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash 2>&1
 echo ""
 echo ">>> Sourcing NVM..."
 . "$HOME/.nvm/nvm.sh" 2>&1
-echo ">>> Installing Node.js 24.15.0..."
-nvm install 24.15.0 2>&1
+echo ">>> Installing Node.js {_NODE_NVM_VERSION}..."
+nvm install {_NODE_NVM_VERSION} 2>&1
 echo ""
 echo ">>> Verifying..."
 node -v 2>&1
@@ -559,7 +601,7 @@ echo "__NVM_OK__"
         _ilog(f"\n{sep}")
         _ilog("  ✓ Node.js successfully installed via NVM!")
         _ilog(sep)
-        nvm_bin = Path.home() / ".nvm" / "versions" / "node" / "v24.15.0" / "bin"
+        nvm_bin = Path.home() / ".nvm" / "versions" / "node" / f"v{_NODE_NVM_VERSION}" / "bin"
         for bn in ["node", "npm", "npx", "corepack"]:
             src = nvm_bin / bn
             dst = _LOCAL_BIN_DIR / bn
@@ -582,22 +624,30 @@ echo "__NVM_OK__"
     _ilog("")
     _RUNTIME_INSTALL_STATUS = {"status": "running", "stage": "standalone", "message": "Downloading standalone…"}
 
+    base_dir  = str(BASE_DIR)
     bin_dir   = str(_LOCAL_BIN_DIR)
-    node_url  = "https://nodejs.org/dist/v26.0.0/node-v26.0.0-linux-x64.tar.xz"
-    node_name = "node-v26.0.0-linux-x64"
+    node_url  = f"https://nodejs.org/dist/v{_NODE_STANDALONE_VERSION}/node-v{_NODE_STANDALONE_VERSION}-linux-x64.tar.xz"
+    node_name = f"node-v{_NODE_STANDALONE_VERSION}-linux-x64"
     tmp_path  = "/tmp/pv3_node.tar.xz"
 
     standalone_script = f"""
 set -e
-echo ">>> Downloading Node.js v26.0.0 standalone..."
+echo ">>> Downloading Node.js v{_NODE_STANDALONE_VERSION} standalone..."
 curl -fL --progress-bar "{node_url}" -o "{tmp_path}" 2>&1
 echo ""
-echo ">>> Extracting node binary..."
-tar -xJf "{tmp_path}" --strip-components=2 -C "{bin_dir}" "{node_name}/bin/node" 2>&1
+echo ">>> Extracting Node.js runtime..."
+tar -xJf "{tmp_path}" --strip-components=1 -C "{base_dir}" \
+  "{node_name}/bin/node" \
+  "{node_name}/bin/npm" \
+  "{node_name}/bin/npx" \
+  "{node_name}/bin/corepack" \
+  "{node_name}/lib/node_modules/npm" \
+  "{node_name}/lib/node_modules/corepack" 2>&1
 chmod +x "{bin_dir}/node"
 rm -f "{tmp_path}"
 echo ">>> Verifying..."
 "{bin_dir}/node" -v 2>&1
+"{bin_dir}/node" "{bin_dir}/npm" -v 2>&1
 echo "__STANDALONE_OK__"
 """
     standalone_ok = False
@@ -621,9 +671,9 @@ echo "__STANDALONE_OK__"
     if standalone_ok:
         node_bin = _LOCAL_BIN_DIR / "node"
         node_bin.chmod(0o755)
-        _ilog("  ✓ Node.js v26.0.0 standalone binary installed!")
+        _ilog(f"  ✓ Node.js v{_NODE_STANDALONE_VERSION} standalone binary installed!")
         _ilog(sep)
-        _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "standalone", "message": "Installed v26.0.0 (standalone)"}
+        _RUNTIME_INSTALL_STATUS = {"status": "done", "stage": "standalone", "message": f"Installed v{_NODE_STANDALONE_VERSION} (standalone)"}
         _bg(_build_runtimes_cache())
     else:
         _ilog("  ✗ Installation failed — check log above for details.")
@@ -644,20 +694,10 @@ async def api_install_nodejs():
 @app.delete("/_/runtimes/nodejs/uninstall")
 async def api_nodejs_uninstall():
     global _RUNTIMES_CACHE
-    removed = []
-    local_node = _LOCAL_BIN_DIR / "node"
-    if local_node.exists():
-        local_node.unlink()
-        removed.append("standalone")
-    nvm_node = _find_nvm_node()
-    if nvm_node:
-        try:
-            Path(nvm_node).unlink()
-            removed.append("nvm")
-        except Exception:
-            pass
+    removed = _cleanup_managed_nodejs()
     if removed:
         _RUNTIMES_CACHE = None
+        _save_runtimes_to_disk(await _build_runtimes_cache())
         return {"ok": True, "message": f"Removed: {', '.join(removed)}"}
     return {"ok": False, "message": "No managed Node.js binary found"}
 
@@ -687,7 +727,8 @@ async def api_delete_project(project_id: str):
 
 @app.post("/_/projects/{project_id}/start")
 async def api_start(project_id: str):
-    result = manager.start_project(project_id)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, manager.start_project, project_id)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
@@ -703,7 +744,8 @@ async def api_stop(project_id: str):
 
 @app.post("/_/projects/{project_id}/restart")
 async def api_restart(project_id: str):
-    result = manager.restart_project(project_id)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, manager.restart_project, project_id)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
@@ -770,29 +812,43 @@ async def api_delete_item(project_id: str, itempath: str):
 # NOTE: /files/new must be BEFORE /files/{filepath:path}
 @app.post("/_/projects/{project_id}/files/new")
 async def api_create_file(project_id: str, request: Request):
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("text/plain"):
+        content = (await request.body()).decode("utf-8", errors="replace")
+        result = await asyncio.to_thread(manager.save_file_content, project_id, "new", content)
+        if not result.get("ok"):
+            raise HTTPException(status_code=400, detail=result.get("error"))
+        return result
     body = await request.json()
     filename = body.get("filename", "").strip()
     if not filename:
         raise HTTPException(status_code=400, detail="filename is required")
-    result = manager.create_project_file(project_id, filename)
+    result = await asyncio.to_thread(manager.create_project_file, project_id, filename)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
 
 
 @app.get("/_/projects/{project_id}/files/{filepath:path}")
-async def api_get_file(project_id: str, filepath: str):
-    content = manager.get_file_content(project_id, filepath)
+async def api_get_file(project_id: str, filepath: str, request: Request):
+    content = await asyncio.to_thread(manager.get_file_content, project_id, filepath)
     if content is None:
         raise HTTPException(status_code=404, detail="File not found")
+    if "text/plain" in request.headers.get("accept", ""):
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(content)
     return {"content": content}
 
 
 @app.post("/_/projects/{project_id}/files/{filepath:path}")
 async def api_save_file(project_id: str, filepath: str, request: Request):
-    body = await request.json()
-    content = body.get("content", "")
-    result = manager.save_file_content(project_id, filepath, content)
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("text/plain"):
+        content = (await request.body()).decode("utf-8", errors="replace")
+    else:
+        body = await request.json()
+        content = body.get("content", "")
+    result = await asyncio.to_thread(manager.save_file_content, project_id, filepath, content)
     if not result.get("ok"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
@@ -1066,7 +1122,7 @@ async def api_check_update(request: Request):
     try:
         req = _urlreq.Request(
             f"https://api.github.com/repos/{GITHUB_REPO}/commits/main",
-            headers={"User-Agent": "PyVegar-Panel/3"}
+            headers={"User-Agent": "PyVegar-Panel/3.4"}
         )
         with _urlreq.urlopen(req, timeout=6) as resp:
             data = json.loads(resp.read())

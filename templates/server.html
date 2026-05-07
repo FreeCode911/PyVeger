@@ -30,12 +30,12 @@
       --inp:rgba(0,0,0,.04);--inpb:rgba(0,0,0,.12);
       --acc:#e01020;--acc2:#e01020;
     }
-    body{background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+    body{background:var(--bg);color:var(--t1);height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;}
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
     ::-webkit-scrollbar-track{background:transparent}
     .hdr-wrap{padding:10px 16px;flex-shrink:0;background:transparent}
-    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);max-width:100%;margin:0 auto;flex-shrink:0}
+    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);max-width:100%;margin:0 auto;flex-shrink:0}
     html[data-theme=light] .hdr{background:rgba(255,255,255,.92);border-color:rgba(251,54,64,.3);box-shadow:0 4px 24px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.06),0 0 20px rgba(251,54,64,.06);}
     .tab-bar{border-bottom:1px solid var(--bdr);background:var(--card);flex-shrink:0}
     .tab{
@@ -67,10 +67,12 @@
     .running-badge{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22)}
     .stopped-badge{background:rgba(239,68,68,.09);color:#f87171;border:1px solid rgba(239,68,68,.18)}
     .restart-badge{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+    .installing-badge{background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.22)}
     .error-badge{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
     html[data-theme=light] .running-badge{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
     html[data-theme=light] .stopped-badge{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.16)}
     html[data-theme=light] .restart-badge{color:#d97706;background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.2)}
+    html[data-theme=light] .installing-badge{color:#2563eb;background:rgba(37,99,235,.09);border-color:rgba(37,99,235,.18)}
     html[data-theme=light] .error-badge{color:#b91c1c;background:rgba(185,28,28,.1);border-color:rgba(185,28,28,.25)}
 
     /* ── Layout ── */
@@ -118,9 +120,26 @@
     #editor-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t3)}
     .editor-topbar{padding:8px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;background:var(--card2);flex-shrink:0;min-width:0}
     .editor-topbar .fname{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #editor-pane{flex:1;display:flex;flex-direction:column;min-height:0}
-    textarea#raw-editor{flex:1;resize:none;background:var(--trm);color:#c9d1d9;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;padding:16px;border:none;outline:none;width:100%;height:100%;min-height:400px}
-    html[data-theme=light] textarea#raw-editor{background:#1e293b;color:#e2e8f0}
+    #editor-pane{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--trm)}
+    .editor-shell{flex:1;display:flex;min-height:0;background:var(--trm);border-top:1px solid rgba(255,255,255,.03)}
+    .line-gutter{
+      flex:0 0 58px;overflow:hidden;background:rgba(255,255,255,.025);border-right:1px solid var(--bdr);
+      color:var(--t4);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:21px;
+      padding:14px 10px 14px 6px;margin:0;text-align:right;user-select:none;white-space:pre;
+    }
+    textarea#raw-editor{
+      flex:1;resize:none;background:transparent;color:#c9d1d9;font-family:'JetBrains Mono',monospace;
+      font-size:13px;line-height:21px;padding:14px 16px;border:none;outline:none;width:100%;height:100%;
+      min-height:400px;tab-size:2;white-space:pre;overflow:auto;
+    }
+    .editor-status{
+      display:flex;align-items:center;gap:12px;min-height:28px;padding:5px 12px;border-top:1px solid var(--bdr);
+      background:var(--card2);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3);flex-shrink:0;
+    }
+    .editor-status span{font-family:'JetBrains Mono',monospace}
+    html[data-theme=light] #editor-pane,html[data-theme=light] .editor-shell{background:#1e293b}
+    html[data-theme=light] textarea#raw-editor{color:#e2e8f0}
+    html[data-theme=light] .line-gutter{background:rgba(15,23,42,.55);color:#64748b;border-right-color:rgba(148,163,184,.2)}
 
     /* ── Main panel ── */
     #main-panel{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0}
@@ -178,7 +197,8 @@
       .editor-topbar{flex-wrap:wrap;gap:5px}
       .editor-topbar .fname{min-width:100px}
       #set-start-btn{display:none}
-      textarea#raw-editor{font-size:12px;padding:10px}
+      textarea#raw-editor{font-size:12px;line-height:20px;padding:10px}
+      .line-gutter{flex-basis:46px;font-size:12px;line-height:20px;padding:10px 8px 10px 4px}
       .pcard-body{padding:10px 12px}
       .pcard{margin:8px}
     }
@@ -193,6 +213,43 @@
       .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
            box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
       html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
+    /* ── Cross-template polish ── */
+    html,body{width:100%;margin:0;overflow-x:hidden}
+    button,a,input,textarea{min-width:0}
+    button,.btn-primary,.btn-ok,.btn-err,.btn-warn,.btn-ghost,.icon-btn,.mobile-back{min-height:32px}
+    .hdr{border-radius:12px}
+    .pcard,.modal-card,.inp,.btn-primary,.btn-ok,.btn-err,.btn-warn,.btn-ghost,.icon-btn,.stat-badge,.tab,.mobile-back{border-radius:8px!important}
+    .hdr>div{min-width:0}
+    .hdr span{min-width:0}
+    .tab-bar{display:flex;overflow-x:auto;scrollbar-width:none}
+    .tab-bar::-webkit-scrollbar{display:none}
+    .tab{white-space:nowrap;flex-shrink:0}
+    .pcard-hdr{min-height:42px;flex-wrap:wrap}
+    .pcard-hdr-title{min-width:0}
+    .pcard-body{min-width:0}
+    #console-area,.log-viewer,pre{overflow-wrap:anywhere}
+    #pkg-output{max-height:260px;overflow:auto}
+    .modal-bg{overflow-y:auto}
+    .modal-card{max-height:calc(100dvh - 32px);overflow-y:auto}
+    @media(max-width:700px){
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0!important}
+      .hdr .btn-ok,.hdr .btn-err,.hdr .btn-warn{flex:1;justify-content:center}
+      .hdr>div{width:100%}
+      .tab{flex:1;justify-content:center}
+      #pane-startup .pcard-body>div>div{flex-wrap:wrap}
+      #pane-startup .pcard-body button{flex:1;justify-content:center}
+      #pkg-input{min-width:180px}
+      #toast{left:12px;right:12px;bottom:12px}
+      #toast-inner{max-width:100%}
+    }
+    @media(max-width:480px){
+      .pcard{margin:8px}
+      .pcard-hdr{padding:10px 12px}
+      .pcard-body{padding:12px}
+      .editor-topbar .btn-ok,.editor-topbar .btn-ghost{flex:1;justify-content:center}
+      #pkg-input{flex-basis:100%}
     }
   </style>
 </head>
@@ -210,8 +267,8 @@
     </a>
     <i data-lucide="chevron-right" style="width:13px;height:13px;color:var(--t4)"></i>
     <span style="font-size:13px;font-weight:700;color:var(--t1)">{{ project.name | replace('_', ' ') }}</span>
-    <span id="status-badge" class="stat-badge {% if project.status == 'running' %}running-badge{% elif project.status == 'restarting' %}restart-badge{% else %}stopped-badge{% endif %}">
-      <span id="status-dot" style="width:6px;height:6px;border-radius:50%;{% if project.status == 'running' %}background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5){% elif project.status == 'restarting' %}background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4){% else %}background:#ef4444{% endif %}"></span>
+    <span id="status-badge" class="stat-badge {% if project.status == 'running' %}running-badge{% elif project.status == 'restarting' %}restart-badge{% elif project.status == 'installing' %}installing-badge{% elif project.status == 'error' %}error-badge{% else %}stopped-badge{% endif %}">
+      <span id="status-dot" style="width:6px;height:6px;border-radius:50%;{% if project.status == 'running' %}background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5){% elif project.status == 'restarting' %}background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4){% elif project.status == 'installing' %}background:#60a5fa;box-shadow:0 0 6px rgba(96,165,250,.45){% else %}background:#ef4444{% endif %}"></span>
       <span id="status-text">{{ project.status }}</span>
     </span>
     <span id="pid-txt" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3)">{% if project.pid %}PID {{ project.pid }}{% endif %}</span>
@@ -238,9 +295,6 @@
   </button>
   <button class="tab" id="tab-startup" onclick="switchTab('startup')" style="border:none;background:none;cursor:pointer">
     <i data-lucide="settings" style="width:14px;height:14px"></i> Startup
-  </button>
-  <button class="tab" id="tab-packages" onclick="switchTab('packages')" style="border:none;background:none;cursor:pointer">
-    <i data-lucide="package" style="width:14px;height:14px"></i> Packages
   </button>
 </div>
 
@@ -286,7 +340,16 @@
             <i data-lucide="save" style="width:11px;height:11px"></i> Save
           </button>
         </div>
-        <textarea id="raw-editor" spellcheck="false" onkeydown="handleEditorKey(event)" oninput="_setEditorDirty(true)"></textarea>
+        <div class="editor-shell">
+          <pre id="line-gutter" class="line-gutter">1</pre>
+          <textarea id="raw-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+            onkeydown="handleEditorKey(event)" oninput="handleEditorInput()" onscroll="syncEditorScroll()"></textarea>
+        </div>
+        <div class="editor-status">
+          <span id="editor-lines">1 line</span>
+          <span id="editor-size">0 B</span>
+          <span id="editor-pos">Ln 1, Col 1</span>
+        </div>
       </div>
     </div>
   </div>
@@ -349,7 +412,7 @@
             <input id="start-file-input" class="inp" style="font-family:'JetBrains Mono',monospace" value="{{ project.start_file }}" placeholder="main.py"/>
             <button onclick="setStartFile()" class="btn-ok"><i data-lucide="save" style="width:12px;height:12px"></i> Set</button>
           </div>
-          <p class="modal-hint">The file Python will run on start (e.g. <code>main.py</code>, <code>src/app.py</code>)</p>
+          <p class="modal-hint">The selected entry file for this project, e.g. <code>main.py</code>, <code>src/app.py</code>, or <code>index.js</code>.</p>
         </div>
         <div>
           <label class="modal-label">Custom Command <span style="color:var(--t3);font-weight:400;text-transform:none">(optional)</span></label>
@@ -361,13 +424,10 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- ═══ PACKAGES TAB ══════════════════════════════════════════════════════ -->
-  <div id="pane-packages" class="pane" style="display:none;flex:1;overflow:auto;padding:14px">
     <div class="pcard">
       <div class="pcard-hdr"><div class="pcard-hdr-title"><i data-lucide="package" style="width:14px;height:14px;color:var(--acc)"></i> Package Manager</div></div>
       <div class="pcard-body">
+        <p class="modal-hint" style="margin-top:0;margin-bottom:12px">When Start runs, PyVegar installs from a matching manifest first: <code>requirements.txt</code>, <code>package.json</code>, <code>go.mod</code>, <code>Gemfile</code>, or <code>composer.json</code>.</p>
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <input id="pkg-input" class="inp" style="font-family:'JetBrains Mono',monospace" placeholder="discord.py, flask, requests…" onkeydown="if(event.key==='Enter')installPkg()"/>
           <button onclick="installPkg()" class="btn-primary" style="flex-shrink:0"><i data-lucide="download" style="width:13px;height:13px"></i> Install</button>
@@ -388,7 +448,7 @@
       <h3 class="modal-title">New File</h3>
     </div>
     <label class="modal-label">File Path</label>
-    <input id="new-file-name" class="inp" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="main.py or utils/helper.py" onkeydown="if(event.key==='Enter')createFile()"/>
+    <input id="new-file-name" class="inp" maxlength="512" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="main.py or utils/helper.py" onkeydown="if(event.key==='Enter')createFile()"/>
     <p class="modal-hint" style="margin-bottom:16px">Use a path to create inside a folder, e.g. <code>utils/helper.py</code></p>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeModal('new-file')" class="btn-ghost">Cancel</button>
@@ -445,10 +505,12 @@ var _startFile = {{ project.start_file | tojson }};
 var _expandedDirs = new Set();
 var _editorDirty = false;
 var _renameTarget = null;
+var _lineRenderTimer = null;
+var _saveInFlight = false;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
-  ['files','console','startup','packages'].forEach(t => {
+  ['files','console','startup'].forEach(t => {
     const pane = document.getElementById(`pane-${t}`);
     const tab = document.getElementById(`tab-${t}`);
     if (!pane || !tab) return;
@@ -467,7 +529,6 @@ function switchTab(name) {
 }
 document.getElementById('pane-console').style.display = 'none';
 document.getElementById('pane-startup').style.display = 'none';
-document.getElementById('pane-packages').style.display = 'none';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function esc(s) { return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
@@ -587,13 +648,82 @@ function _setEditorDirty(isDirty) {
   }
 }
 
+function _formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(mb >= 100 ? 0 : 1)} MB`;
+}
+
+function _lineCount(text) {
+  if (!text) return 1;
+  let count = 1;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 10) count++;
+  }
+  return count;
+}
+
+function updateEditorStats() {
+  const ed = document.getElementById('raw-editor');
+  if (!ed) return;
+  const text = ed.value;
+  const lines = _lineCount(text);
+  const size = new Blob([text]).size;
+  const before = text.slice(0, ed.selectionStart);
+  const ln = _lineCount(before);
+  const lastBreak = before.lastIndexOf('\n');
+  const col = before.length - lastBreak;
+  const linesEl = document.getElementById('editor-lines');
+  const sizeEl = document.getElementById('editor-size');
+  const posEl = document.getElementById('editor-pos');
+  if (linesEl) linesEl.textContent = `${lines} line${lines === 1 ? '' : 's'}`;
+  if (sizeEl) sizeEl.textContent = _formatBytes(size);
+  if (posEl) posEl.textContent = `Ln ${ln}, Col ${col}`;
+}
+
+function renderLineNumbers(immediate=false) {
+  clearTimeout(_lineRenderTimer);
+  const run = () => {
+    const ed = document.getElementById('raw-editor');
+    const gutter = document.getElementById('line-gutter');
+    if (!ed || !gutter) return;
+    const lines = _lineCount(ed.value);
+    const nums = [];
+    for (let i = 1; i <= lines; i++) nums.push(i);
+    gutter.textContent = nums.join('\n');
+    syncEditorScroll();
+    updateEditorStats();
+  };
+  if (immediate) run();
+  else _lineRenderTimer = setTimeout(run, 80);
+}
+
+function syncEditorScroll() {
+  const ed = document.getElementById('raw-editor');
+  const gutter = document.getElementById('line-gutter');
+  if (ed && gutter) gutter.scrollTop = ed.scrollTop;
+}
+
+function handleEditorInput() {
+  _setEditorDirty(true);
+  renderLineNumbers(false);
+}
+
 async function openFile(fp) {
   currentFile = fp;
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fp)}`);
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fp)}`, {
+    headers: {'Accept':'text/plain'}
+  });
   if (!r.ok) { toast('Could not open file', 'err'); return; }
-  const d = await r.json();
-  document.getElementById('raw-editor').value = d.content;
+  const content = await r.text();
+  const ed = document.getElementById('raw-editor');
+  ed.value = content;
+  ed.scrollTop = 0;
+  ed.scrollLeft = 0;
   _setEditorDirty(false);
+  renderLineNumbers(true);
   document.getElementById('editor-fname').textContent = fp;
   document.getElementById('editor-icon').setAttribute('data-lucide', fileIcon(fp.split('/').pop()));
   document.getElementById('editor-placeholder').style.display = 'none';
@@ -607,13 +737,31 @@ async function openFile(fp) {
 }
 
 async function saveFile() {
-  if (!currentFile) return;
-  const content = document.getElementById('raw-editor').value;
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
-    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({content})
-  });
-  if (r.ok) { toast('Saved'); _setEditorDirty(false); }
-  else { const d = await r.json(); toast(d.detail || 'Save failed', 'err'); }
+  if (!currentFile || _saveInFlight) return;
+  const ed = document.getElementById('raw-editor');
+  const content = ed.value;
+  const saveBtn = document.getElementById('save-btn');
+  const st = document.getElementById('editor-save-state');
+  _saveInFlight = true;
+  if (saveBtn) saveBtn.disabled = true;
+  if (st) { st.textContent = 'Saving...'; st.style.color = '#60a5fa'; }
+  try {
+    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
+      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'}, body: content
+    });
+    if (r.ok) { toast('Saved'); _setEditorDirty(false); updateEditorStats(); }
+    else {
+      const d = await r.json().catch(() => ({}));
+      toast(d.detail || 'Save failed', 'err');
+      _setEditorDirty(true);
+    }
+  } catch (e) {
+    toast('Save failed: network error', 'err');
+    _setEditorDirty(true);
+  } finally {
+    _saveInFlight = false;
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
 
 function handleEditorKey(e) {
@@ -623,8 +771,13 @@ function handleEditorKey(e) {
     const t = e.target, s = t.selectionStart, end = t.selectionEnd;
     t.value = t.value.substring(0, s) + '  ' + t.value.substring(end);
     t.selectionStart = t.selectionEnd = s + 2;
+    handleEditorInput();
   }
 }
+
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement && document.activeElement.id === 'raw-editor') updateEditorStats();
+});
 
 async function setStartFile() {
   const file = currentFile || document.getElementById('start-file-input').value.trim();
@@ -673,18 +826,28 @@ function closeModal(name) {
 async function createFile() {
   const name = document.getElementById('new-file-name').value.trim();
   if (!name) { toast('Enter a filename', 'warn'); return; }
+  if (/[\r\n]/.test(name) || name.length > 512) {
+    toast('Filename is too long or contains new lines', 'err');
+    return;
+  }
   closeModal('new-file');
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/new`, {
-    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({filename: name})
-  });
-  const d = await r.json();
-  if (r.ok) {
-    toast(`Created ${d.name}`);
-    const parts = d.name.split('/');
-    for (let i = 1; i < parts.length; i++) _expandedDirs.add(parts.slice(0, i).join('/'));
-    await loadTree();
-    openFile(d.name);
-  } else toast(d.detail || 'Failed', 'err');
+  try {
+    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/new`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({filename: name})
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) {
+      toast(`Created ${d.name}`);
+      const parts = d.name.split('/');
+      for (let i = 1; i < parts.length; i++) _expandedDirs.add(parts.slice(0, i).join('/'));
+      await loadTree();
+      openFile(d.name);
+    } else {
+      toast(d.detail || 'Failed to create file', 'err');
+    }
+  } catch (e) {
+    toast('Create file failed: network error', 'err');
+  }
 }
 
 async function createFolder() {
@@ -774,9 +937,10 @@ function pollStatus() {
     const badge = document.getElementById('status-badge');
     const dot = document.getElementById('status-dot');
     const txt = document.getElementById('status-text');
-    badge.className = 'stat-badge ' + (d.status==='running'?'running-badge':d.status==='restarting'?'restart-badge':d.status==='error'?'error-badge':'stopped-badge');
+    badge.className = 'stat-badge ' + (d.status==='running'?'running-badge':d.status==='restarting'?'restart-badge':d.status==='installing'?'installing-badge':d.status==='error'?'error-badge':'stopped-badge');
     if (d.status==='running') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)';
     else if (d.status==='restarting') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4)';
+    else if (d.status==='installing') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#60a5fa;box-shadow:0 0 6px rgba(96,165,250,.45)';
     else dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#ef4444';
     txt.textContent = d.status;
     document.getElementById('pid-txt').textContent = d.pid ? `PID ${d.pid}` : '';
@@ -898,10 +1062,11 @@ function _svConnectStats() {
     const txt      = document.getElementById('status-text');
     const pidTxt   = document.getElementById('pid-txt');
     const infoSt   = document.getElementById('info-status');
-    if (badge) badge.className = 'stat-badge ' + (p.status==='running'?'running-badge':p.status==='restarting'?'restart-badge':p.status==='error'?'error-badge':'stopped-badge');
+    if (badge) badge.className = 'stat-badge ' + (p.status==='running'?'running-badge':p.status==='restarting'?'restart-badge':p.status==='installing'?'installing-badge':p.status==='error'?'error-badge':'stopped-badge');
     if (dot) {
       if (p.status==='running')     dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)';
       else if (p.status==='restarting') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,.4)';
+      else if (p.status==='installing') dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#60a5fa;box-shadow:0 0 6px rgba(96,165,250,.45)';
       else                          dot.style.cssText='width:6px;height:6px;border-radius:50%;background:#ef4444';
     }
     if (txt)    txt.textContent   = p.status;

@@ -32,7 +32,7 @@
       --acc:#e01020;--acc2:#e01020;
       --ok:#16a34a;--warn:#d97706;--err:#dc2626;
     }
-    body{background:var(--bg);color:var(--t1);min-height:100vh;}
+    body{background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;}
 
     :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
     @media (prefers-reduced-motion: reduce){
@@ -41,7 +41,7 @@
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
-    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1280px;margin:0 auto;}
+    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1280px;margin:0 auto;}
     html[data-theme=light] .hdr{background:rgba(255,255,255,.92);border-color:rgba(251,54,64,.3);box-shadow:0 4px 24px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.06),0 0 20px rgba(251,54,64,.06);}
     .proj-card{
       background:var(--card);border:1px solid var(--bdr);border-radius:16px;
@@ -53,13 +53,16 @@
     .dot-run{background:#22c55e;box-shadow:0 0 0 2.5px rgba(34,197,94,.25),0 0 10px rgba(34,197,94,.4)}
     .dot-stop{background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.2)}
     .dot-restart{background:#f59e0b;box-shadow:0 0 0 2.5px rgba(245,158,11,.25),0 0 10px rgba(245,158,11,.4)}
+    .dot-installing{background:#60a5fa;box-shadow:0 0 0 2.5px rgba(96,165,250,.22),0 0 10px rgba(96,165,250,.35)}
     .badge-run{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.22)}
     .badge-stop{background:rgba(239,68,68,.09);color:#f87171;border:1px solid rgba(239,68,68,.18)}
     .badge-restart{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+    .badge-installing{background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.22)}
     .badge-error{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
     html[data-theme=light] .badge-run{color:#16a34a;background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.2)}
     html[data-theme=light] .badge-stop{color:#dc2626;background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.16)}
     html[data-theme=light] .badge-restart{color:#d97706;background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.2)}
+    html[data-theme=light] .badge-installing{color:#2563eb;background:rgba(37,99,235,.09);border-color:rgba(37,99,235,.18)}
     html[data-theme=light] .badge-error{color:#b91c1c;background:rgba(185,28,28,.1);border-color:rgba(185,28,28,.25)}
     .act-btn{
       flex:0 0 38px;height:32px;padding:0;border-radius:8px;font-size:11.5px;font-weight:600;
@@ -121,51 +124,78 @@
     .file-tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:5px}
     .file-start{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
     .file-normal{background:var(--inp);color:var(--t4);border:1px solid var(--inpb)}
-    .modal-card{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,.6)}
+    .modal-card{
+      background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:20px;
+      box-shadow:0 25px 60px rgba(0,0,0,.6);max-height:calc(100dvh - 32px);overflow-y:auto;
+    }
     html[data-theme=light] .modal-card{border-color:var(--bdr);box-shadow:0 16px 40px rgba(0,0,0,.15)}
     @keyframes modalin{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
     .slide-in{animation:modalin .2s ease both}
     #toast{position:fixed;bottom:20px;right:20px;z-index:9999}
     @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-    .lang-dd{position:relative;width:100%}
+    .lang-dd{position:relative;width:100%;min-width:0}
     .lang-dd-btn{
       width:100%;display:flex;align-items:center;gap:8px;
       background:var(--inp);border:1.5px solid var(--inpb);color:var(--t1);
       border-radius:10px;padding:10px 14px;font-size:13px;font-family:'Inter',sans-serif;
-      cursor:pointer;transition:border-color .2s,box-shadow .2s;text-align:left;
+      cursor:pointer;transition:border-color .2s,box-shadow .2s;text-align:left;min-width:0;
     }
     .lang-dd-btn:focus,.lang-dd-btn.open{
       outline:none;border-color:rgba(251,54,64,.7);box-shadow:0 0 0 3px rgba(251,54,64,.12);
     }
     .lang-dd-list{
-      position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:200;
+      position:static;margin-top:6px;width:100%;
       background:var(--card);border:1.5px solid rgba(251,54,64,.25);
       border-radius:10px;overflow:hidden;
       box-shadow:0 8px 32px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.2);
-      max-height:220px;overflow-y:auto;
+      max-height:188px;overflow-y:auto;
     }
     html[data-theme=light] .lang-dd-list{box-shadow:0 8px 24px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.06)}
     .lang-dd-opt{
       display:flex;align-items:center;gap:10px;padding:9px 14px;
       font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s,color .12s;
-      border-bottom:1px solid var(--bdr);
+      border-bottom:1px solid var(--bdr);min-width:0;
     }
     .lang-dd-opt:last-child{border-bottom:none}
-    .lang-dd-opt:hover{background:rgba(251,54,64,.07);color:var(--t1)}
-    .lang-dd-opt.selected{background:rgba(251,54,64,.1);color:var(--acc);font-weight:600}
+    .lang-dd-opt:hover{background:rgba(255,255,255,.045);color:var(--t1)}
+    .lang-dd-opt.selected{background:rgba(251,54,64,.12);color:var(--t1);font-weight:600}
+    html[data-theme=light] .lang-dd-opt:hover{background:rgba(0,0,0,.035)}
     .lang-dd-opt-icon{
       width:24px;height:24px;border-radius:6px;display:flex;align-items:center;
       justify-content:center;flex-shrink:0;font-size:9px;font-weight:800;color:#fff;
     }
-    .lang-dd-opt-name{font-weight:600;color:inherit}
-    .lang-dd-opt-ver{font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace;margin-left:auto;flex-shrink:0}
+    .lang-dd-opt-name{font-weight:600;color:inherit;min-width:64px;flex:0 0 auto}
+    .lang-dd-opt.selected .lang-dd-opt-ver{color:var(--t3)}
+    .lang-dd-opt-ver{
+      font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace;
+      margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .lang-dd-label-inner{display:flex;align-items:center;gap:8px;min-width:0;width:100%}
+    .lang-dd-label-name{color:var(--t1);font-weight:600;flex:0 0 auto}
+    .lang-dd-label-ver{
+      font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace;
+      min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    #lang-dd-label{min-width:0;display:block;overflow:hidden}
     .icon-sun{display:block} .icon-moon{display:none}
     html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
     .cmd-block{
       display:flex;align-items:center;gap:7px;background:var(--bg2);border-radius:8px;
       padding:6px 10px;border:1px solid var(--bdr);
     }
+    .update-banner{
+      max-width:1280px;margin:0 auto 8px;padding:0 16px;display:none;
+    }
+    .update-banner-inner{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.22);
+      color:#fbbf24;border-radius:8px;padding:9px 12px;font-size:12px;
+    }
+    html[data-theme=light] .update-banner-inner{color:#b45309;background:rgba(245,158,11,.1);border-color:rgba(217,119,6,.22)}
+    .update-banner-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .update-banner-actions a{color:inherit;text-decoration:none;font-weight:700}
+    .update-banner-actions button{background:transparent;border:none;color:inherit;cursor:pointer;padding:2px;display:flex}
     .tun-ok{color:#4ade80}
     .tun-err{color:#f87171}
     html[data-theme=light] .tun-ok{color:#16a34a}
@@ -188,6 +218,36 @@
       .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
            box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
       html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
+    /* ── Cross-template polish ── */
+    html,body{width:100%;margin:0;overflow-x:hidden}
+    body{font-size:14px;line-height:1.45}
+    button,a,input,select,textarea{min-width:0}
+    button,.btn-primary,.btn-ghost,.icon-btn,.act-btn{min-height:34px}
+    .hdr{border-radius:12px}
+    .proj-card,.modal-card,.inp,.btn-primary,.btn-ghost,.icon-btn,.stat-chip,.cmd-block,.lang-dd-btn,.lang-dd-list,.pg-btn{border-radius:8px!important}
+    .proj-card{flex:1 1 300px;min-width:260px;max-width:calc(33.333% - 10px)}
+    .file-tag{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .grid-container{padding-bottom:24px}
+    #grid{align-items:stretch}
+    #toast{left:16px;right:16px;bottom:16px;display:flex;justify-content:flex-end;pointer-events:none}
+    #toast-inner{max-width:min(420px,100%);pointer-events:auto}
+    #new-modal{overflow-y:auto;padding-top:24px;padding-bottom:24px}
+    #new-modal .modal-card{max-height:calc(100dvh - 48px);overflow-y:auto}
+    @media(max-width:1100px){.proj-card{max-width:calc(50% - 7px)}}
+    @media(max-width:700px){
+      .proj-card{flex-basis:100%;max-width:100%;min-width:0}
+      .grid-container{padding:10px 12px 28px}
+      #grid{gap:10px}
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0!important}
+      .stat-chip{flex:1;justify-content:center}
+      .update-banner{padding:0 12px}
+      .update-banner-inner{align-items:flex-start;flex-direction:column}
+    }
+    @media(max-width:480px){
+      .btn-primary,.btn-ghost{width:100%;justify-content:center}
+      #toast{justify-content:center}
     }
   </style>
 </head>
@@ -230,6 +290,21 @@
   <div class="stat-chip"><span style="color:#10b981;font-size:10px">Active</span><span id="top-active-m" class="mono" style="color:var(--t1);font-size:11px;font-weight:600">—</span></div>
 </div>
 
+<div id="update-banner" class="update-banner">
+  <div class="update-banner-inner">
+    <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      <i data-lucide="git-commit" style="width:14px;height:14px;flex-shrink:0"></i>
+      <span id="update-banner-text" style="min-width:0;overflow:hidden;text-overflow:ellipsis">A new PyVegar update is available.</span>
+    </div>
+    <div class="update-banner-actions">
+      <a href="/settings#updates">Review update</a>
+      <button onclick="dismissUpdateBanner()" title="Dismiss" aria-label="Dismiss update notification">
+        <i data-lucide="x" style="width:14px;height:14px"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Toolbar -->
 <div style="max-width:1280px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
   <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
@@ -259,7 +334,7 @@
       <div style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:20px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);margin-bottom:20px">
         <i data-lucide="server" style="width:32px;height:32px;color:var(--acc);opacity:.7"></i>
       </div>
-      <p style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:-.01em">No servers yet</p>
+      <p style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:8px;letter-spacing:0">No servers yet</p>
       <p style="font-size:13px;color:var(--t3);margin-bottom:22px;line-height:1.6">Your projects will appear here.<br>Create your first server to get started.</p>
       <button onclick="openNew()" style="display:inline-flex;align-items:center;gap:7px;background:var(--acc);color:#fff;border:none;cursor:pointer;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(251,54,64,.3);transition:transform .15s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
         <i data-lucide="plus" style="width:14px;height:14px"></i> New Server
@@ -270,7 +345,7 @@
     {% for p in projects %}
     <div class="proj-card" data-id="{{ p.id }}" data-name="{{ p.name | replace('_', ' ') }}">
       <!-- Status accent -->
-      <div data-proj-bar style="height:2px;{% if p.status == 'running' %}background:linear-gradient(90deg,#22c55e,rgba(34,197,94,.15)){% elif p.status == 'restarting' %}background:linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15)){% else %}background:linear-gradient(90deg,var(--bdr),transparent){% endif %}"></div>
+      <div data-proj-bar style="height:2px;{% if p.status == 'running' %}background:linear-gradient(90deg,#22c55e,rgba(34,197,94,.15)){% elif p.status == 'restarting' %}background:linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15)){% elif p.status == 'installing' %}background:linear-gradient(90deg,#60a5fa,rgba(96,165,250,.15)){% else %}background:linear-gradient(90deg,var(--bdr),transparent){% endif %}"></div>
 
       <!-- Language banner (full-width, outside <a>) -->
       <div data-lang-chip data-lang="{{ p.language }}" data-cmd="{{ p.startup_command if p.startup_command else 'python3 -u ' + p.start_file }}" data-file="{{ p.start_file }}"></div>
@@ -279,10 +354,10 @@
         <!-- Top row -->
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:9px;min-width:0">
-            <span data-proj-dot style="width:9px;height:9px;border-radius:50%;flex-shrink:0" class="{% if p.status == 'running' %}dot-run{% elif p.status == 'restarting' %}dot-restart{% else %}dot-stop{% endif %}"></span>
+            <span data-proj-dot style="width:9px;height:9px;border-radius:50%;flex-shrink:0" class="{% if p.status == 'running' %}dot-run{% elif p.status == 'restarting' %}dot-restart{% elif p.status == 'installing' %}dot-installing{% else %}dot-stop{% endif %}"></span>
             <span style="font-weight:700;font-size:15px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name | replace('_', ' ') }}</span>
           </div>
-          <span data-proj-badge style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em" class="{% if p.status == 'running' %}badge-run{% elif p.status == 'restarting' %}badge-restart{% else %}badge-stop{% endif %}">{{ p.status }}</span>
+          <span data-proj-badge style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:8px;flex-shrink:0;text-transform:uppercase" class="{% if p.status == 'running' %}badge-run{% elif p.status == 'restarting' %}badge-restart{% elif p.status == 'installing' %}badge-installing{% else %}badge-stop{% endif %}">{{ p.status }}</span>
         </div>
 
         <!-- Meta -->
@@ -406,6 +481,28 @@ function _initStats(){if(!_statsStarted)_reconnectStats();}
 if(window.PV3)PV3.onNavigate(function(){_statsDead=true;if(_statsWs)_statsWs.close();});
 setTimeout(_initStats,500);
 
+async function checkDashboardUpdateNotice(){
+  const banner=document.getElementById('update-banner');
+  const txt=document.getElementById('update-banner-text');
+  if(!banner||!txt)return;
+  try{
+    const r=await fetch('/_/update/check?_='+Date.now());
+    const d=await r.json();
+    if(d.error||d.up_to_date||!d.remote)return;
+    if(localStorage.getItem('pv3_update_dismissed')===d.remote)return;
+    txt.textContent=`New update available: ${d.message||d.remote}`;
+    banner.dataset.remote=d.remote;
+    banner.style.display='block';
+    try{lucide.createIcons();}catch(_){}
+  }catch(_){}
+}
+function dismissUpdateBanner(){
+  const banner=document.getElementById('update-banner');
+  if(banner&&banner.dataset.remote)localStorage.setItem('pv3_update_dismissed',banner.dataset.remote);
+  if(banner)banner.style.display='none';
+}
+setTimeout(checkDashboardUpdateNotice,900);
+
 // ── Language banner ──────────────────────────────────────────────────────────
 var LANG_MAP={
   python:{ label:'Python',  abbr:'Py',  slug:'python',    color:'#3776ab', bg:'rgba(55,118,171,.18)',  bd:'rgba(55,118,171,.22)' },
@@ -433,14 +530,14 @@ function renderLangChip(el,lang,cmd,file){
     el.innerHTML=
       `<div style="background:linear-gradient(135deg,${lc.bg} 0%,transparent 110%);border-bottom:1px solid ${lc.bd};padding:10px 16px;display:flex;align-items:center;gap:11px;position:relative;overflow:hidden;min-height:50px">`+
         `<span style="width:34px;height:34px;border-radius:9px;background:${lc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:1;position:relative;overflow:hidden">`+
-          `<span style="font-size:${lc.abbr.length>2?'8':'11'}px;font-weight:900;color:#fff;letter-spacing:-.5px">${lc.abbr}</span>`+
+          `<span style="font-size:${lc.abbr.length>2?'8':'11'}px;font-weight:900;color:#fff;letter-spacing:0">${lc.abbr}</span>`+
           _renderLogoImg(lang)+
         `</span>`+
         `<div style="min-width:0;flex:1;z-index:1">`+
           `<div style="font-size:13.5px;font-weight:700;color:${lc.color};line-height:1.2;margin-bottom:2px">${lc.label}</div>`+
           `<div style="font-size:10px;color:${lc.color};opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace">${sub}</div>`+
         `</div>`+
-        `<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:56px;font-weight:900;color:${lc.color};opacity:.07;pointer-events:none;line-height:1;user-select:none;letter-spacing:-4px">${lc.abbr}</span>`+
+        `<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:56px;font-weight:900;color:${lc.color};opacity:.07;pointer-events:none;line-height:1;user-select:none;letter-spacing:0">${lc.abbr}</span>`+
       `</div>`;
   } else {
     el.innerHTML=
@@ -467,14 +564,15 @@ function applyCard(p){
   const pidEl=card.querySelector('[data-proj-pid]');
   const rsEl=card.querySelector('[data-proj-restarts]');
   const chipEl=card.querySelector('[data-lang-chip]');
-  if(bar){
-    if(s==='running')bar.style.background='linear-gradient(90deg,#22c55e,rgba(34,197,94,.15))';
-    else if(s==='restarting')bar.style.background='linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15))';
-    else if(s==='error')bar.style.background='linear-gradient(90deg,#ef4444,rgba(239,68,68,.15))';
-    else bar.style.background='linear-gradient(90deg,var(--bdr),transparent)';
-  }
-  if(dot)dot.className=s==='running'?'dot-run':s==='restarting'?'dot-restart':s==='error'?'dot-stop':'dot-stop';
-  if(badge){badge.className=s==='running'?'badge-run':s==='restarting'?'badge-restart':s==='error'?'badge-error':'badge-stop';badge.textContent=s;}
+	  if(bar){
+	    if(s==='running')bar.style.background='linear-gradient(90deg,#22c55e,rgba(34,197,94,.15))';
+	    else if(s==='restarting')bar.style.background='linear-gradient(90deg,#f59e0b,rgba(245,158,11,.15))';
+	    else if(s==='installing')bar.style.background='linear-gradient(90deg,#60a5fa,rgba(96,165,250,.15))';
+	    else if(s==='error')bar.style.background='linear-gradient(90deg,#ef4444,rgba(239,68,68,.15))';
+	    else bar.style.background='linear-gradient(90deg,var(--bdr),transparent)';
+	  }
+	  if(dot)dot.className=s==='running'?'dot-run':s==='restarting'?'dot-restart':s==='installing'?'dot-installing':s==='error'?'dot-stop':'dot-stop';
+	  if(badge){badge.className=s==='running'?'badge-run':s==='restarting'?'badge-restart':s==='installing'?'badge-installing':s==='error'?'badge-error':'badge-stop';badge.textContent=s;}
   if(pidEl)pidEl.textContent=p.pid||'—';
   if(rsEl)rsEl.textContent=p.restarts;
   if(chipEl&&p.language!==undefined){
@@ -592,27 +690,52 @@ function _getLogoSlug(langVal){
 function _buildLangOptIcon(color,abbr,slug){
   var hasLogo=!!slug;
   return `<span class="lang-dd-opt-icon" style="position:relative;background:${color};overflow:hidden">`+
-    `<span style="font-size:8px;font-weight:900;color:#fff;letter-spacing:-.5px">${abbr}</span>`+
+    `<span style="font-size:8px;font-weight:900;color:#fff;letter-spacing:0">${abbr}</span>`+
     (hasLogo?`<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`:'')+
   `</span>`;
+}
+function _esc(s){
+  return String(s||'').replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function _cleanRtVersion(rt){
+  var ver=String((rt&&rt.version)||'').trim();
+  if(!ver||/flag provided but not defined|usage:/i.test(ver))return '';
+  return ver;
+}
+function _setLangLabel(rt,color,abbr,slug){
+  const label=document.getElementById('lang-dd-label');
+  var hasLogo=!!slug;
+  var ver=_cleanRtVersion(rt);
+  label.innerHTML=
+    `<span class="lang-dd-label-inner">`+
+      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
+        `<span style="font-weight:900;letter-spacing:0">${_esc(abbr)}</span>`+
+        (hasLogo?`<img src="/static/logos/${_esc(slug)}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`:'')+
+      `</span>`+
+      `<span class="lang-dd-label-name">${_esc(rt.name)}</span>`+
+      (ver?`<span class="lang-dd-label-ver" title="${_esc(ver)}">${_esc(ver)}</span>`:'')+
+    `</span>`;
+  label.style.color='';
 }
 function _populateLangSelect(){
   const hidden=document.getElementById('new-lang');
   const list=document.getElementById('lang-dd-list');
-  const label=document.getElementById('lang-dd-label');
   list.innerHTML='';
   _runtimes.forEach((rt,i)=>{
     const color=LANG_COLORS[rt.value]||'#fb3640';
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
     const slug=_getLogoSlug(rt.value);
+    const ver=_cleanRtVersion(rt);
     const opt=document.createElement('div');
     opt.className='lang-dd-opt'+(i===0?' selected':'');
     opt.dataset.value=rt.value;
     opt.innerHTML=
       _buildLangOptIcon(color,abbr,slug)+
-      `<span class="lang-dd-opt-name">${rt.name}</span>`+
-      (rt.version?`<span class="lang-dd-opt-ver">${rt.version}</span>`:'');
-    opt.onclick=()=>selectLangOpt(rt.value,rt.name,rt.version,color,abbr,slug);
+      `<span class="lang-dd-opt-name">${_esc(rt.name)}</span>`+
+      (ver?`<span class="lang-dd-opt-ver" title="${_esc(ver)}">${_esc(ver)}</span>`:'');
+    opt.onclick=()=>selectLangOpt(rt.value,rt.name,ver,color,abbr,slug);
     list.appendChild(opt);
   });
   if(_runtimes.length>0){
@@ -621,34 +744,13 @@ function _populateLangSelect(){
     const abbr=LANG_ABBR[rt.value]||rt.name.slice(0,2).toUpperCase();
     const slug=_getLogoSlug(rt.value);
     hidden.value=rt.value;
-    var hasLogo=!!slug;
-    label.innerHTML=
-      `<span style="display:inline-flex;align-items:center;gap:8px">`+
-        `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
-          `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
-          (hasLogo?`<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`:'')+
-        `</span>`+
-        `<span style="color:var(--t1);font-weight:500">${rt.name}</span>`+
-        (rt.version?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${rt.version}</span>`:'')+
-      `</span>`;
-    label.style.color='';
+    _setLangLabel(rt,color,abbr,slug);
     onLangChange(rt.value);
   }
 }
 function selectLangOpt(val,name,ver,color,abbr,slug){
   document.getElementById('new-lang').value=val;
-  const label=document.getElementById('lang-dd-label');
-  var hasLogo=!!slug;
-  label.innerHTML=
-    `<span style="display:inline-flex;align-items:center;gap:8px">`+
-      `<span style="width:20px;height:20px;border-radius:5px;background:${color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;position:relative;overflow:hidden">`+
-        `<span style="font-weight:900;letter-spacing:-.5px">${abbr}</span>`+
-        (hasLogo?`<img src="/static/logos/${slug}.svg" width="18" height="18" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)" onerror="this.remove()">`:'')+
-      `</span>`+
-      `<span style="color:var(--t1);font-weight:500">${name}</span>`+
-      (ver?`<span style="font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace">${ver}</span>`:'')+
-    `</span>`;
-  label.style.color='';
+  _setLangLabel({name:name,version:ver},color,abbr,slug);
   document.querySelectorAll('.lang-dd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.value===val));
   closeLangDd();
   onLangChange(val);

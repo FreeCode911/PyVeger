@@ -29,11 +29,11 @@
       --inp:rgba(0,0,0,.03);--inpb:rgba(0,0,0,.1);
       --acc:#e01020;--acc2:#e01020;
     }
-    body{background:var(--bg);color:var(--t1);min-height:100vh;}
+    body{background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
-    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1200px;margin:0 auto;}
+    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:1200px;margin:0 auto;}
     html[data-theme=light] .hdr{background:rgba(255,255,255,.92);border-color:rgba(251,54,64,.3);box-shadow:0 4px 24px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.06),0 0 20px rgba(251,54,64,.06);}
     .icon-btn{
       display:flex;align-items:center;justify-content:center;
@@ -77,6 +77,26 @@
       .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
            box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
       html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
+    /* ── Cross-template polish ── */
+    html,body{width:100%;margin:0;overflow-x:hidden}
+    body{font-size:14px;line-height:1.45}
+    button,a,input{min-width:0}
+    .hdr{border-radius:12px}
+    .terminal-wrap,.icon-btn,.ghost-btn,.badge{border-radius:8px!important}
+    .hdr>div{min-width:0}
+    .breadcrumb-link{min-width:0}
+    .breadcrumb-link+svg+area,.breadcrumb-link+svg+span{min-width:0}
+    #log-box{height:calc(100dvh - 170px);min-height:360px;overflow-wrap:anywhere}
+    .term-bar{gap:10px}
+    @media(max-width:700px){
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0!important}
+      .hdr>div{gap:8px!important}
+      .hdr a,.hdr span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      main{padding:12px!important}
+      #log-box{height:calc(100dvh - 210px);min-height:300px;font-size:11.5px;padding:12px}
+      .term-bar{padding:9px 12px;flex-wrap:wrap}
     }
   </style>
 </head>

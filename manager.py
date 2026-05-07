@@ -14,6 +14,7 @@ BASE_DIR = Path(__file__).parent
 SCRIPTS_DIR = BASE_DIR / "scripts"
 LOGS_DIR = BASE_DIR / "logs"
 DB_FILE = BASE_DIR / "database.json"
+LOCAL_BIN_DIR = BASE_DIR / "bin"
 
 SCRIPTS_DIR.mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
@@ -26,6 +27,7 @@ _watchers: dict[str, threading.Thread] = {}
 
 _DEFAULT_PROJECT = {
     "status": "stopped",
+    "desired_status": "stopped",
     "pid": None,
     "start_file": "main.py",
     "startup_command": "",
@@ -81,8 +83,12 @@ def _safe_rel_path(proj_dir: Path, rel: str) -> Path | None:
     rel = rel.strip().lstrip("/\\").replace("\\", "/")
     if not rel:
         return None
+    if "\x00" in rel or "\n" in rel or "\r" in rel:
+        return None
+    if len(rel) > 4096:
+        return None
     parts = rel.split("/")
-    if any(p == ".." or p == "." for p in parts if p):
+    if any(p == ".." or p == "." or len(p) > 255 for p in parts if p):
         return None
     try:
         candidate = (proj_dir / rel).resolve()
@@ -110,6 +116,7 @@ def _reconcile():
                 if pid and not _pid_alive(pid):
                     db[proj_id]["status"] = "stopped"
                     db[proj_id]["pid"] = None
+                    db[proj_id].setdefault("desired_status", "running")
                     changed = True
         if changed:
             _save_db(db)
@@ -157,6 +164,7 @@ def list_projects() -> list[dict]:
             "id": proj_id,
             "name": info.get("name", proj_id),
             "status": info.get("status", "stopped"),
+            "desired_status": info.get("desired_status", "stopped"),
             "pid": info.get("pid"),
             "uptime": uptime,
             "restarts": info.get("restarts", 0),
@@ -187,6 +195,7 @@ def get_project(project_id: str) -> dict | None:
         "id": pid_val,
         "name": info.get("name", pid_val),
         "status": info.get("status", "stopped"),
+        "desired_status": info.get("desired_status", "stopped"),
         "pid": info.get("pid"),
         "uptime": uptime,
         "restarts": info.get("restarts", 0),
@@ -301,11 +310,14 @@ def create_project_file(project_id: str, filepath: str) -> dict:
     target = _safe_rel_path(proj_dir, filepath)
     if not target:
         return {"ok": False, "error": "Invalid filepath"}
-    if target.exists():
-        return {"ok": False, "error": "File already exists"}
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text("")
-    return {"ok": True, "name": str(target.relative_to(proj_dir))}
+    try:
+        if target.exists():
+            return {"ok": False, "error": "File already exists"}
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("")
+        return {"ok": True, "name": str(target.relative_to(proj_dir))}
+    except OSError as e:
+        return {"ok": False, "error": f"Could not create file: {e.strerror or e}"}
 
 
 def create_project_folder(project_id: str, folder_path: str) -> dict:
@@ -318,10 +330,13 @@ def create_project_folder(project_id: str, folder_path: str) -> dict:
     target = _safe_rel_path(proj_dir, folder_path)
     if not target:
         return {"ok": False, "error": "Invalid folder path"}
-    if target.exists():
-        return {"ok": False, "error": "Already exists"}
-    target.mkdir(parents=True, exist_ok=True)
-    return {"ok": True, "path": str(target.relative_to(proj_dir))}
+    try:
+        if target.exists():
+            return {"ok": False, "error": "Already exists"}
+        target.mkdir(parents=True, exist_ok=True)
+        return {"ok": True, "path": str(target.relative_to(proj_dir))}
+    except OSError as e:
+        return {"ok": False, "error": f"Could not create folder: {e.strerror or e}"}
 
 
 def delete_project_item(project_id: str, item_path: str) -> dict:
@@ -433,8 +448,57 @@ def _pip_cmd() -> list[str]:
     return [sys.executable, "-m", "pip"]
 
 
+def _find_nvm_bin(bin_name: str) -> Path | None:
+    matches = sorted(Path.home().glob(f".nvm/versions/node/*/bin/{bin_name}"), reverse=True)
+    for path in matches:
+        if path.exists() and os.access(path, os.X_OK):
+            return path
+    return None
+
+
+def _resolve_bin(bin_name: str) -> Path | None:
+    local = LOCAL_BIN_DIR / bin_name
+    if local.exists() and os.access(local, os.X_OK):
+        return local
+    nvm = _find_nvm_bin(bin_name)
+    if nvm:
+        return nvm
+    system = shutil.which(bin_name)
+    return Path(system) if system else None
+
+
+def _package_env() -> dict[str, str]:
+    env = os.environ.copy()
+    path_parts = [str(LOCAL_BIN_DIR)]
+    node_bin = _resolve_bin("node")
+    if node_bin and node_bin.parent != LOCAL_BIN_DIR:
+        path_parts.append(str(node_bin.parent))
+    path_parts.append(env.get("PATH", ""))
+    env["PATH"] = os.pathsep.join(p for p in path_parts if p)
+    return env
+
+
 def _npm_cmd() -> list[str]:
-    return ["npm"]
+    npm_bin = _resolve_bin("npm")
+    if not npm_bin:
+        return ["npm"]
+
+    node_bin = _resolve_bin("node")
+    if node_bin:
+        return [str(node_bin), str(npm_bin)]
+
+    return [str(npm_bin)]
+
+
+def _missing_package_manager_error(manager_name: str, err: FileNotFoundError) -> dict:
+    if manager_name == "npm":
+        return {
+            "ok": False,
+            "error": "npm was not found. Install Node.js from Settings, then retry.",
+            "output": str(err),
+            "manager": manager_name,
+        }
+    return {"ok": False, "error": str(err), "output": "", "manager": manager_name}
 
 
 def _pkg_manager_for_project(project_id: str) -> tuple[str, list[str], list[str], int]:
@@ -445,6 +509,143 @@ def _pkg_manager_for_project(project_id: str) -> tuple[str, list[str], list[str]
     return "pip", _pip_cmd(), ["install", "--break-system-packages"], 120
 
 
+def _runtime_key(info: dict) -> str:
+    lang = (info.get("language") or "").strip().lower()
+    if lang in {"nodejs", "javascript", "typescript", "js", "ts"}:
+        return "node"
+    if lang in {"python", "py"}:
+        return "python"
+    if lang in {"go", "golang"}:
+        return "go"
+    if lang == "ruby":
+        return "ruby"
+    if lang == "php":
+        return "php"
+
+    suffix = Path(info.get("start_file", "")).suffix.lower()
+    if suffix in {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}:
+        return "node"
+    if suffix == ".py":
+        return "python"
+    if suffix == ".go":
+        return "go"
+    if suffix == ".rb":
+        return "ruby"
+    if suffix == ".php":
+        return "php"
+    return ""
+
+
+def _manifest_dirs(proj_dir: Path, start_file: str) -> list[Path]:
+    dirs: list[Path] = []
+    start_path = _safe_rel_path(proj_dir, start_file)
+    if start_path:
+        dirs.append(start_path.parent)
+    dirs.append(proj_dir)
+    unique: list[Path] = []
+    for path in dirs:
+        if path not in unique:
+            unique.append(path)
+    return unique
+
+
+def _first_manifest(proj_dir: Path, start_file: str, names: list[str]) -> Path | None:
+    for directory in _manifest_dirs(proj_dir, start_file):
+        for name in names:
+            manifest = directory / name
+            if manifest.is_file():
+                return manifest
+    return None
+
+
+def _package_manifest_command(proj_dir: Path, info: dict) -> tuple[str, list[str], Path, int] | None:
+    start_file = info.get("start_file", "main.py")
+    runtime = _runtime_key(info)
+
+    if runtime == "python":
+        manifest = _first_manifest(proj_dir, start_file, ["requirements.txt"])
+        if manifest:
+            return "requirements.txt", _pip_cmd() + ["install", "--break-system-packages", "-r", manifest.name], manifest.parent, 180
+        return None
+
+    if runtime == "node":
+        manifest = _first_manifest(proj_dir, start_file, ["package.json", "package-lock.json"])
+        if manifest:
+            return manifest.name, _npm_cmd() + ["install"], manifest.parent, 240
+        return None
+
+    if runtime == "go":
+        manifest = _first_manifest(proj_dir, start_file, ["go.mod"])
+        go_bin = _resolve_bin("go")
+        if manifest:
+            return "go.mod", [str(go_bin) if go_bin else "go", "mod", "download"], manifest.parent, 180
+        return None
+
+    if runtime == "ruby":
+        manifest = _first_manifest(proj_dir, start_file, ["Gemfile"])
+        bundle_bin = _resolve_bin("bundle") or _resolve_bin("bundler")
+        if manifest:
+            return "Gemfile", [str(bundle_bin) if bundle_bin else "bundle", "install"], manifest.parent, 180
+        return None
+
+    if runtime == "php":
+        manifest = _first_manifest(proj_dir, start_file, ["composer.json"])
+        composer_bin = _resolve_bin("composer")
+        if manifest:
+            return "composer.json", [str(composer_bin) if composer_bin else "composer", "install"], manifest.parent, 180
+        return None
+
+    return None
+
+
+def install_manifest_packages(project_id: str, info: dict | None = None) -> dict:
+    pid_val = _safe_id(project_id)
+    if not pid_val or not _project_dir(pid_val).exists():
+        return {"ok": False, "error": "Project not found", "output": ""}
+    proj_dir = _project_dir(pid_val)
+    if info is None:
+        with _db_lock:
+            info = _load_db().get(pid_val, {})
+
+    spec = _package_manifest_command(proj_dir, info)
+    if not spec:
+        return {"ok": True, "skipped": True, "output": "", "manifest": None}
+
+    manifest_name, cmd, cwd, timeout_s = spec
+    rel_cwd = "." if cwd == proj_dir else str(cwd.relative_to(proj_dir))
+    _write_system(pid_val, f"Installing packages from {manifest_name}  ·  cwd: {rel_cwd}  ·  command: {' '.join(cmd)}")
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            cwd=cwd,
+            env=_package_env(),
+        )
+    except subprocess.TimeoutExpired:
+        _write_system(pid_val, f"Package install timed out from {manifest_name}")
+        return {"ok": False, "error": "Package installation timed out", "output": "", "manifest": manifest_name, "cwd": rel_cwd}
+    except FileNotFoundError as e:
+        _write_system(pid_val, f"Package install failed from {manifest_name}  ·  {e}")
+        return {"ok": False, "error": str(e), "output": "", "manifest": manifest_name, "cwd": rel_cwd}
+    output = result.stdout + result.stderr
+    if output:
+        try:
+            with open(_log_path(pid_val), "a") as f:
+                f.write(output)
+                if not output.endswith("\n"):
+                    f.write("\n")
+        except Exception:
+            pass
+    ok = result.returncode == 0
+    if ok:
+        _write_system(pid_val, f"Package install completed from {manifest_name}")
+    else:
+        _write_system(pid_val, f"Package install failed from {manifest_name}  ·  exit code {result.returncode}")
+    return {"ok": ok, "output": output, "returncode": result.returncode, "manifest": manifest_name, "cwd": rel_cwd}
+
+
 def install_package(project_id: str, package: str) -> dict:
     pid_val = _safe_id(project_id)
     if not pid_val or not _project_dir(pid_val).exists():
@@ -452,6 +653,7 @@ def install_package(project_id: str, package: str) -> dict:
     package = package.strip()
     if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n", "\r"]):
         return {"ok": False, "error": "Invalid package name", "output": ""}
+    manager_name = "package manager"
     try:
         manager_name, base_cmd, install_args, timeout_s = _pkg_manager_for_project(pid_val)
         result = subprocess.run(
@@ -460,11 +662,14 @@ def install_package(project_id: str, package: str) -> dict:
             text=True,
             timeout=timeout_s,
             cwd=_project_dir(pid_val),
+            env=_package_env(),
         )
         output = result.stdout + result.stderr
         return {"ok": result.returncode == 0, "output": output, "returncode": result.returncode, "manager": manager_name}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "Installation timed out", "output": ""}
+    except FileNotFoundError as e:
+        return _missing_package_manager_error(manager_name, e)
     except Exception as e:
         return {"ok": False, "error": str(e), "output": ""}
 
@@ -476,6 +681,7 @@ def uninstall_package(project_id: str, package: str) -> dict:
     package = package.strip()
     if not package or any(c in package for c in [";", "&", "|", "`", "$", "(", ")", "\n"]):
         return {"ok": False, "error": "Invalid package name", "output": ""}
+    manager_name = "package manager"
     try:
         manager_name, base_cmd, _, _ = _pkg_manager_for_project(pid_val)
         if manager_name == "npm":
@@ -490,9 +696,12 @@ def uninstall_package(project_id: str, package: str) -> dict:
             text=True,
             timeout=timeout_s,
             cwd=_project_dir(pid_val),
+            env=_package_env(),
         )
         output = result.stdout + result.stderr
         return {"ok": result.returncode == 0, "output": output, "manager": manager_name}
+    except FileNotFoundError as e:
+        return _missing_package_manager_error(manager_name, e)
     except Exception as e:
         return {"ok": False, "error": str(e), "output": ""}
 
@@ -551,6 +760,7 @@ def _watch_project(project_id: str, proc: subprocess.Popen):
             crash_count = 0
         if crash_count >= 2:
             db[project_id]["status"] = "error"
+            db[project_id]["desired_status"] = "stopped"
             db[project_id]["pid"] = None
             db[project_id]["restarts"] = restarts
             db[project_id]["crash_count"] = crash_count
@@ -561,6 +771,7 @@ def _watch_project(project_id: str, proc: subprocess.Popen):
         db[project_id]["restarts"] = restarts
         db[project_id]["crash_count"] = crash_count
         db[project_id]["status"] = "restarting"
+        db[project_id]["desired_status"] = "running"
         _save_db(db)
     logger.info(f"Project {project_id} crashed (uptime {run_time:.1f}s), auto-restarting in 2s…")
     _write_system(project_id, f"Crashed (uptime {run_time:.1f}s) — auto-restarting in 2 s…")
@@ -594,17 +805,46 @@ def start_project(project_id: str, auto_restart: bool = False) -> dict:
         log_p = _log_path(pid_val)
         if log_p.exists() and (time.time() - log_p.stat().st_mtime) > 300:
             log_p.write_text("")
+    with _db_lock:
+        db = _load_db()
+        existing = db.get(pid_val, {})
+        db[pid_val] = {**existing, "status": "installing", "desired_status": "running", "pid": None}
+        _save_db(db)
+    install_result = install_manifest_packages(pid_val, info)
+    if not install_result.get("ok"):
+        with _db_lock:
+            db = _load_db()
+            existing = db.get(pid_val, {})
+            db[pid_val] = {**existing, "status": "error", "desired_status": "stopped", "pid": None}
+            _save_db(db)
+        return {
+            "ok": False,
+            "error": install_result.get("error") or "Package installation failed",
+            "output": install_result.get("output", ""),
+            "manifest": install_result.get("manifest"),
+        }
     cmd = _build_command(info)
     action = "Auto-restarted" if auto_restart else "Started"
     _write_system(pid_val, f"{action}  ·  command: {' '.join(cmd)}")
     log_file = open(_log_path(pid_val), "a")
-    proc = subprocess.Popen(
-        cmd,
-        stdout=log_file,
-        stderr=subprocess.STDOUT,
-        cwd=str(proj_dir),
-        start_new_session=True,
-    )
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            cwd=str(proj_dir),
+            env=_package_env(),
+            start_new_session=True,
+        )
+    except Exception as e:
+        log_file.close()
+        with _db_lock:
+            db = _load_db()
+            existing = db.get(pid_val, {})
+            db[pid_val] = {**existing, "status": "error", "desired_status": "stopped", "pid": None}
+            _save_db(db)
+        _write_system(pid_val, f"ERROR — failed to start: {e}")
+        return {"ok": False, "error": str(e)}
     _procs[pid_val] = proc
     with _db_lock:
         db = _load_db()
@@ -613,6 +853,7 @@ def start_project(project_id: str, auto_restart: bool = False) -> dict:
             **existing,
             "pid": proc.pid,
             "status": "running",
+            "desired_status": "running",
             "start_time": time.time(),
             "restarts": existing.get("restarts", 0) if auto_restart else 0,
             "crash_count": existing.get("crash_count", 0) if auto_restart else 0,
@@ -632,7 +873,7 @@ def stop_project(project_id: str) -> dict:
         db = _load_db()
         info = db.get(pid_val, {})
         pid = info.get("pid")
-        db[pid_val] = {**info, "status": "stopped", "pid": None, "crash_count": 0}
+        db[pid_val] = {**info, "status": "stopped", "desired_status": "stopped", "pid": None, "crash_count": 0}
         _save_db(db)
     _procs.pop(pid_val, None)
     if not pid or not _pid_alive(pid):
@@ -674,6 +915,48 @@ def restart_all() -> list[dict]:
     for p in list_projects():
         if p["status"] == "running":
             results.append({p["id"]: restart_project(p["id"])})
+    return results
+
+
+def autostart_desired_projects() -> list[dict]:
+    with _db_lock:
+        db = _load_db()
+        candidates = []
+        changed = False
+        for project_id, info in db.items():
+            desired = info.get("desired_status")
+            status = info.get("status")
+            pid = info.get("pid")
+            should_start = desired == "running" or (
+                desired is None and status in {"running", "restarting", "installing"}
+            )
+            if not should_start:
+                continue
+            if pid and _pid_alive(pid):
+                continue
+            db[project_id]["status"] = "stopped"
+            db[project_id]["pid"] = None
+            db[project_id]["desired_status"] = "running"
+            candidates.append(project_id)
+            changed = True
+        if changed:
+            _save_db(db)
+
+    results = []
+    for project_id in candidates:
+        _write_system(project_id, "Panel restarted — auto-starting server because it was running before restart.")
+        try:
+            result = start_project(project_id)
+        except Exception as e:
+            result = {"ok": False, "error": str(e)}
+        if not result.get("ok"):
+            with _db_lock:
+                db = _load_db()
+                existing = db.get(project_id, {})
+                db[project_id] = {**existing, "status": "error", "desired_status": "stopped", "pid": None}
+                _save_db(db)
+            _write_system(project_id, f"ERROR — auto-start after panel restart failed: {result.get('error', 'unknown error')}")
+        results.append({project_id: result})
     return results
 
 

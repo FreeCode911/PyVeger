@@ -1,9 +1,18 @@
 {
-  "version": "3.3",
+  "version": "3.4",
   "releases": [
     {
-      "version": "3.3",
+      "version": "3.4",
       "label": "Current",
+      "changes": [
+        { "title": "Restart restore", "desc": "Projects that were running before a panel restart are automatically started again when PyVegar boots." },
+        { "title": "Update notification", "desc": "Dashboard checks the latest GitHub commit and shows an update prompt when a newer commit is available." },
+        { "title": "Editor and file save fixes", "desc": "Improved file editor line numbers/status, faster plain-text saves for large files, and safe handling for files named new." }
+      ]
+    },
+    {
+      "version": "3.3",
+      "label": "",
       "changes": [
         { "title": "Install Runtime", "desc": "Settings → Install Runtime: one-click Node.js install via NVM (nvm install 24) with standalone binary fallback (node-v26.0.0-linux-x64); live colour-coded WebSocket install log" },
         { "title": "Save Settings fix", "desc": "Resolved JS crash that prevented the Settings save button from working when credential input fields were absent from the DOM" },

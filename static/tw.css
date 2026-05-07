@@ -1,4 +1,6 @@
 .hidden{display:none!important}
+html{margin:0;width:100%;min-height:100%;overflow-x:hidden}
+body{margin:0;width:100%;min-height:100%;overflow-x:hidden}
 .flex{display:flex}
 .block{display:block}
 .inline{display:inline}

@@ -109,7 +109,8 @@ class PyVegarFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         ts    = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
         level = _LEVEL_FMT.get(record.levelname, f"  {record.levelname:<8}")
-        name  = f"{GREY}{record.name:<12}{RESET}"
+        display_name = "uvicorn" if record.name == "uvicorn.error" else record.name
+        name  = f"{GREY}{display_name:<12}{RESET}"
         msg   = record.getMessage()
 
         # Special formatting for uvicorn access/ws lines

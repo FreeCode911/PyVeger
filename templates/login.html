@@ -25,7 +25,7 @@
       --acc:#e01020;--acc2:#e01020;
     }
     body{
-      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;
+      min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px;
       background:var(--bg);color:var(--t1);
     }
 
@@ -55,10 +55,24 @@
     .icon-sun{display:block} .icon-moon{display:none}
     html[data-theme=light] .icon-sun{display:none} html[data-theme=light] .icon-moon{display:block}
     @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
-    .logo-bolt{display:inline-block;animation:bob 3.5s ease-in-out infinite;font-size:44px}
-    @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-    .fadeup{animation:fadein .45s ease both}
-  </style>
+	    .logo-bolt{display:inline-block;animation:bob 3.5s ease-in-out infinite;font-size:44px}
+	    @keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+	    .fadeup{animation:fadein .45s ease both}
+	    :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+	    @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+	    html,body{width:100%;margin:0;overflow-x:hidden}
+	    body{line-height:1.45}
+	    button,input{min-width:0}
+	    .glass,.inp,.btn-primary,.theme-btn{border-radius:8px!important}
+	    .glass{width:100%;box-shadow:0 18px 48px rgba(0,0,0,.28)}
+	    .btn-primary{min-height:44px}
+	    @media(max-width:420px){
+	      body{align-items:flex-start;padding:48px 12px 20px}
+	      .theme-btn{top:10px;right:10px}
+	      .glass{padding:20px!important}
+	      h1{font-size:24px!important}
+	    }
+	  </style>
 </head>
 <body>
 
@@ -71,7 +85,7 @@
 
   <div class="text-center fadeup" style="margin-bottom:28px;animation-delay:.05s">
     <img src="/static/logo.svg?v=6" width="64" height="64" style="border-radius:18px;box-shadow:0 8px 32px rgba(251,54,64,.45);display:block;margin:0 auto" alt="PyVegar">
-    <h1 style="font-size:26px;font-weight:700;color:var(--t1);margin:12px 0 4px;letter-spacing:-.5px">
+    <h1 style="font-size:26px;font-weight:700;color:var(--t1);margin:12px 0 4px;letter-spacing:0">
       <span style="color:var(--acc)">PyVegar</span>
     </h1>
     <p style="font-size:13px;color:var(--t3)">Sign in to your panel</p>

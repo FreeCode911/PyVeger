@@ -29,13 +29,13 @@
       --acc:#e01020;--acc2:#e01020;
       --trm:rgba(0,0,0,.04);
     }
-    body{background:var(--bg);color:var(--t1);min-height:100vh;}
+    body{background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;}
     :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
     @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
     .hdr-wrap{position:sticky;top:0;z-index:20;padding:10px 16px;pointer-events:none}
-    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:50px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:880px;margin:0 auto;}
+    .hdr{background:rgba(16,16,16,.88);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(251,54,64,.22);border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3),0 0 24px rgba(251,54,64,.08);pointer-events:all;max-width:880px;margin:0 auto;}
     html[data-theme=light] .hdr{background:rgba(255,255,255,.92);border-color:rgba(251,54,64,.3);box-shadow:0 4px 24px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.06),0 0 20px rgba(251,54,64,.06);}
     .section{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;margin-bottom:18px}
     html[data-theme=light] .section{box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -116,6 +116,35 @@
       .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;
            box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 12px rgba(251,54,64,.1);}
       html[data-theme=light] .hdr{border-radius:0;margin:0;border-left:none;border-right:none;border-top:none;}
+    }
+    /* ── Cross-template polish ── */
+    html,body{width:100%;margin:0;overflow-x:hidden}
+    body{font-size:14px;line-height:1.45}
+    button,a,input,select,textarea{min-width:0}
+    button,.btn-primary,.btn-ok,.btn-err,.btn-ghost,.icon-btn{min-height:34px}
+    .hdr{border-radius:12px}
+    .section,.inp,.btn-primary,.btn-ok,.btn-err,.btn-ghost,.icon-btn,.badge-run,.badge-stop{border-radius:8px!important}
+    .sec-hdr,.row{min-width:0}
+    .row input,.row textarea{min-width:0}
+    .hint,.log-viewer,pre{overflow-wrap:anywhere}
+    #toast{left:16px;right:16px;bottom:16px;display:flex;justify-content:flex-end;pointer-events:none}
+    #toast-inner{max-width:min(420px,100%);pointer-events:auto}
+    main{width:100%}
+    @media(max-width:700px){
+      .hdr-wrap{padding:0}
+      .hdr{border-radius:0!important}
+      main{padding-top:14px!important}
+      .section{margin-bottom:14px}
+      .sec-hdr{align-items:flex-start}
+      .row>div{min-width:0}
+      .btn-primary,.btn-ok,.btn-err,.btn-ghost{justify-content:center}
+    }
+    @media(max-width:480px){
+      .hdr>div{flex-wrap:wrap}
+      .hdr .icon-btn{width:32px;height:32px}
+      .row{padding:12px}
+      .sec-hdr{padding:12px}
+      #toast{justify-content:center}
     }
   </style>
 </head>
@@ -248,7 +277,7 @@
       <input id="cf-token" type="password" class="inp" value="{{ cloudflare_token }}" placeholder="eyJh…"/>
       <p class="hint">Cloudflare Dashboard → Zero Trust → Networks → Tunnels → your tunnel → Configure → Install &amp; Run → copy the token</p>
     </div>
-    <div class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div id="updates" class="row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div style="display:flex;gap:7px">
         <button type="button" onclick="tunnelAction('start')" class="btn-ok">
           <i data-lucide="play" style="width:12px;height:12px"></i> Start
@@ -282,7 +311,7 @@
     <div style="padding:20px 18px;display:flex;align-items:center;gap:16px">
       <img src="/static/logo.svg?v=7" width="52" height="52" style="border-radius:14px;flex-shrink:0;box-shadow:0 4px 16px rgba(251,54,64,.35)" alt="PyVegar">
       <div style="flex:1;min-width:0">
-        <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:-.01em">PyVegar</div>
+        <div style="font-size:16px;font-weight:700;color:var(--t1);letter-spacing:0">PyVegar</div>
         <div style="font-size:12px;color:var(--t3);margin-top:2px">Python server management panel</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
           <span id="about-version-badge" style="display:inline-flex;align-items:center;gap:5px;background:rgba(251,54,64,.1);border:1px solid rgba(251,54,64,.2);border-radius:6px;padding:2px 8px">

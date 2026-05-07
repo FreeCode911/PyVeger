@@ -3,7 +3,7 @@
   <h1>PyVegar</h1>
 </div>
 
-[![Version](https://img.shields.io/badge/version-3.3-fb3640?style=flat-square)](version.json)
+[![Version](https://img.shields.io/badge/version-3.4-fb3640?style=flat-square)](version.json)
 [![License](https://img.shields.io/badge/license-Personal-informational)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?style=flat-square)](https://fastapi.tiangolo.com)
@@ -297,7 +297,13 @@ Server page → Packages tab → type package name → Install
 
 ## 📋 Changelog
 
-### V3.3 — Current
+### V3.4 — Current
+
+- **Restart restore** — projects that were running before a PyVegar panel restart are automatically started again when the panel boots
+- **Dashboard update prompt** — checks the latest GitHub commit and shows an update notice with a link to Settings → Updates when a newer commit is available
+- **Editor/file fixes** — improved file editor line numbers/status, faster large plain-text saves, and safe saving for files named `new`
+
+### V3.3
 
 - **Install Runtime** — Settings → Install Runtime: one-click Node.js install; tries NVM (`nvm install 24`) first, falls back to standalone binary (`node-v26.0.0-linux-x64.tar.xz`); live colour-coded WebSocket log; badge shows `NVM` / `Standalone` / `System`
 - **Save Settings fix** — resolved JS crash that prevented the Settings save button from working when credential input fields were absent from the page
