@@ -9,6 +9,7 @@ import subprocess
 import threading
 import logging
 from pathlib import Path
+from typing import Iterator
 
 BASE_DIR = Path(__file__).parent
 SCRIPTS_DIR = BASE_DIR / "scripts"
@@ -104,6 +105,10 @@ def _project_dir(project_id: str) -> Path:
 
 def _log_path(project_id: str) -> Path:
     return LOGS_DIR / f"{project_id}.log"
+
+
+def _chunk_temp_path(target: Path) -> Path:
+    return target.with_name(f".{target.name}.pvtmp")
 
 
 def _reconcile():
@@ -428,6 +433,53 @@ def get_file_content(project_id: str, filepath: str) -> str | None:
         return None
 
 
+def get_file_info(project_id: str, filepath: str) -> dict | None:
+    pid_val = _safe_id(project_id)
+    if not pid_val:
+        return None
+    proj_dir = _project_dir(pid_val)
+    fpath = _safe_rel_path(proj_dir, filepath)
+    if not fpath or not fpath.is_file():
+        return None
+    try:
+        st = fpath.stat()
+        return {
+            "path": fpath,
+            "size": st.st_size,
+            "mtime_ns": st.st_mtime_ns,
+        }
+    except OSError:
+        return None
+
+
+def iter_file_chunks(project_id: str, filepath: str, start: int = 0, end: int | None = None,
+                     chunk_size: int = 256 * 1024) -> Iterator[bytes] | None:
+    info = get_file_info(project_id, filepath)
+    if not info:
+        return None
+    path = info["path"]
+    size = info["size"]
+    if start < 0 or start > size:
+        return None
+    if end is None or end > size:
+        end = size
+    if end < start:
+        return None
+
+    def _reader() -> Iterator[bytes]:
+        remaining = end - start
+        with open(path, "rb") as f:
+            f.seek(start)
+            while remaining > 0:
+                chunk = f.read(min(chunk_size, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+                yield chunk
+
+    return _reader()
+
+
 def save_file_content(project_id: str, filepath: str, content: str) -> dict:
     pid_val = _safe_id(project_id)
     if not pid_val:
@@ -439,6 +491,42 @@ def save_file_content(project_id: str, filepath: str, content: str) -> dict:
     fpath.parent.mkdir(parents=True, exist_ok=True)
     fpath.write_text(content)
     return {"ok": True}
+
+
+def write_file_chunk(project_id: str, filepath: str, content: bytes, offset: int,
+                     truncate: bool = False, finalize: bool = False) -> dict:
+    pid_val = _safe_id(project_id)
+    if not pid_val:
+        return {"ok": False, "error": "Invalid project ID"}
+    proj_dir = _project_dir(pid_val)
+    fpath = _safe_rel_path(proj_dir, filepath)
+    if not fpath:
+        return {"ok": False, "error": "Invalid path"}
+    if offset < 0:
+        return {"ok": False, "error": "Invalid offset"}
+
+    fpath.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = _chunk_temp_path(fpath)
+    try:
+        if truncate:
+            with open(tmp_path, "wb") as f:
+                f.write(content)
+        else:
+            if not tmp_path.exists():
+                return {"ok": False, "error": "Upload session not initialized"}
+            current_size = tmp_path.stat().st_size
+            if current_size != offset:
+                return {"ok": False, "error": f"Offset mismatch: expected {current_size}, got {offset}"}
+            with open(tmp_path, "ab") as f:
+                f.write(content)
+
+        if finalize:
+            tmp_path.replace(fpath)
+
+        size = tmp_path.stat().st_size if tmp_path.exists() else fpath.stat().st_size
+        return {"ok": True, "size": size}
+    except OSError as e:
+        return {"ok": False, "error": f"Could not write file: {e.strerror or e}"}
 
 
 # ─── Package Management ───────────────────────────────────────────────────────

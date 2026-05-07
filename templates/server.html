@@ -120,17 +120,17 @@
     #editor-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t3)}
     .editor-topbar{padding:8px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;background:var(--card2);flex-shrink:0;min-width:0}
     .editor-topbar .fname{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #editor-lang{
+      min-width:120px;max-width:180px;border-radius:8px;border:1px solid var(--inpb);background:var(--inp);color:var(--t2);
+      padding:4px 28px 4px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none
+    }
     #editor-pane{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--trm)}
     .editor-shell{flex:1;display:flex;min-height:0;background:var(--trm);border-top:1px solid rgba(255,255,255,.03)}
-    .line-gutter{
-      flex:0 0 58px;overflow:hidden;background:rgba(255,255,255,.025);border-right:1px solid var(--bdr);
-      color:var(--t4);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:21px;
-      padding:14px 10px 14px 6px;margin:0;text-align:right;user-select:none;white-space:pre;
-    }
+    #code-editor{flex:1;min-width:0;min-height:0}
     textarea#raw-editor{
       flex:1;resize:none;background:transparent;color:#c9d1d9;font-family:'JetBrains Mono',monospace;
       font-size:13px;line-height:21px;padding:14px 16px;border:none;outline:none;width:100%;height:100%;
-      min-height:400px;tab-size:2;white-space:pre;overflow:auto;
+      min-height:400px;tab-size:2;white-space:pre;overflow:auto;display:none;
     }
     .editor-status{
       display:flex;align-items:center;gap:12px;min-height:28px;padding:5px 12px;border-top:1px solid var(--bdr);
@@ -139,7 +139,6 @@
     .editor-status span{font-family:'JetBrains Mono',monospace}
     html[data-theme=light] #editor-pane,html[data-theme=light] .editor-shell{background:#1e293b}
     html[data-theme=light] textarea#raw-editor{color:#e2e8f0}
-    html[data-theme=light] .line-gutter{background:rgba(15,23,42,.55);color:#64748b;border-right-color:rgba(148,163,184,.2)}
 
     /* ── Main panel ── */
     #main-panel{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0}
@@ -198,7 +197,6 @@
       .editor-topbar .fname{min-width:100px}
       #set-start-btn{display:none}
       textarea#raw-editor{font-size:12px;line-height:20px;padding:10px}
-      .line-gutter{flex-basis:46px;font-size:12px;line-height:20px;padding:10px 8px 10px 4px}
       .pcard-body{padding:10px 12px}
       .pcard{margin:8px}
     }
@@ -332,6 +330,27 @@
           <button onclick="backToFiles()" class="mobile-back"><i data-lucide="chevron-left" style="width:13px;height:13px"></i> Files</button>
           <i id="editor-icon" data-lucide="file" style="width:14px;height:14px;color:var(--t3);flex-shrink:0"></i>
           <span id="editor-fname" class="fname">—</span>
+          <select id="editor-lang" onchange="changeEditorLanguage(this.value)" title="Syntax language">
+            <option value="auto">Auto</option>
+            <option value="text">Plain Text</option>
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="json">JSON</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="markdown">Markdown</option>
+            <option value="bash">Shell</option>
+            <option value="yaml">YAML</option>
+            <option value="xml">XML</option>
+            <option value="php">PHP</option>
+            <option value="ruby">Ruby</option>
+            <option value="java">Java</option>
+            <option value="c_cpp">C/C++</option>
+            <option value="golang">Go</option>
+            <option value="rust">Rust</option>
+            <option value="sql">SQL</option>
+          </select>
           <span id="editor-save-state" style="font-size:11px;color:var(--t3);padding:2px 8px;border-radius:999px;border:1px solid var(--bdr);background:var(--inp)">Saved</span>
           <button id="set-start-btn" onclick="setStartFile()" class="btn-ghost" style="padding:4px 10px;font-size:11px">
             <i data-lucide="play" style="width:11px;height:11px"></i> Set Start
@@ -341,7 +360,7 @@
           </button>
         </div>
         <div class="editor-shell">
-          <pre id="line-gutter" class="line-gutter">1</pre>
+          <div id="code-editor"></div>
           <textarea id="raw-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
             onkeydown="handleEditorKey(event)" oninput="handleEditorInput()" onscroll="syncEditorScroll()"></textarea>
         </div>
@@ -449,10 +468,10 @@
     </div>
     <label class="modal-label">File Path</label>
     <input id="new-file-name" class="inp" maxlength="512" style="font-family:'JetBrains Mono',monospace;margin-bottom:8px" placeholder="main.py or utils/helper.py" onkeydown="if(event.key==='Enter')createFile()"/>
-    <p class="modal-hint" style="margin-bottom:16px">Use a path to create inside a folder, e.g. <code>utils/helper.py</code></p>
+    <p id="new-file-hint" class="modal-hint" style="margin-bottom:16px">Use a path to create inside a folder, e.g. <code>utils/helper.py</code></p>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeModal('new-file')" class="btn-ghost">Cancel</button>
-      <button onclick="createFile()" class="btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i> Create</button>
+      <button id="new-file-create-btn" onclick="createFile()" class="btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i> Create</button>
     </div>
   </div>
 </div>
@@ -497,6 +516,8 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/ace-builds@1.36.0/src-min-noconflict/ace.js"></script>
+<script src="https://unpkg.com/ace-builds@1.36.0/src-min-noconflict/ext-language_tools.js"></script>
 <script>
 var PROJECT = {{ project.id | tojson }};
 var PROJECT_NAME = {{ project.name | tojson }};
@@ -507,6 +528,20 @@ var _editorDirty = false;
 var _renameTarget = null;
 var _lineRenderTimer = null;
 var _saveInFlight = false;
+var _largeFileMode = false;
+var _openInFlight = false;
+var _lastLoadedSize = 0;
+var _lastLoadedEtag = '';
+var _chunkSize = 256 * 1024;
+var _largeFileThreshold = 1024 * 1024;
+var _fileWs = null;
+var _fileWsConnectPromise = null;
+var _fileOpenPending = null;
+var _fileSavePending = null;
+var _existingFilePaths = new Set();
+var _aceEditor = null;
+var _editorLang = 'auto';
+var _lastAutoLanguage = 'text';
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
@@ -540,12 +575,182 @@ function fileIcon(name) {
   return m[ext] || 'file';
 }
 
+function initCodeEditor() {
+  if (_aceEditor || !window.ace) return _aceEditor;
+  ace.config.set('basePath', 'https://unpkg.com/ace-builds@1.36.0/src-min-noconflict');
+  const el = document.getElementById('code-editor');
+  if (!el) return null;
+  _aceEditor = ace.edit(el, {
+    fontSize: 13,
+    showPrintMargin: false,
+    tabSize: 2,
+    useSoftTabs: true,
+    wrap: false,
+    enableBasicAutocompletion: true,
+    enableLiveAutocompletion: false,
+    enableSnippets: true,
+  });
+  _aceEditor.session.setUseWorker(false);
+  _aceEditor.session.setMode('ace/mode/text');
+  _aceEditor.setTheme('ace/theme/one_dark');
+  _aceEditor.setOption('scrollPastEnd', 0.15);
+  _aceEditor.commands.addCommand({
+    name: 'saveFile',
+    bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+    exec: () => saveFile(),
+  });
+  _aceEditor.on('change', () => handleEditorInput());
+  _aceEditor.selection.on('changeCursor', () => updateEditorStats());
+  _aceEditor.selection.on('changeSelection', () => updateEditorStats());
+  syncEditorTheme();
+  return _aceEditor;
+}
+
+function syncEditorTheme() {
+  if (!_aceEditor) return;
+  const theme = (document.documentElement.getAttribute('data-theme') || 'dark') === 'light'
+    ? 'ace/theme/github'
+    : 'ace/theme/one_dark';
+  _aceEditor.setTheme(theme);
+}
+
+function getEditorText() {
+  if (!_largeFileMode && _aceEditor) return _aceEditor.getValue();
+  const ed = document.getElementById('raw-editor');
+  return ed ? ed.value : '';
+}
+
+function setEditorText(text) {
+  if (!_largeFileMode && _aceEditor) {
+    _aceEditor.setValue(text || '', -1);
+    return;
+  }
+  const ed = document.getElementById('raw-editor');
+  if (ed) ed.value = text || '';
+}
+
+function getEditorCursor() {
+  if (!_largeFileMode && _aceEditor) {
+    const pos = _aceEditor.getCursorPosition();
+    return {line: pos.row + 1, col: pos.column + 1};
+  }
+  const ed = document.getElementById('raw-editor');
+  if (!ed) return {line: 1, col: 1};
+  const before = ed.value.slice(0, ed.selectionStart);
+  const line = _lineCount(before);
+  const lastBreak = before.lastIndexOf('\n');
+  return {line, col: before.length - lastBreak};
+}
+
+function resetEditorScroll() {
+  if (!_largeFileMode && _aceEditor) {
+    _aceEditor.scrollToLine(0, true, true, function(){});
+    _aceEditor.gotoLine(1, 0, true);
+    return;
+  }
+  const ed = document.getElementById('raw-editor');
+  if (ed) {
+    ed.scrollTop = 0;
+    ed.scrollLeft = 0;
+  }
+}
+
+function syncEditorSurface() {
+  const code = document.getElementById('code-editor');
+  const raw = document.getElementById('raw-editor');
+  const lang = document.getElementById('editor-lang');
+  const useAce = !_largeFileMode && !!initCodeEditor();
+  if (raw) raw.style.display = useAce ? 'none' : 'block';
+  if (code) code.style.display = useAce ? 'block' : 'none';
+  if (lang) lang.disabled = !useAce;
+  if (useAce && _aceEditor) {
+    _aceEditor.resize();
+  }
+}
+
+function detectEditorLanguage(fp) {
+  const name = (fp || '').toLowerCase();
+  if (name.endsWith('.py')) return 'python';
+  if (name.endsWith('.js') || name.endsWith('.jsx') || name.endsWith('.mjs') || name.endsWith('.cjs')) return 'javascript';
+  if (name.endsWith('.ts') || name.endsWith('.tsx')) return 'typescript';
+  if (name.endsWith('.json')) return 'json';
+  if (name.endsWith('.html') || name.endsWith('.htm')) return 'html';
+  if (name.endsWith('.css') || name.endsWith('.scss') || name.endsWith('.less')) return 'css';
+  if (name.endsWith('.md')) return 'markdown';
+  if (name.endsWith('.sh') || name.endsWith('.bash') || name.endsWith('.zsh') || name === '.env') return 'bash';
+  if (name.endsWith('.yaml') || name.endsWith('.yml')) return 'yaml';
+  if (name.endsWith('.xml') || name.endsWith('.svg')) return 'xml';
+  if (name.endsWith('.php')) return 'php';
+  if (name.endsWith('.rb')) return 'ruby';
+  if (name.endsWith('.java')) return 'java';
+  if (name.endsWith('.c') || name.endsWith('.cpp') || name.endsWith('.cc') || name.endsWith('.h') || name.endsWith('.hpp')) return 'c_cpp';
+  if (name.endsWith('.go')) return 'golang';
+  if (name.endsWith('.rs')) return 'rust';
+  if (name.endsWith('.sql')) return 'sql';
+  return 'text';
+}
+
+function applyEditorLanguage(fp) {
+  _lastAutoLanguage = detectEditorLanguage(fp);
+  const lang = _editorLang === 'auto' ? _lastAutoLanguage : _editorLang;
+  const select = document.getElementById('editor-lang');
+  if (select && select.value !== _editorLang) select.value = _editorLang;
+  if (_largeFileMode || !_aceEditor) return;
+  _aceEditor.session.setMode(`ace/mode/${lang === 'text' ? 'text' : lang}`);
+}
+
+function changeEditorLanguage(value) {
+  _editorLang = value || 'auto';
+  applyEditorLanguage(currentFile || '');
+}
+
+function normalizeProjectPath(path) {
+  return (path || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/');
+}
+
+function collectFilePaths(nodes) {
+  const next = new Set();
+  (function walk(items) {
+    for (const item of items || []) {
+      if (item.type === 'file') next.add(normalizeProjectPath(item.path));
+      else if (item.type === 'dir' && item.children) walk(item.children);
+    }
+  })(nodes);
+  _existingFilePaths = next;
+}
+
+function updateNewFileState() {
+  const inp = document.getElementById('new-file-name');
+  const btn = document.getElementById('new-file-create-btn');
+  const hint = document.getElementById('new-file-hint');
+  if (!inp || !btn || !hint) return;
+  const raw = inp.value || '';
+  const normalized = normalizeProjectPath(raw);
+  const invalid = !normalized || /[\r\n]/.test(raw) || normalized.length > 512;
+  const exists = !invalid && _existingFilePaths.has(normalized);
+  btn.disabled = invalid || exists;
+  btn.style.opacity = btn.disabled ? '.55' : '';
+  btn.style.cursor = btn.disabled ? 'not-allowed' : '';
+  if (exists) {
+    hint.textContent = 'A file with that path already exists.';
+    hint.style.color = '#f87171';
+  } else {
+    hint.innerHTML = 'Use a path to create inside a folder, e.g. <code>utils/helper.py</code>';
+    hint.style.color = '';
+  }
+}
+
 // ── File Tree ──────────────────────────────────────────────────────────────
 async function loadTree() {
   const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/tree`);
   if (!r.ok) return;
   const d = await r.json();
   _startFile = d.start_file;
+  collectFilePaths(d.tree || []);
   const list = document.getElementById('file-list');
   list.innerHTML = '';
   if (!d.tree || !d.tree.length) {
@@ -665,98 +870,318 @@ function _lineCount(text) {
   return count;
 }
 
+function _setLargeFileMode(enabled) {
+  _largeFileMode = !!enabled;
+  syncEditorSurface();
+}
+
+function _wsProto() {
+  return location.protocol === 'https:' ? 'wss' : 'ws';
+}
+
+function _cleanupFileWsState(err) {
+  if (_fileOpenPending && _fileOpenPending.reject) _fileOpenPending.reject(err || new Error('File socket closed'));
+  if (_fileSavePending && _fileSavePending.reject) _fileSavePending.reject(err || new Error('File socket closed'));
+  _fileOpenPending = null;
+  _fileSavePending = null;
+}
+
+function connectFileWs() {
+  if (_fileWs && _fileWs.readyState === WebSocket.OPEN) return Promise.resolve(_fileWs);
+  if (_fileWsConnectPromise) return _fileWsConnectPromise;
+  _fileWsConnectPromise = new Promise((resolve, reject) => {
+    try {
+      const ws = new WebSocket(`${_wsProto()}://${location.host}/ws/files/${encodeURIComponent(PROJECT)}`);
+      ws.binaryType = 'arraybuffer';
+      ws.onopen = () => {
+        _fileWs = ws;
+        _fileWsConnectPromise = null;
+        resolve(ws);
+      };
+      ws.onmessage = async e => {
+        if (typeof e.data !== 'string') {
+          if (_fileOpenPending && _fileOpenPending.decoder && e.data) {
+            _fileOpenPending.buffer += _fileOpenPending.decoder.decode(e.data, {stream: true});
+          }
+          return;
+        }
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        if (msg.type === 'file-meta' && _fileOpenPending && _fileOpenPending.path === msg.filepath) {
+          _fileOpenPending.size = msg.size || 0;
+          _fileOpenPending.etag = msg.etag || '';
+          _lastLoadedSize = _fileOpenPending.size;
+          _lastLoadedEtag = _fileOpenPending.etag;
+          _setLargeFileMode(_fileOpenPending.size >= _largeFileThreshold);
+          return;
+        }
+        if (msg.type === 'file-end' && _fileOpenPending && _fileOpenPending.path === msg.filepath) {
+          const pending = _fileOpenPending;
+          pending.buffer += pending.decoder.decode();
+          _fileOpenPending = null;
+          pending.resolve({content: pending.buffer, size: msg.size || pending.size || 0, etag: pending.etag || ''});
+          return;
+        }
+        if (msg.type === 'save-ready' && _fileSavePending && _fileSavePending.path === msg.filepath) {
+          _fileSavePending.ready = true;
+          _fileSavePending.kick();
+          return;
+        }
+        if (msg.type === 'save-ack' && _fileSavePending && _fileSavePending.path === msg.filepath) {
+          _fileSavePending.offset = msg.offset || _fileSavePending.offset;
+          _fileSavePending.kick();
+          return;
+        }
+        if (msg.type === 'save-complete' && _fileSavePending && _fileSavePending.path === msg.filepath) {
+          const pending = _fileSavePending;
+          _fileSavePending = null;
+          pending.resolve({size: msg.size || pending.size || 0});
+          return;
+        }
+        if (msg.type === 'error') {
+          const err = new Error(msg.detail || 'File socket error');
+          if (_fileOpenPending) {
+            const pending = _fileOpenPending;
+            _fileOpenPending = null;
+            pending.reject(err);
+            return;
+          }
+          if (_fileSavePending) {
+            const pending = _fileSavePending;
+            _fileSavePending = null;
+            pending.reject(err);
+          }
+        }
+      };
+      ws.onclose = () => {
+        _fileWs = null;
+        _fileWsConnectPromise = null;
+        _cleanupFileWsState(new Error('File socket closed'));
+      };
+      ws.onerror = () => {
+        if (!_fileWs && _fileWsConnectPromise) {
+          _fileWsConnectPromise = null;
+          reject(new Error('File socket connection failed'));
+        }
+      };
+    } catch (err) {
+      _fileWsConnectPromise = null;
+      reject(err);
+    }
+  });
+  return _fileWsConnectPromise;
+}
+
+async function openFileHttpFallback(fp) {
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fp)}`, {
+    headers: {'Accept':'text/plain'}
+  });
+  if (!r.ok) throw new Error('Could not open file');
+  const totalSize = Number(r.headers.get('content-length') || r.headers.get('x-file-size') || '0');
+  _lastLoadedSize = totalSize;
+  _lastLoadedEtag = r.headers.get('etag') || '';
+  _setLargeFileMode(totalSize >= _largeFileThreshold);
+  if (!r.body || !window.TextDecoder) {
+    return await r.text();
+  }
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let content = '';
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    content += decoder.decode(part.value, {stream: true});
+  }
+  content += decoder.decode();
+  return content;
+}
+
+async function openFileWs(fp) {
+  const ws = await connectFileWs();
+  return await new Promise((resolve, reject) => {
+    _fileOpenPending = {
+      path: fp,
+      buffer: '',
+      decoder: new TextDecoder('utf-8'),
+      resolve,
+      reject,
+      size: 0,
+      etag: '',
+    };
+    ws.send(JSON.stringify({action: 'open', filepath: fp}));
+  });
+}
+
+async function saveFileHttpFallback(content) {
+  const contentSize = new Blob([content]).size;
+  if (contentSize >= _largeFileThreshold) {
+    await saveFileChunked(content);
+    return {size: contentSize};
+  }
+  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
+    method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'}, body: content
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.detail || 'Save failed');
+  }
+  return {size: contentSize};
+}
+
+async function saveFileWs(content) {
+  const ws = await connectFileWs();
+  const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+  return await new Promise((resolve, reject) => {
+    const pending = {
+      path: currentFile,
+      size: blob.size,
+      offset: 0,
+      ready: false,
+      sending: false,
+      resolve,
+      reject,
+      kick: async () => {
+        if (!pending.ready || pending.sending || !_fileSavePending) return;
+        pending.sending = true;
+        try {
+          while (pending.offset < blob.size) {
+            const end = Math.min(pending.offset + _chunkSize, blob.size);
+            const buf = await blob.slice(pending.offset, end).arrayBuffer();
+            ws.send(buf);
+            pending.offset = end;
+            return;
+          }
+          ws.send(JSON.stringify({action: 'save-finish', filepath: pending.path}));
+        } catch (err) {
+          _fileSavePending = null;
+          reject(err);
+        } finally {
+          pending.sending = false;
+        }
+      },
+    };
+    _fileSavePending = pending;
+    ws.send(JSON.stringify({action: 'save-start', filepath: currentFile, size: blob.size}));
+  });
+}
+
 function updateEditorStats() {
-  const ed = document.getElementById('raw-editor');
-  if (!ed) return;
-  const text = ed.value;
+  const text = getEditorText();
   const lines = _lineCount(text);
   const size = new Blob([text]).size;
-  const before = text.slice(0, ed.selectionStart);
-  const ln = _lineCount(before);
-  const lastBreak = before.lastIndexOf('\n');
-  const col = before.length - lastBreak;
+  const pos = getEditorCursor();
   const linesEl = document.getElementById('editor-lines');
   const sizeEl = document.getElementById('editor-size');
   const posEl = document.getElementById('editor-pos');
   if (linesEl) linesEl.textContent = `${lines} line${lines === 1 ? '' : 's'}`;
   if (sizeEl) sizeEl.textContent = _formatBytes(size);
-  if (posEl) posEl.textContent = `Ln ${ln}, Col ${col}`;
+  if (posEl) posEl.textContent = `Ln ${pos.line}, Col ${pos.col}`;
 }
 
 function renderLineNumbers(immediate=false) {
   clearTimeout(_lineRenderTimer);
-  const run = () => {
-    const ed = document.getElementById('raw-editor');
-    const gutter = document.getElementById('line-gutter');
-    if (!ed || !gutter) return;
-    const lines = _lineCount(ed.value);
-    const nums = [];
-    for (let i = 1; i <= lines; i++) nums.push(i);
-    gutter.textContent = nums.join('\n');
-    syncEditorScroll();
-    updateEditorStats();
-  };
+  const run = () => updateEditorStats();
   if (immediate) run();
   else _lineRenderTimer = setTimeout(run, 80);
 }
 
 function syncEditorScroll() {
-  const ed = document.getElementById('raw-editor');
-  const gutter = document.getElementById('line-gutter');
-  if (ed && gutter) gutter.scrollTop = ed.scrollTop;
+  updateEditorStats();
 }
 
 function handleEditorInput() {
   _setEditorDirty(true);
-  renderLineNumbers(false);
+  if (_largeFileMode) updateEditorStats();
+  else renderLineNumbers(false);
 }
 
 async function openFile(fp) {
+  if (_openInFlight) return;
+  _openInFlight = true;
   currentFile = fp;
-  const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(fp)}`, {
-    headers: {'Accept':'text/plain'}
-  });
-  if (!r.ok) { toast('Could not open file', 'err'); return; }
-  const content = await r.text();
-  const ed = document.getElementById('raw-editor');
-  ed.value = content;
-  ed.scrollTop = 0;
-  ed.scrollLeft = 0;
-  _setEditorDirty(false);
-  renderLineNumbers(true);
-  document.getElementById('editor-fname').textContent = fp;
-  document.getElementById('editor-icon').setAttribute('data-lucide', fileIcon(fp.split('/').pop()));
-  document.getElementById('editor-placeholder').style.display = 'none';
-  document.getElementById('editor-pane').style.display = 'flex';
-  lucide.createIcons();
-  if (_isMobile()) {
-    document.getElementById('file-sidebar').classList.add('mob-hide');
-    document.getElementById('editor-area').classList.remove('mob-hide');
+  const st = document.getElementById('editor-save-state');
+  if (st) { st.textContent = 'Loading...'; st.style.color = '#60a5fa'; }
+  _setLargeFileMode(false);
+  setEditorText('');
+  try {
+    let content = '';
+    try {
+      const loaded = await openFileWs(fp);
+      content = loaded.content || '';
+    } catch (err) {
+      content = await openFileHttpFallback(fp);
+    }
+    setEditorText(content);
+    applyEditorLanguage(fp);
+    resetEditorScroll();
+    _setEditorDirty(false);
+    renderLineNumbers(true);
+    document.getElementById('editor-fname').textContent = fp;
+    document.getElementById('editor-icon').setAttribute('data-lucide', fileIcon(fp.split('/').pop()));
+    document.getElementById('editor-placeholder').style.display = 'none';
+    document.getElementById('editor-pane').style.display = 'flex';
+    lucide.createIcons();
+    if (_isMobile()) {
+      document.getElementById('file-sidebar').classList.add('mob-hide');
+      document.getElementById('editor-area').classList.remove('mob-hide');
+    }
+    if (_largeFileMode) toast('Large file mode enabled', 'warn');
+    loadTree();
+  } catch (e) {
+    toast('Could not open file', 'err');
+  } finally {
+    _openInFlight = false;
+    if (st) { st.textContent = 'Saved'; st.style.color = 'var(--t3)'; }
   }
-  loadTree();
+}
+
+async function saveFileChunked(content) {
+  const fileBlob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+  let offset = 0;
+  while (offset < fileBlob.size || (fileBlob.size === 0 && offset === 0)) {
+    const chunk = fileBlob.slice(offset, offset + _chunkSize);
+    const finalize = offset + chunk.size >= fileBlob.size;
+    const params = new URLSearchParams({
+      chunked: '1',
+      offset: String(offset),
+      truncate: offset === 0 ? '1' : '0',
+      finalize: finalize ? '1' : '0',
+    });
+    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}?${params.toString()}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/octet-stream'},
+      body: chunk,
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.detail || 'Save failed');
+    }
+    offset += chunk.size;
+    if (fileBlob.size === 0) break;
+  }
 }
 
 async function saveFile() {
   if (!currentFile || _saveInFlight) return;
-  const ed = document.getElementById('raw-editor');
-  const content = ed.value;
+  const content = getEditorText();
   const saveBtn = document.getElementById('save-btn');
   const st = document.getElementById('editor-save-state');
   _saveInFlight = true;
   if (saveBtn) saveBtn.disabled = true;
   if (st) { st.textContent = 'Saving...'; st.style.color = '#60a5fa'; }
   try {
-    const r = await fetch(`/_/projects/${encodeURIComponent(PROJECT)}/files/${encodeURIComponent(currentFile)}`, {
-      method: 'POST', headers: {'Content-Type':'text/plain;charset=utf-8'}, body: content
-    });
-    if (r.ok) { toast('Saved'); _setEditorDirty(false); updateEditorStats(); }
-    else {
-      const d = await r.json().catch(() => ({}));
-      toast(d.detail || 'Save failed', 'err');
-      _setEditorDirty(true);
+    let result;
+    try {
+      result = await saveFileWs(content);
+    } catch (err) {
+      result = await saveFileHttpFallback(content);
     }
+    _lastLoadedSize = result.size || new Blob([content]).size;
+    toast('Saved');
+    _setEditorDirty(false);
+    updateEditorStats();
   } catch (e) {
-    toast('Save failed: network error', 'err');
+    toast(e && e.message ? e.message : 'Save failed: network error', 'err');
     _setEditorDirty(true);
   } finally {
     _saveInFlight = false;
@@ -765,6 +1190,7 @@ async function saveFile() {
 }
 
 function handleEditorKey(e) {
+  if (!_largeFileMode) return;
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveFile(); }
   if (e.key === 'Tab') {
     e.preventDefault();
@@ -776,7 +1202,7 @@ function handleEditorKey(e) {
 }
 
 document.addEventListener('selectionchange', () => {
-  if (document.activeElement && document.activeElement.id === 'raw-editor') updateEditorStats();
+  if (_largeFileMode && document.activeElement && document.activeElement.id === 'raw-editor') updateEditorStats();
 });
 
 async function setStartFile() {
@@ -809,6 +1235,7 @@ function showNewFile(folderPath) {
   const inp = document.getElementById('new-file-name');
   inp.value = folderPath ? folderPath + '/' : '';
   document.getElementById('modal-new-file').classList.add('open');
+  updateNewFileState();
   setTimeout(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 80);
 }
 
@@ -824,10 +1251,15 @@ function closeModal(name) {
 }
 
 async function createFile() {
-  const name = document.getElementById('new-file-name').value.trim();
+  const name = normalizeProjectPath(document.getElementById('new-file-name').value);
   if (!name) { toast('Enter a filename', 'warn'); return; }
   if (/[\r\n]/.test(name) || name.length > 512) {
     toast('Filename is too long or contains new lines', 'err');
+    return;
+  }
+  if (_existingFilePaths.has(name)) {
+    updateNewFileState();
+    toast('That file already exists', 'warn');
     return;
   }
   closeModal('new-file');
@@ -1043,6 +1475,7 @@ function toggleTheme() {
   const n = c === 'light' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', n);
   localStorage.setItem('pv3t', n);
+  syncEditorTheme();
   lucide.createIcons();
 }
 
@@ -1086,6 +1519,7 @@ if (window.PV3) PV3.onNavigate(() => {
   clearTimeout(_statusTimer);
   if (_svStatsWs) _svStatsWs.close();
   if (_wsInst)    _wsInst.close();
+  if (_fileWs)    _fileWs.close();
 });
 _svConnectStats();
 
@@ -1093,6 +1527,9 @@ _svConnectStats();
 if (_isMobile()) {
   document.getElementById('editor-area').classList.add('mob-hide');
 }
+initCodeEditor();
+syncEditorSurface();
+document.getElementById('new-file-name')?.addEventListener('input', updateNewFileState);
 loadTree();
 lucide.createIcons();
 

@@ -1,1 +1,13 @@
-{}
+{
+  "d7a15e73-97a7-4747-92e0-016d70da1485": {
+    "status": "stopped",
+    "pid": null,
+    "start_file": "main.py",
+    "startup_command": "python3 -u main.py",
+    "start_time": null,
+    "restarts": 0,
+    "language": "python",
+    "id": "d7a15e73-97a7-4747-92e0-016d70da1485",
+    "name": "bash"
+  }
+}

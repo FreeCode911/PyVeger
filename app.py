@@ -20,7 +20,7 @@ import bcrypt
 
 import psutil
 from fastapi import FastAPI, UploadFile, File, Request, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -41,6 +41,7 @@ CONFIG_FILE = BASE_DIR / "config.json"
 _sessions: dict[str, float] = {}
 SESSION_TTL = 60 * 60 * 24 * 7
 SESSION_COOKIE = "pv3_session"
+FILE_STREAM_CHUNK_SIZE = 256 * 1024
 
 _PUBLIC = {"/login", "/static"}
 
@@ -831,17 +832,86 @@ async def api_create_file(project_id: str, request: Request):
 
 @app.get("/_/projects/{project_id}/files/{filepath:path}")
 async def api_get_file(project_id: str, filepath: str, request: Request):
+    info = await asyncio.to_thread(manager.get_file_info, project_id, filepath)
+    if info is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    headers = {
+        "Cache-Control": "no-store",
+        "Accept-Ranges": "bytes",
+        "X-File-Size": str(info["size"]),
+        "ETag": f'W/"{info["size"]:x}-{info["mtime_ns"]:x}"',
+    }
+    if "text/plain" in request.headers.get("accept", ""):
+        range_header = request.headers.get("range", "").strip()
+        start = 0
+        end = info["size"]
+        status_code = 200
+        if range_header.startswith("bytes="):
+            spec = range_header[6:].strip()
+            if "," in spec:
+                raise HTTPException(status_code=416, detail="Multiple ranges are not supported")
+            start_str, _, end_str = spec.partition("-")
+            try:
+                if start_str == "":
+                    suffix = int(end_str)
+                    if suffix <= 0:
+                        raise ValueError
+                    start = max(0, info["size"] - suffix)
+                else:
+                    start = int(start_str)
+                    if end_str:
+                        end = min(info["size"], int(end_str) + 1)
+                if start < 0 or start >= info["size"] or end <= start:
+                    raise ValueError
+            except ValueError:
+                raise HTTPException(status_code=416, detail="Invalid range")
+            headers["Content-Range"] = f"bytes {start}-{end - 1}/{info['size']}"
+            status_code = 206
+        stream = await asyncio.to_thread(
+            manager.iter_file_chunks,
+            project_id,
+            filepath,
+            start,
+            end,
+            FILE_STREAM_CHUNK_SIZE,
+        )
+        if stream is None:
+            raise HTTPException(status_code=404, detail="File not found")
+        headers["Content-Length"] = str(end - start)
+        return StreamingResponse(
+            stream,
+            status_code=status_code,
+            media_type="text/plain; charset=utf-8",
+            headers=headers,
+        )
     content = await asyncio.to_thread(manager.get_file_content, project_id, filepath)
     if content is None:
         raise HTTPException(status_code=404, detail="File not found")
-    if "text/plain" in request.headers.get("accept", ""):
-        from fastapi.responses import PlainTextResponse
-        return PlainTextResponse(content)
     return {"content": content}
 
 
 @app.post("/_/projects/{project_id}/files/{filepath:path}")
 async def api_save_file(project_id: str, filepath: str, request: Request):
+    if request.query_params.get("chunked") == "1":
+        try:
+            offset = int(request.query_params.get("offset", "0"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid offset")
+        truncate = request.query_params.get("truncate") == "1"
+        finalize = request.query_params.get("finalize") == "1"
+        content = await request.body()
+        result = await asyncio.to_thread(
+            manager.write_file_chunk,
+            project_id,
+            filepath,
+            content,
+            offset,
+            truncate,
+            finalize,
+        )
+        if not result.get("ok"):
+            raise HTTPException(status_code=400, detail=result.get("error"))
+        return result
     content_type = request.headers.get("content-type", "")
     if content_type.startswith("text/plain"):
         content = (await request.body()).decode("utf-8", errors="replace")
@@ -1002,6 +1072,154 @@ async def api_save_settings(request: Request):
 
 
 # ── WebSocket: Live Logs ───────────────────────────────────────────────────────
+
+@app.websocket("/ws/files/{project_id}")
+async def ws_files(websocket: WebSocket, project_id: str):
+    token = websocket.cookies.get(SESSION_COOKIE)
+    if not _valid_session(token):
+        await websocket.close(code=1008)
+        return
+
+    proj = manager.get_project(project_id)
+    if not proj:
+        await websocket.close(code=1008)
+        return
+
+    await websocket.accept()
+    save_state: dict | None = None
+
+    try:
+        while True:
+            msg = await websocket.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+
+            text = msg.get("text")
+            data = msg.get("bytes")
+
+            if text is not None:
+                try:
+                    payload = json.loads(text)
+                except json.JSONDecodeError:
+                    await websocket.send_json({"type": "error", "detail": "Invalid message"})
+                    continue
+
+                action = payload.get("action")
+                filepath = str(payload.get("filepath", "")).strip()
+
+                if action == "open":
+                    info = await asyncio.to_thread(manager.get_file_info, project_id, filepath)
+                    if info is None:
+                        await websocket.send_json({"type": "error", "detail": "File not found"})
+                        continue
+                    await websocket.send_json({
+                        "type": "file-meta",
+                        "filepath": filepath,
+                        "size": info["size"],
+                        "etag": f'W/"{info["size"]:x}-{info["mtime_ns"]:x}"',
+                    })
+                    stream = await asyncio.to_thread(
+                        manager.iter_file_chunks,
+                        project_id,
+                        filepath,
+                        0,
+                        info["size"],
+                        FILE_STREAM_CHUNK_SIZE,
+                    )
+                    if stream is None:
+                        await websocket.send_json({"type": "error", "detail": "File not found"})
+                        continue
+                    for chunk in stream:
+                        await websocket.send_bytes(chunk)
+                    await websocket.send_json({"type": "file-end", "filepath": filepath, "size": info["size"]})
+                    continue
+
+                if action == "save-start":
+                    try:
+                        size = int(payload.get("size", 0))
+                    except (TypeError, ValueError):
+                        await websocket.send_json({"type": "error", "detail": "Invalid size"})
+                        continue
+                    if size < 0:
+                        await websocket.send_json({"type": "error", "detail": "Invalid size"})
+                        continue
+                    result = await asyncio.to_thread(
+                        manager.write_file_chunk,
+                        project_id,
+                        filepath,
+                        b"",
+                        0,
+                        True,
+                        size == 0,
+                    )
+                    if not result.get("ok"):
+                        await websocket.send_json({"type": "error", "detail": result.get("error", "Save failed")})
+                        continue
+                    save_state = {"filepath": filepath, "offset": 0, "size": size, "empty_done": size == 0}
+                    await websocket.send_json({"type": "save-ready", "filepath": filepath, "size": size})
+                    if size == 0:
+                        await websocket.send_json({"type": "save-complete", "filepath": filepath, "size": 0})
+                    continue
+
+                if action == "save-finish":
+                    if not save_state or save_state.get("filepath") != filepath:
+                        await websocket.send_json({"type": "error", "detail": "No active save session"})
+                        continue
+                    if save_state.get("empty_done"):
+                        save_state = None
+                        continue
+                    result = await asyncio.to_thread(
+                        manager.write_file_chunk,
+                        project_id,
+                        filepath,
+                        b"",
+                        int(save_state["offset"]),
+                        False,
+                        True,
+                    )
+                    if not result.get("ok"):
+                        await websocket.send_json({"type": "error", "detail": result.get("error", "Finalize failed")})
+                        continue
+                    await websocket.send_json({
+                        "type": "save-complete",
+                        "filepath": filepath,
+                        "size": result.get("size", save_state["offset"]),
+                    })
+                    save_state = None
+                    continue
+
+                await websocket.send_json({"type": "error", "detail": "Unknown action"})
+                continue
+
+            if data is not None:
+                if not save_state or save_state.get("empty_done"):
+                    await websocket.send_json({"type": "error", "detail": "No active save session"})
+                    continue
+                filepath = str(save_state["filepath"])
+                offset = int(save_state["offset"])
+                result = await asyncio.to_thread(
+                    manager.write_file_chunk,
+                    project_id,
+                    filepath,
+                    data,
+                    offset,
+                    False,
+                    False,
+                )
+                if not result.get("ok"):
+                    await websocket.send_json({"type": "error", "detail": result.get("error", "Chunk write failed")})
+                    continue
+                save_state["offset"] = offset + len(data)
+                await websocket.send_json({
+                    "type": "save-ack",
+                    "filepath": filepath,
+                    "offset": save_state["offset"],
+                    "size": save_state["size"],
+                })
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.warning(f"ws_files error: {e}")
 
 @app.websocket("/ws/logs/{project_id}")
 async def ws_logs(websocket: WebSocket, project_id: str):

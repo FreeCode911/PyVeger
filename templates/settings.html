@@ -635,21 +635,24 @@ async function refreshBadge() {
   try {
     const r = await fetch('/_/status');
     const d = await r.json();
-    const st = d.tunnel?.status || 'stopped';
-    const badge = document.getElementById('named-badge');
-    const dot   = document.getElementById('named-dot');
-    const txt   = document.getElementById('named-status-text');
-    if (st === 'running') {
-      badge.className = 'badge-run';
-      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
-    } else {
-      badge.className = 'badge-stop';
-      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
-    }
-    txt.textContent = st;
+    applyTunnelBadge(d.tunnel?.status || 'stopped');
   } catch(e) {}
 }
-setInterval(refreshBadge, 5000);
+
+function applyTunnelBadge(st) {
+  const badge = document.getElementById('named-badge');
+  const dot   = document.getElementById('named-dot');
+  const txt   = document.getElementById('named-status-text');
+  if (!badge || !dot || !txt) return;
+  if (st === 'running') {
+    badge.className = 'badge-run';
+    dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
+  } else {
+    badge.className = 'badge-stop';
+    dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
+  }
+  txt.textContent = st;
+}
 
 // ── Live tunnel log via WebSocket ─────────────────────────────────────────────
 var logEl  = document.getElementById('tunnel-log');
@@ -925,6 +928,7 @@ async function removeNodejs() {
 }
 
 loadNodeRtStatus();
+refreshBadge();
 
 // ── Live tunnel badge via ws/stats ────────────────────────────────────────
 var _stgStatsWs;
@@ -935,19 +939,7 @@ function _stgConnectStats(){
   _stgStatsWs.onmessage = e => {
     let d; try { d = JSON.parse(e.data); } catch { return; }
     if (d.tunnel == null) return;
-    const st     = d.tunnel;
-    const badge  = document.getElementById('named-badge');
-    const dot    = document.getElementById('named-dot');
-    const txt    = document.getElementById('named-status-text');
-    if (!badge) return;
-    if (st === 'running') {
-      badge.className = 'badge-run';
-      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px rgba(34,197,94,.5)';
-    } else {
-      badge.className = 'badge-stop';
-      dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#ef4444';
-    }
-    txt.textContent = st;
+    applyTunnelBadge(d.tunnel);
   };
   _stgStatsWs.onclose = () => { if (!_settingsDead) setTimeout(_stgConnectStats, 3000); };
 }
