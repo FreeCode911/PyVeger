@@ -47,6 +47,24 @@ def _bar(pct: float, length: int = 12) -> str:
     return "█" * filled + "░" * (length - filled) + f"  {pct:.1f}%"
 
 
+def _resolve_project(project_ref: str) -> dict | None:
+    import manager
+    if not project_ref:
+        return None
+    proj = manager.get_project(project_ref)
+    if proj:
+        return proj
+    ref = project_ref.strip().lower()
+    for item in manager.list_projects():
+        if item["name"].lower() == ref:
+            return item
+    return None
+
+
+def _project_label(project: dict) -> str:
+    return project.get("name") or project.get("id", "unknown")
+
+
 def _run_bot(token: str):
     global _bot_running
     try:
@@ -69,10 +87,16 @@ def _run_bot(token: str):
         cfg = _load_config()
         allowed = [u.strip().lower() for u in cfg.get("allowed_users", [])]
         uid = str(interaction.user.id)
-        uname = interaction.user.name.lower()
+        identities = {
+            uid,
+            interaction.user.name.lower(),
+            getattr(interaction.user, "display_name", "").lower(),
+            (getattr(interaction.user, "global_name", "") or "").lower(),
+            str(interaction.user).lower(),
+        }
         if interaction.guild and str(interaction.guild.owner_id) == uid:
             return True
-        return uid in allowed or uname in allowed
+        return any(identity for identity in identities if identity in allowed)
 
     async def _deny(interaction: discord.Interaction):
         embed = discord.Embed(
@@ -88,15 +112,25 @@ def _run_bot(token: str):
     async def _project_ac(interaction: discord.Interaction, current: str):
         projects = manager.list_projects()
         return [
-            app_commands.Choice(name=p["name"], value=p["name"])
-            for p in projects if current.lower() in p["name"].lower()
+            app_commands.Choice(name=p["name"][:100], value=p["id"])
+            for p in projects
+            if current.lower() in p["name"].lower() or current.lower() in p["id"].lower()
         ][:25]
 
     async def _file_ac(interaction: discord.Interaction, current: str):
-        project = interaction.namespace.project
-        if not project:
+        project_ref = getattr(interaction.namespace, "project", "")
+        proj = _resolve_project(project_ref)
+        if not proj:
             return []
-        files = manager.list_project_files(project)
+        tree = manager.list_project_tree(proj["id"])
+        files: list[str] = []
+        stack = list(tree)
+        while stack:
+            node = stack.pop()
+            if node.get("type") == "file":
+                files.append(node["path"])
+            else:
+                stack.extend(node.get("children", []))
         return [
             app_commands.Choice(name=f, value=f)
             for f in files if current.lower() in f.lower()
@@ -105,8 +139,9 @@ def _run_bot(token: str):
     # ── Interactive View ──────────────────────────────────────────────────────
 
     class ProjectView(discord.ui.View):
-        def __init__(self, project_name: str, status: str):
+        def __init__(self, project_id: str, project_name: str, status: str):
             super().__init__(timeout=180)
+            self.project_id = project_id
             self.project_name = project_name
             self._refresh_buttons(status)
 
@@ -119,7 +154,7 @@ def _run_bot(token: str):
         @discord.ui.button(label="Start", style=discord.ButtonStyle.success, emoji="▶️", row=0)
         async def start_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
-            result = manager.start_project(self.project_name)
+            result = manager.start_project(self.project_id)
             if result.get("ok"):
                 embed = discord.Embed(
                     title="✅ Server Started",
@@ -141,7 +176,7 @@ def _run_bot(token: str):
         @discord.ui.button(label="Stop", style=discord.ButtonStyle.danger, emoji="⏹️", row=0)
         async def stop_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
-            result = manager.stop_project(self.project_name)
+            result = manager.stop_project(self.project_id)
             if result.get("ok"):
                 embed = discord.Embed(
                     title="⏹️ Server Stopped",
@@ -162,7 +197,7 @@ def _run_bot(token: str):
         @discord.ui.button(label="Restart", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
         async def restart_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer()
-            result = manager.restart_project(self.project_name)
+            result = manager.restart_project(self.project_id)
             if result.get("ok"):
                 embed = discord.Embed(
                     title="🔄 Server Restarted",
@@ -184,7 +219,7 @@ def _run_bot(token: str):
         @discord.ui.button(label="View Logs", style=discord.ButtonStyle.primary, emoji="📋", row=0)
         async def logs_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
             await interaction.response.defer(ephemeral=True)
-            log_lines = manager.get_log_lines(self.project_name, n=25)
+            log_lines = manager.get_log_lines(self.project_id, n=25)
             content = "\n".join(log_lines) if log_lines else "No logs yet."
             if len(content) > 3800:
                 content = "…" + content[-3797:]
@@ -247,7 +282,7 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
         await interaction.response.defer()
-        p = manager.get_project(project)
+        p = _resolve_project(project)
         if not p:
             embed = discord.Embed(
                 title="Not Found",
@@ -272,7 +307,7 @@ def _run_bot(token: str):
         if p.get("start_time"):
             embed.add_field(name="Last Started", value=f"<t:{int(p['start_time'])}:R>", inline=True)
         embed.set_footer(text="PyVegar · Use the buttons below to control the server")
-        view = ProjectView(p["name"], p["status"])
+        view = ProjectView(p["id"], p["name"], p["status"])
         await interaction.followup.send(embed=embed, view=view)
 
     # ── /start ────────────────────────────────────────────────────────────────
@@ -284,11 +319,14 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
         await interaction.response.defer()
-        result = manager.start_project(project)
+        proj = _resolve_project(project)
+        if not proj:
+            await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
+        result = manager.start_project(proj["id"])
         if result.get("ok"):
             embed = discord.Embed(
                 title="✅ Server Started",
-                description=f"**{project}** is now running.",
+                description=f"**{_project_label(proj)}** is now running.",
                 color=0x22c55e, timestamp=discord.utils.utcnow(),
             )
             embed.add_field(name="PID", value=f"`{result.get('pid')}`", inline=True)
@@ -310,11 +348,14 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
         await interaction.response.defer()
-        result = manager.stop_project(project)
+        proj = _resolve_project(project)
+        if not proj:
+            await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
+        result = manager.stop_project(proj["id"])
         if result.get("ok"):
             embed = discord.Embed(
                 title="⏹️ Server Stopped",
-                description=f"**{project}** has been stopped.",
+                description=f"**{_project_label(proj)}** has been stopped.",
                 color=0xef4444, timestamp=discord.utils.utcnow(),
             )
         else:
@@ -335,11 +376,14 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
         await interaction.response.defer()
-        result = manager.restart_project(project)
+        proj = _resolve_project(project)
+        if not proj:
+            await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
+        result = manager.restart_project(proj["id"])
         if result.get("ok"):
             embed = discord.Embed(
                 title="🔄 Server Restarted",
-                description=f"**{project}** has been restarted.",
+                description=f"**{_project_label(proj)}** has been restarted.",
                 color=0xf59e0b, timestamp=discord.utils.utcnow(),
             )
             embed.add_field(name="New PID", value=f"`{result.get('pid')}`", inline=True)
@@ -384,11 +428,14 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
         await interaction.response.defer()
+        proj = _resolve_project(project)
+        if not proj:
+            await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
         lines = max(1, min(lines, 50))
-        log_lines = manager.get_log_lines(project, n=lines)
+        log_lines = manager.get_log_lines(proj["id"], n=lines)
         if not log_lines:
             embed = discord.Embed(
-                title=f"📋 Logs — {project}",
+                title=f"📋 Logs — {_project_label(proj)}",
                 description="No logs found for this server yet.",
                 color=0x6366f1,
             )
@@ -398,12 +445,11 @@ def _run_bot(token: str):
         if len(content) > 3800:
             content = "…(trimmed)\n" + content[-3787:]
         embed = discord.Embed(
-            title=f"📋 Logs — {project}",
+            title=f"📋 Logs — {_project_label(proj)}",
             description=f"```\n{content}\n```",
             color=0x6366f1, timestamp=discord.utils.utcnow(),
         )
-        p = manager.get_project(project)
-        embed.set_footer(text=f"Last {lines} lines · Status: {p['status'] if p else '—'} · PyVegar")
+        embed.set_footer(text=f"Last {lines} lines · Status: {proj['status']} · PyVegar")
         await interaction.followup.send(embed=embed)
 
     # ── /system ───────────────────────────────────────────────────────────────
@@ -460,20 +506,31 @@ def _run_bot(token: str):
             await _deny(interaction); return
         await interaction.response.defer()
 
-        proj = manager.get_project(project)
+        proj = _resolve_project(project)
         if not proj:
             embed = discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444)
             await interaction.followup.send(embed=embed, ephemeral=True); return
 
-        files = manager.list_project_files(project)
-        desc = "\n".join(f"📄 `{f}`" for f in files) if files else "_No files yet._"
+        files = manager.list_project_tree(proj["id"])
+        flat_files: list[str] = []
+        stack = list(files)
+        while stack:
+            node = stack.pop()
+            if node.get("type") == "file":
+                flat_files.append(node["path"])
+            else:
+                stack.extend(node.get("children", []))
+        flat_files.sort()
+        desc = "\n".join(f"📄 `{f}`" for f in flat_files[:50]) if flat_files else "_No files yet._"
+        if len(flat_files) > 50:
+            desc += f"\n...and `{len(flat_files) - 50}` more"
         embed = discord.Embed(
-            title=f"📁 Files — {project}",
+            title=f"📁 Files — {_project_label(proj)}",
             description=desc,
             color=_status_color(proj["status"]),
             timestamp=discord.utils.utcnow(),
         )
-        embed.set_footer(text=f"PyVegar · {len(files)} file{'s' if len(files) != 1 else ''}")
+        embed.set_footer(text=f"PyVegar · {len(flat_files)} file{'s' if len(flat_files) != 1 else ''}")
         await interaction.followup.send(embed=embed)
 
     # ── /editfile ─────────────────────────────────────────────────────────────
@@ -485,20 +542,14 @@ def _run_bot(token: str):
         if not _allowed(interaction):
             await _deny(interaction); return
 
-        proj = manager.get_project(project)
+        proj = _resolve_project(project)
         if not proj:
             embed = discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444)
             await interaction.response.send_message(embed=embed, ephemeral=True); return
 
-        file_path = manager.SCRIPTS_DIR / project / filename
-        if not file_path.exists():
+        current_content = manager.get_file_content(proj["id"], filename)
+        if current_content is None:
             embed = discord.Embed(title="❌ File Not Found", description=f"`{filename}` not found in `{project}`.", color=0xef4444)
-            await interaction.response.send_message(embed=embed, ephemeral=True); return
-
-        try:
-            current_content = file_path.read_text(errors="replace")
-        except Exception as e:
-            embed = discord.Embed(title="❌ Read Error", description=str(e), color=0xef4444)
             await interaction.response.send_message(embed=embed, ephemeral=True); return
 
         class EditModal(discord.ui.Modal):
@@ -514,18 +565,18 @@ def _run_bot(token: str):
                 self_m.add_item(self_m.file_content)
 
             async def on_submit(self_m, inter: discord.Interaction):
-                try:
-                    file_path.write_text(self_m.file_content.value)
+                result = manager.save_file_content(proj["id"], filename, self_m.file_content.value)
+                if result.get("ok"):
                     embed = discord.Embed(
                         title="✅ File Saved",
-                        description=f"`{filename}` in **{project}** has been updated.",
+                        description=f"`{filename}` in **{_project_label(proj)}** has been updated.",
                         color=0x22c55e, timestamp=discord.utils.utcnow(),
                     )
                     embed.add_field(name="Size", value=f"`{len(self_m.file_content.value)} chars`", inline=True)
                     embed.set_footer(text="PyVegar")
                     await inter.response.send_message(embed=embed, ephemeral=True)
-                except Exception as e:
-                    embed = discord.Embed(title="❌ Save Error", description=str(e), color=0xef4444)
+                else:
+                    embed = discord.Embed(title="❌ Save Error", description=result.get("error", "Unknown error"), color=0xef4444)
                     await inter.response.send_message(embed=embed, ephemeral=True)
 
         await interaction.response.send_modal(EditModal())
@@ -556,6 +607,21 @@ def _run_bot(token: str):
             embed.add_field(name=name, value=desc, inline=False)
         embed.set_footer(text="PyVegar · All commands require permission except /help")
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @tree.error
+    async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+        logger.warning(f"Discord command error: {error}")
+        msg = "Something went wrong while running that command."
+        if isinstance(error, app_commands.CommandInvokeError) and error.original:
+            msg = str(error.original)
+        embed = discord.Embed(title="❌ Command Error", description=msg[:4000], color=0xef4444)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+        except Exception:
+            pass
 
     # ── Events ────────────────────────────────────────────────────────────────
 
