@@ -125,6 +125,56 @@ def _run_bot(token: str):
         embed.set_footer(text="PyVegar")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    ANSI = {
+        "reset": "\u001b[0m",
+        "red": "\u001b[1;31m",
+        "green": "\u001b[1;32m",
+        "yellow": "\u001b[1;33m",
+        "blue": "\u001b[1;34m",
+        "cyan": "\u001b[1;36m",
+        "gray": "\u001b[0;37m",
+    }
+
+    def _embed(title: str, description: str = "", color: int = 0x6366f1, footer: str = "PyVegar"):
+        embed = discord.Embed(
+            title=title,
+            description=description,
+            color=color,
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_footer(text=footer)
+        return embed
+
+    def _ok_embed(title: str, description: str = "", footer: str = "PyVegar"):
+        return _embed(title, description, 0x22c55e, footer)
+
+    def _err_embed(title: str, description: str = "", footer: str = "PyVegar"):
+        return _embed(title, description, 0xef4444, footer)
+
+    def _warn_embed(title: str, description: str = "", footer: str = "PyVegar"):
+        return _embed(title, description, 0xf59e0b, footer)
+
+    def _ansi_block(lines: list[str]) -> str:
+        return "```ansi\n" + "\n".join(lines)[:3900] + "\n```"
+
+    def _ansi_status(status: str, text: str) -> str:
+        color = {
+            "running": ANSI["green"],
+            "stopped": ANSI["red"],
+            "restarting": ANSI["yellow"],
+            "error": ANSI["red"],
+            "installing": ANSI["blue"],
+        }.get(status, ANSI["gray"])
+        return f"{color}{text}{ANSI['reset']}"
+
+    def _ansi_bar(label: str, pct: float) -> str:
+        color = ANSI["green"] if pct < 60 else ANSI["yellow"] if pct < 85 else ANSI["red"]
+        return f"{ANSI['cyan']}{label:<6}{ANSI['reset']} {color}{_bar(pct)}{ANSI['reset']}"
+
+    def _trim_code(text: str, limit: int = 3800) -> str:
+        text = text or ""
+        return text if len(text) <= limit else "…\n" + text[-(limit - 2):]
+
     # ── Autocomplete ──────────────────────────────────────────────────────────
 
     async def _project_ac(interaction: discord.Interaction, current: str):
@@ -174,20 +224,11 @@ def _run_bot(token: str):
             await interaction.response.defer()
             result = manager.start_project(self.project_id)
             if result.get("ok"):
-                embed = discord.Embed(
-                    title="✅ Server Started",
-                    description=f"**{self.project_name}** is now running.",
-                    color=0x22c55e, timestamp=discord.utils.utcnow(),
-                )
+                embed = _ok_embed("✅ Server Started", f"**{self.project_name}** is now running.")
                 embed.add_field(name="PID", value=f"`{result.get('pid')}`")
                 self._refresh_buttons("running")
             else:
-                embed = discord.Embed(
-                    title="❌ Failed to Start",
-                    description=f"```{result.get('error', 'Unknown error')}```",
-                    color=0xef4444,
-                )
-            embed.set_footer(text="PyVegar")
+                embed = _err_embed("❌ Failed to Start", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
             await interaction.message.edit(view=self)
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -196,19 +237,10 @@ def _run_bot(token: str):
             await interaction.response.defer()
             result = manager.stop_project(self.project_id)
             if result.get("ok"):
-                embed = discord.Embed(
-                    title="⏹️ Server Stopped",
-                    description=f"**{self.project_name}** has been stopped.",
-                    color=0xef4444, timestamp=discord.utils.utcnow(),
-                )
+                embed = _warn_embed("⏹️ Server Stopped", f"**{self.project_name}** has been stopped.")
                 self._refresh_buttons("stopped")
             else:
-                embed = discord.Embed(
-                    title="❌ Failed to Stop",
-                    description=f"```{result.get('error', 'Unknown error')}```",
-                    color=0xef4444,
-                )
-            embed.set_footer(text="PyVegar")
+                embed = _err_embed("❌ Failed to Stop", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
             await interaction.message.edit(view=self)
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -217,20 +249,11 @@ def _run_bot(token: str):
             await interaction.response.defer()
             result = manager.restart_project(self.project_id)
             if result.get("ok"):
-                embed = discord.Embed(
-                    title="🔄 Server Restarted",
-                    description=f"**{self.project_name}** has been restarted.",
-                    color=0xf59e0b, timestamp=discord.utils.utcnow(),
-                )
+                embed = _warn_embed("🔄 Server Restarted", f"**{self.project_name}** has been restarted.")
                 embed.add_field(name="New PID", value=f"`{result.get('pid')}`")
                 self._refresh_buttons("running")
             else:
-                embed = discord.Embed(
-                    title="❌ Failed to Restart",
-                    description=f"```{result.get('error', 'Unknown error')}```",
-                    color=0xef4444,
-                )
-            embed.set_footer(text="PyVegar")
+                embed = _err_embed("❌ Failed to Restart", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
             await interaction.message.edit(view=self)
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -239,14 +262,12 @@ def _run_bot(token: str):
             await interaction.response.defer(ephemeral=True)
             log_lines = manager.get_log_lines(self.project_id, n=25)
             content = "\n".join(log_lines) if log_lines else "No logs yet."
-            if len(content) > 3800:
-                content = "…" + content[-3797:]
-            embed = discord.Embed(
-                title=f"📋 Logs — {self.project_name}",
-                description=f"```\n{content}\n```",
-                color=0x6366f1, timestamp=discord.utils.utcnow(),
+            embed = _embed(
+                f"📋 Logs — {self.project_name}",
+                _ansi_block([_trim_code(content)]),
+                0x6366f1,
+                "Last 25 lines · PyVegar",
             )
-            embed.set_footer(text="Last 25 lines · PyVegar")
             await interaction.followup.send(embed=embed, ephemeral=True)
 
     # ── /projects ─────────────────────────────────────────────────────────────
@@ -258,34 +279,26 @@ def _run_bot(token: str):
         await interaction.response.defer()
         projects = manager.list_projects()
         if not projects:
-            embed = discord.Embed(
-                title="⚡ PyVegar — Servers",
-                description="No servers found. Create one in the web panel.",
-                color=0x6366f1,
-            )
+            embed = _embed("⚡ PyVegar — Servers", "No servers found. Create one in the web panel.")
             await interaction.followup.send(embed=embed); return
 
         running = sum(1 for p in projects if p["status"] == "running")
-        embed = discord.Embed(
-            title="⚡ PyVegar — Servers",
-            description=f"**{running}** running · **{len(projects) - running}** stopped · **{len(projects)}** total",
-            color=0x6366f1,
-            timestamp=discord.utils.utcnow(),
-        )
+        embed = _embed("⚡ PyVegar — Servers", f"**{running}** running · **{len(projects) - running}** stopped · **{len(projects)}** total")
         for p in projects:
-            emoji = _status_emoji(p["status"])
             uptime = _fmt_uptime(p.get("uptime"))
             pid = p.get("pid") or "—"
             cmd = p.get("startup_command") or f"python3 {p.get('start_file', 'main.py')}"
             if len(cmd) > 45:
                 cmd = cmd[:42] + "…"
             embed.add_field(
-                name=f"{emoji}  {p['name']}",
-                value=(
-                    f"**Status** `{p['status']}`  **PID** `{pid}`\n"
-                    f"**Uptime** `{uptime}`  **Restarts** `{p.get('restarts', 0)}`\n"
-                    f"**Cmd** `{cmd}`"
-                ),
+                name=f"{_status_emoji(p['status'])}  {p['name']}",
+                value=_ansi_block([
+                    _ansi_status(p["status"], f"STATUS   {p['status']}"),
+                    f"{ANSI['cyan']}PID      {ANSI['reset']}{pid}",
+                    f"{ANSI['cyan']}UPTIME   {ANSI['reset']}{uptime}",
+                    f"{ANSI['cyan']}RESTARTS {ANSI['reset']}{p.get('restarts', 0)}",
+                    f"{ANSI['cyan']}CMD      {ANSI['reset']}{cmd}",
+                ]),
                 inline=False,
             )
         embed.set_footer(text="PyVegar · Use /status <name> for details")
@@ -309,19 +322,17 @@ def _run_bot(token: str):
             )
             await interaction.followup.send(embed=embed, ephemeral=True); return
 
-        embed = discord.Embed(
-            title=f"{_status_emoji(p['status'])}  {p['name']}",
-            color=_status_color(p["status"]),
-            timestamp=discord.utils.utcnow(),
-        )
-        embed.add_field(name="Status",   value=f"`{p['status']}`",                  inline=True)
-        embed.add_field(name="PID",      value=f"`{p.get('pid') or '—'}`",          inline=True)
-        embed.add_field(name="Uptime",   value=f"`{_fmt_uptime(p.get('uptime'))}`", inline=True)
-        embed.add_field(name="Restarts", value=f"`{p.get('restarts', 0)}`",         inline=True)
-        embed.add_field(name="Start File", value=f"`{p.get('start_file', '—')}`",  inline=True)
-        embed.add_field(name="Files",    value=f"`{len(p.get('files', []))}`",      inline=True)
+        embed = _embed(f"{_status_emoji(p['status'])}  {p['name']}", color=_status_color(p["status"]))
+        embed.description = _ansi_block([
+            _ansi_status(p["status"], f"STATUS    {p['status']}"),
+            f"{ANSI['cyan']}PID       {ANSI['reset']}{p.get('pid') or '—'}",
+            f"{ANSI['cyan']}UPTIME    {ANSI['reset']}{_fmt_uptime(p.get('uptime'))}",
+            f"{ANSI['cyan']}RESTARTS  {ANSI['reset']}{p.get('restarts', 0)}",
+            f"{ANSI['cyan']}FILES     {ANSI['reset']}{len(p.get('files', []))}",
+            f"{ANSI['cyan']}START     {ANSI['reset']}{p.get('start_file', '—')}",
+        ])
         if p.get("startup_command"):
-            embed.add_field(name="Startup Command", value=f"```{p['startup_command'][:120]}```", inline=False)
+            embed.add_field(name="Startup Command", value=f"```sh\n{p['startup_command'][:120]}\n```", inline=False)
         if p.get("start_time"):
             embed.add_field(name="Last Started", value=f"<t:{int(p['start_time'])}:R>", inline=True)
         embed.set_footer(text="PyVegar · Use the buttons below to control the server")
@@ -342,19 +353,10 @@ def _run_bot(token: str):
             await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
         result = manager.start_project(proj["id"])
         if result.get("ok"):
-            embed = discord.Embed(
-                title="✅ Server Started",
-                description=f"**{_project_label(proj)}** is now running.",
-                color=0x22c55e, timestamp=discord.utils.utcnow(),
-            )
+            embed = _ok_embed("✅ Server Started", f"**{_project_label(proj)}** is now running.")
             embed.add_field(name="PID", value=f"`{result.get('pid')}`", inline=True)
         else:
-            embed = discord.Embed(
-                title="❌ Failed to Start",
-                description=f"```{result.get('error', 'Unknown error')}```",
-                color=0xef4444,
-            )
-        embed.set_footer(text="PyVegar")
+            embed = _err_embed("❌ Failed to Start", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
         await interaction.followup.send(embed=embed)
 
     # ── /stop ─────────────────────────────────────────────────────────────────
@@ -371,18 +373,9 @@ def _run_bot(token: str):
             await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
         result = manager.stop_project(proj["id"])
         if result.get("ok"):
-            embed = discord.Embed(
-                title="⏹️ Server Stopped",
-                description=f"**{_project_label(proj)}** has been stopped.",
-                color=0xef4444, timestamp=discord.utils.utcnow(),
-            )
+            embed = _warn_embed("⏹️ Server Stopped", f"**{_project_label(proj)}** has been stopped.")
         else:
-            embed = discord.Embed(
-                title="❌ Failed to Stop",
-                description=f"```{result.get('error', 'Unknown error')}```",
-                color=0x6366f1,
-            )
-        embed.set_footer(text="PyVegar")
+            embed = _err_embed("❌ Failed to Stop", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
         await interaction.followup.send(embed=embed)
 
     # ── /restart ──────────────────────────────────────────────────────────────
@@ -399,19 +392,10 @@ def _run_bot(token: str):
             await interaction.followup.send(embed=discord.Embed(title="❌ Project Not Found", description=f"No server named `{project}`.", color=0xef4444), ephemeral=True); return
         result = manager.restart_project(proj["id"])
         if result.get("ok"):
-            embed = discord.Embed(
-                title="🔄 Server Restarted",
-                description=f"**{_project_label(proj)}** has been restarted.",
-                color=0xf59e0b, timestamp=discord.utils.utcnow(),
-            )
+            embed = _warn_embed("🔄 Server Restarted", f"**{_project_label(proj)}** has been restarted.")
             embed.add_field(name="New PID", value=f"`{result.get('pid')}`", inline=True)
         else:
-            embed = discord.Embed(
-                title="❌ Failed to Restart",
-                description=f"```{result.get('error', 'Unknown error')}```",
-                color=0xef4444,
-            )
-        embed.set_footer(text="PyVegar")
+            embed = _err_embed("❌ Failed to Restart", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
         await interaction.followup.send(embed=embed)
 
     # ── /restart_all ──────────────────────────────────────────────────────────
@@ -424,10 +408,7 @@ def _run_bot(token: str):
         results = manager.restart_all()
         restarted = [list(r.keys())[0] for r in results if list(r.values())[0].get("ok")]
         failed    = [list(r.keys())[0] for r in results if not list(r.values())[0].get("ok")]
-        embed = discord.Embed(
-            title="🔄 Restart All",
-            color=0xf59e0b, timestamp=discord.utils.utcnow(),
-        )
+        embed = _warn_embed("🔄 Restart All")
         if restarted:
             embed.add_field(name=f"✅ Restarted ({len(restarted)})", value="\n".join(f"`{n}`" for n in restarted), inline=False)
         if failed:
@@ -460,14 +441,12 @@ def _run_bot(token: str):
             await interaction.followup.send(embed=embed, ephemeral=True); return
 
         content = "\n".join(log_lines)
-        if len(content) > 3800:
-            content = "…(trimmed)\n" + content[-3787:]
-        embed = discord.Embed(
-            title=f"📋 Logs — {_project_label(proj)}",
-            description=f"```\n{content}\n```",
-            color=0x6366f1, timestamp=discord.utils.utcnow(),
+        embed = _embed(
+            f"📋 Logs — {_project_label(proj)}",
+            _ansi_block([_trim_code(content)]),
+            0x6366f1,
+            f"Last {lines} lines · Status: {proj['status']} · PyVegar",
         )
-        embed.set_footer(text=f"Last {lines} lines · Status: {proj['status']} · PyVegar")
         await interaction.followup.send(embed=embed)
 
     # ── /system ───────────────────────────────────────────────────────────────
@@ -488,29 +467,18 @@ def _run_bot(token: str):
 
         color = 0xef4444 if (cpu > 85 or mem.percent > 85) else (0xf59e0b if (cpu > 60 or mem.percent > 60) else 0x22c55e)
 
-        embed = discord.Embed(
-            title="⚡ System Overview",
-            color=color, timestamp=discord.utils.utcnow(),
-        )
-        embed.add_field(
-            name="🖥️ CPU",
-            value=f"```{_bar(cpu)}```",
-            inline=False,
-        )
-        embed.add_field(
-            name="💾 RAM",
-            value=f"```{_bar(mem.percent)}  {mem.used // 1024**2} MB / {mem.total // 1024**2} MB```",
-            inline=False,
-        )
-        embed.add_field(
-            name="💿 Disk",
-            value=f"```{_bar(disk.percent)}  {disk.used / 1024**3:.1f} GB / {disk.total / 1024**3:.1f} GB```",
-            inline=False,
-        )
+        embed = _embed("⚡ System Overview", color=color)
+        embed.description = _ansi_block([
+            _ansi_bar("CPU", cpu),
+            _ansi_bar("RAM", mem.percent),
+            _ansi_bar("DISK", disk.percent),
+        ])
         tun_emoji = "🟢" if tunnel_st.get("status") == "running" else "🔴"
         embed.add_field(name="🖧 Servers",  value=f"`{running}/{total}` running",                            inline=True)
         embed.add_field(name="🌐 Tunnel",   value=f"{tun_emoji} `{tunnel_st.get('status', 'stopped')}`",   inline=True)
         embed.add_field(name="🔢 CPU Cores", value=f"`{psutil.cpu_count()}`",                               inline=True)
+        embed.add_field(name="Memory", value=f"`{mem.used // 1024**2} MB / {mem.total // 1024**2} MB`", inline=True)
+        embed.add_field(name="Disk", value=f"`{disk.used / 1024**3:.1f} GB / {disk.total / 1024**3:.1f} GB`", inline=True)
         embed.set_footer(text="PyVegar")
         await interaction.followup.send(embed=embed)
 
@@ -542,13 +510,12 @@ def _run_bot(token: str):
         desc = "\n".join(f"📄 `{f}`" for f in flat_files[:50]) if flat_files else "_No files yet._"
         if len(flat_files) > 50:
             desc += f"\n...and `{len(flat_files) - 50}` more"
-        embed = discord.Embed(
-            title=f"📁 Files — {_project_label(proj)}",
-            description=desc,
-            color=_status_color(proj["status"]),
-            timestamp=discord.utils.utcnow(),
+        embed = _embed(
+            f"📁 Files — {_project_label(proj)}",
+            desc,
+            _status_color(proj["status"]),
+            f"PyVegar · {len(flat_files)} file{'s' if len(flat_files) != 1 else ''}",
         )
-        embed.set_footer(text=f"PyVegar · {len(flat_files)} file{'s' if len(flat_files) != 1 else ''}")
         await interaction.followup.send(embed=embed)
 
     # ── /editfile ─────────────────────────────────────────────────────────────
@@ -585,16 +552,11 @@ def _run_bot(token: str):
             async def on_submit(self_m, inter: discord.Interaction):
                 result = manager.save_file_content(proj["id"], filename, self_m.file_content.value)
                 if result.get("ok"):
-                    embed = discord.Embed(
-                        title="✅ File Saved",
-                        description=f"`{filename}` in **{_project_label(proj)}** has been updated.",
-                        color=0x22c55e, timestamp=discord.utils.utcnow(),
-                    )
+                    embed = _ok_embed("✅ File Saved", f"`{filename}` in **{_project_label(proj)}** has been updated.")
                     embed.add_field(name="Size", value=f"`{len(self_m.file_content.value)} chars`", inline=True)
-                    embed.set_footer(text="PyVegar")
                     await inter.response.send_message(embed=embed, ephemeral=True)
                 else:
-                    embed = discord.Embed(title="❌ Save Error", description=result.get("error", "Unknown error"), color=0xef4444)
+                    embed = _err_embed("❌ Save Error", _ansi_block([f"{ANSI['red']}{result.get('error', 'Unknown error')}{ANSI['reset']}"]))
                     await inter.response.send_message(embed=embed, ephemeral=True)
 
         await interaction.response.send_modal(EditModal())
@@ -603,11 +565,7 @@ def _run_bot(token: str):
 
     @tree.command(name="help", description="Show all available PyVegar commands")
     async def cmd_help(interaction: discord.Interaction):
-        embed = discord.Embed(
-            title="⚡ PyVegar — Help",
-            description="Remote control your server panel from Discord.",
-            color=0x6366f1, timestamp=discord.utils.utcnow(),
-        )
+        embed = _embed("⚡ PyVegar — Help", "Remote control your server panel from Discord.")
         cmds = [
             ("📋 /projects",                        "List all servers with status, uptime & PID"),
             ("🔍 /status `<project>`",               "Detailed info + Start / Stop / Restart / Logs buttons"),
@@ -623,6 +581,11 @@ def _run_bot(token: str):
         ]
         for name, desc in cmds:
             embed.add_field(name=name, value=desc, inline=False)
+        embed.add_field(
+            name="Output Styles",
+            value="`ansi` logs, colored status blocks, buttons, modals, autocompletes, embeds, timestamps, and rotating presence are enabled.",
+            inline=False,
+        )
         embed.set_footer(text="PyVegar · All commands require permission except /help")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
